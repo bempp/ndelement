@@ -1,0 +1,69 @@
+name: 🧪
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - main
+  merge_group:
+
+jobs:
+  run-tests-rust:
+    name: Run Rust tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-version: ["stable"]
+        mpi: ['mpich', 'openmpi']
+        feature-flags: ['--features "mpi,strict"']
+    steps:
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-version }}
+          components: rustfmt
+      - name: Set up MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - name: Install cargo-mpirun
+        run: cargo install cargo-mpirun
+      - uses: actions/checkout@v3
+      - name: Install LAPACK, OpenBLAS
+        run:
+          sudo apt-get install -y libopenblas-dev liblapack-dev
+
+      - name: Run unit tests
+        run: cargo test ${{ matrix.feature-flags }}
+      - name: Run unit tests in release mode
+        run: cargo test --release ${{ matrix.feature-flags }}
+      - name: Run tests
+        run: cargo test --examples --release ${{ matrix.feature-flags }}
+      # - name: Test benchmarks build
+      #   run: cargo bench --no-run --features "mpi,strict"
+      - name: Run examples
+        run: |
+          python3 find_examples.py
+          chmod +x examples.sh
+          ./examples.sh
+
+  check-dependencies:
+    name: Check dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-version: ["stable"]
+    steps:
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-version }}
+          components: rustfmt
+      - name: Install cargo-upgrades
+        run: cargo install cargo-upgrades
+      - uses: actions/checkout@v3
+      - name: Check that dependencies are up to date
+        run:
+          cargo upgrades
