@@ -35,6 +35,7 @@ rlst = { git = "https://github.com/linalg-rs/rlst.git" }
 thiserror="1.*"
 
 [dev-dependencies]
+bempp = "0.1.0"
 blas-src = { version = "0.10", features = ["blis"]}
 lapack-src = { version = "0.10", features = ["netlib"]}
 

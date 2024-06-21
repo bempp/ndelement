@@ -499,17 +499,20 @@ pub fn tabulate_legendre_polynomials<
 
 #[cfg(test)]
 mod test {
-    /*
     use super::*;
-    use crate::quadrature::simplex_rules::simplex_rule;
     use approx::*;
+    use bempp::quadrature::simplex_rules::simplex_rule;
     use rlst::{rlst_dynamic_array2, rlst_dynamic_array3};
 
     #[test]
     fn test_legendre_interval() {
         let degree = 6;
 
-        let rule = simplex_rule(ReferenceCellType::Interval, degree + 1).unwrap();
+        let rule = simplex_rule(
+            bempp::traits::types::ReferenceCellType::Interval,
+            degree + 1,
+        )
+        .unwrap();
 
         let mut points = rlst_dynamic_array2!(f64, [rule.npoints, 1]);
         for (i, j) in rule.points.iter().enumerate() {
@@ -543,7 +546,7 @@ mod test {
     fn test_legendre_triangle() {
         let degree = 5;
 
-        let rule = simplex_rule(ReferenceCellType::Triangle, 79).unwrap();
+        let rule = simplex_rule(bempp::traits::types::ReferenceCellType::Triangle, 79).unwrap();
         let mut points = rlst_dynamic_array2!(f64, [rule.npoints, 2]);
         for i in 0..rule.npoints {
             for j in 0..2 {
@@ -578,7 +581,8 @@ mod test {
     fn test_legendre_quadrilateral() {
         let degree = 5;
 
-        let rule = simplex_rule(ReferenceCellType::Quadrilateral, 85).unwrap();
+        let rule =
+            simplex_rule(bempp::traits::types::ReferenceCellType::Quadrilateral, 85).unwrap();
         let mut points = rlst_dynamic_array2!(f64, [rule.npoints, 2]);
         for i in 0..rule.npoints {
             for j in 0..2 {
@@ -974,5 +978,4 @@ mod test {
             );
         }
     }
-    */
 }
