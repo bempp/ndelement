@@ -1,5 +1,8 @@
 use ndelement::ciarlet::lagrange;
-use ndelement::{types::{Continuity, ReferenceCellType}, traits::FiniteElement};
+use ndelement::{
+    traits::FiniteElement,
+    types::{Continuity, ReferenceCellType},
+};
 use rlst::{rlst_dynamic_array2, rlst_dynamic_array4, RawAccess};
 
 extern crate blas_src;
