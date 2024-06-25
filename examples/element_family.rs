@@ -1,6 +1,6 @@
 use ndelement::ciarlet::LagrangeElementFamily;
 use ndelement::traits::{ElementFamily, FiniteElement};
-use ndelement::{Continuity, ReferenceCellType};
+use ndelement::types::{Continuity, ReferenceCellType};
 
 extern crate blas_src;
 extern crate lapack_src;
