@@ -7,21 +7,15 @@ use crate::traits::ElementFamily;
 use crate::types::{Continuity, MapType, ReferenceCellType};
 use rlst::MatrixInverse;
 use rlst::RlstScalar;
-use rlst::{
-    dense::array::views::ArrayViewMut, rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray,
-    RandomAccessMut, VectorContainer,
-};
+use rlst::{rlst_dynamic_array2, rlst_dynamic_array3, RandomAccessMut};
 use std::marker::PhantomData;
 
 /// Create a Raviart-Thomas element
-pub fn create<T: RlstScalar>(
+pub fn create<T: RlstScalar + MatrixInverse>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T>
-where
-    for<'a> Array<T, ArrayViewMut<'a, T, BaseArray<T, VectorContainer<T>, 2>, 2>, 2>: MatrixInverse,
-{
+) -> CiarletElement<T> {
     if cell_type != ReferenceCellType::Triangle && cell_type != ReferenceCellType::Quadrilateral {
         panic!("Unsupported cell type");
     }
@@ -99,19 +93,13 @@ where
 }
 
 /// Raviart-Thomas element family
-pub struct RaviartThomasElementFamily<T: RlstScalar>
-where
-    for<'a> Array<T, ArrayViewMut<'a, T, BaseArray<T, VectorContainer<T>, 2>, 2>, 2>: MatrixInverse,
-{
+pub struct RaviartThomasElementFamily<T: RlstScalar + MatrixInverse> {
     degree: usize,
     continuity: Continuity,
     _t: PhantomData<T>,
 }
 
-impl<T: RlstScalar> RaviartThomasElementFamily<T>
-where
-    for<'a> Array<T, ArrayViewMut<'a, T, BaseArray<T, VectorContainer<T>, 2>, 2>, 2>: MatrixInverse,
-{
+impl<T: RlstScalar + MatrixInverse> RaviartThomasElementFamily<T> {
     /// Create new family
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
@@ -122,10 +110,7 @@ where
     }
 }
 
-impl<T: RlstScalar> ElementFamily for RaviartThomasElementFamily<T>
-where
-    for<'a> Array<T, ArrayViewMut<'a, T, BaseArray<T, VectorContainer<T>, 2>, 2>, 2>: MatrixInverse,
-{
+impl<T: RlstScalar + MatrixInverse> ElementFamily for RaviartThomasElementFamily<T> {
     type T = T;
     type CellType = ReferenceCellType;
     type FiniteElement = CiarletElement<T>;
