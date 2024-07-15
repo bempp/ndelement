@@ -5,7 +5,7 @@ use crate::reference_cell;
 use crate::traits::FiniteElement;
 use crate::types::{Continuity, MapType, ReferenceCellType};
 use rlst::{
-    dense::array::views::ArrayViewMut, rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray,
+    rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray,
     MatrixInverse, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, VectorContainer,
 };
 
@@ -32,7 +32,7 @@ fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usi
 }
 
 /// A Ciarlet element
-pub struct CiarletElement<T: RlstScalar> {
+pub struct CiarletElement<T: RlstScalar + MatrixInverse> {
     cell_type: ReferenceCellType,
     degree: usize,
     embedded_superdegree: usize,
@@ -47,9 +47,7 @@ pub struct CiarletElement<T: RlstScalar> {
     interpolation_weights: EntityWeights<T>,
 }
 
-impl<T: RlstScalar> CiarletElement<T>
-where
-    for<'a> Array<T, ArrayViewMut<'a, T, BaseArray<T, VectorContainer<T>, 2>, 2>, 2>: MatrixInverse,
+impl<T: RlstScalar + MatrixInverse> CiarletElement<T>
 {
     /// Create a Ciarlet element
     #[allow(clippy::too_many_arguments)]
@@ -246,7 +244,7 @@ where
         &self.interpolation_weights
     }
 }
-impl<T: RlstScalar> FiniteElement for CiarletElement<T> {
+impl<T: RlstScalar + MatrixInverse> FiniteElement for CiarletElement<T> {
     type CellType = ReferenceCellType;
     type MapType = MapType;
     type T = T;

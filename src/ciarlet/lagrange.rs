@@ -6,19 +6,17 @@ use crate::reference_cell;
 use crate::traits::ElementFamily;
 use crate::types::{Continuity, MapType, ReferenceCellType};
 use rlst::{
-    dense::array::views::ArrayViewMut, rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray,
-    MatrixInverse, RandomAccessMut, RlstScalar, VectorContainer,
+    rlst_dynamic_array2, rlst_dynamic_array3,
+    MatrixInverse, RandomAccessMut, RlstScalar,
 };
 use std::marker::PhantomData;
 
 /// Create a Lagrange element
-pub fn create<T: RlstScalar>(
+pub fn create<T: RlstScalar + MatrixInverse>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
 ) -> CiarletElement<T>
-where
-    for<'a> Array<T, ArrayViewMut<'a, T, BaseArray<T, VectorContainer<T>, 2>, 2>, 2>: MatrixInverse,
 {
     let dim = polynomial_count(cell_type, degree);
     let tdim = reference_cell::dim(cell_type);
@@ -178,18 +176,14 @@ where
 }
 
 /// Lagrange element family
-pub struct LagrangeElementFamily<T: RlstScalar>
-where
-    for<'a> Array<T, ArrayViewMut<'a, T, BaseArray<T, VectorContainer<T>, 2>, 2>, 2>: MatrixInverse,
+pub struct LagrangeElementFamily<T: RlstScalar + MatrixInverse>
 {
     degree: usize,
     continuity: Continuity,
     _t: PhantomData<T>,
 }
 
-impl<T: RlstScalar> LagrangeElementFamily<T>
-where
-    for<'a> Array<T, ArrayViewMut<'a, T, BaseArray<T, VectorContainer<T>, 2>, 2>, 2>: MatrixInverse,
+impl<T: RlstScalar + MatrixInverse> LagrangeElementFamily<T>
 {
     /// Create new family
     pub fn new(degree: usize, continuity: Continuity) -> Self {
@@ -201,9 +195,7 @@ where
     }
 }
 
-impl<T: RlstScalar> ElementFamily for LagrangeElementFamily<T>
-where
-    for<'a> Array<T, ArrayViewMut<'a, T, BaseArray<T, VectorContainer<T>, 2>, 2>, 2>: MatrixInverse,
+impl<T: RlstScalar + MatrixInverse> ElementFamily for LagrangeElementFamily<T>
 {
     type T = T;
     type FiniteElement = CiarletElement<T>;
