@@ -15,8 +15,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T>
-{
+) -> CiarletElement<T> {
     if cell_type != ReferenceCellType::Triangle && cell_type != ReferenceCellType::Quadrilateral {
         panic!("Unsupported cell type");
     }
@@ -94,15 +93,13 @@ pub fn create<T: RlstScalar + MatrixInverse>(
 }
 
 /// Raviart-Thomas element family
-pub struct RaviartThomasElementFamily<T: RlstScalar + MatrixInverse>
-{
+pub struct RaviartThomasElementFamily<T: RlstScalar + MatrixInverse> {
     degree: usize,
     continuity: Continuity,
     _t: PhantomData<T>,
 }
 
-impl<T: RlstScalar + MatrixInverse> RaviartThomasElementFamily<T>
-{
+impl<T: RlstScalar + MatrixInverse> RaviartThomasElementFamily<T> {
     /// Create new family
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
@@ -113,8 +110,7 @@ impl<T: RlstScalar + MatrixInverse> RaviartThomasElementFamily<T>
     }
 }
 
-impl<T: RlstScalar + MatrixInverse> ElementFamily for RaviartThomasElementFamily<T>
-{
+impl<T: RlstScalar + MatrixInverse> ElementFamily for RaviartThomasElementFamily<T> {
     type T = T;
     type CellType = ReferenceCellType;
     type FiniteElement = CiarletElement<T>;

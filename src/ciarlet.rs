@@ -5,8 +5,8 @@ use crate::reference_cell;
 use crate::traits::FiniteElement;
 use crate::types::{Continuity, MapType, ReferenceCellType};
 use rlst::{
-    rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray,
-    MatrixInverse, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, VectorContainer,
+    rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray, MatrixInverse, RandomAccessByRef,
+    RandomAccessMut, RlstScalar, Shape, VectorContainer,
 };
 
 pub mod lagrange;
@@ -47,8 +47,7 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse> {
     interpolation_weights: EntityWeights<T>,
 }
 
-impl<T: RlstScalar + MatrixInverse> CiarletElement<T>
-{
+impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
     /// Create a Ciarlet element
     #[allow(clippy::too_many_arguments)]
     pub fn create(
