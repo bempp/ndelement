@@ -26,7 +26,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
     let entity_counts = reference_cell::entity_counts(cell_type);
     let vertices = reference_cell::vertices::<T::Real>(cell_type);
     if degree == 0 {
-        if continuity == Continuity::Continuous {
+        if continuity == Continuity::Standard {
             panic!("Cannot create continuous degree 0 Lagrange element");
         }
         for (d, counts) in entity_counts.iter().enumerate() {

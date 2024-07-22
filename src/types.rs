@@ -9,7 +9,7 @@ pub enum Continuity {
     /// For some element, this option does not indicate that the values are fully continuous.
     /// For example, for Raviart-Thomas elements it only indicates that the normal components
     /// are continuous across edges
-    Continuous = 0,
+    Standard = 0,
     /// The element is discontinuous betweeen cells
     Discontinuous = 1,
 }
