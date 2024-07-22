@@ -10,7 +10,7 @@ extern crate lapack_src;
 
 fn main() {
     // Create a P2 element on a triangle
-    let element = lagrange::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Continuous);
+    let element = lagrange::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
 
     println!("This element has {} basis functions.", element.dim());
 

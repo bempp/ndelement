@@ -346,7 +346,7 @@ mod test {
 
     #[test]
     fn test_lagrange_1() {
-        let e = lagrange::create::<f64>(ReferenceCellType::Triangle, 1, Continuity::Continuous);
+        let e = lagrange::create::<f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
     }
 
@@ -370,7 +370,7 @@ mod test {
 
     #[test]
     fn test_lagrange_1_interval() {
-        let e = lagrange::create::<f64>(ReferenceCellType::Interval, 1, Continuity::Continuous);
+        let e = lagrange::create::<f64>(ReferenceCellType::Interval, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
         let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 4));
         let mut points = rlst_dynamic_array2!(f64, [4, 1]);
@@ -423,7 +423,7 @@ mod test {
 
     #[test]
     fn test_lagrange_1_triangle() {
-        let e = lagrange::create::<f64>(ReferenceCellType::Triangle, 1, Continuity::Continuous);
+        let e = lagrange::create::<f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
         let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
         let mut points = rlst_dynamic_array2!(f64, [6, 2]);
@@ -460,10 +460,10 @@ mod test {
 
     #[test]
     fn test_lagrange_higher_degree_triangle() {
-        lagrange::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Continuous);
-        lagrange::create::<f64>(ReferenceCellType::Triangle, 3, Continuity::Continuous);
-        lagrange::create::<f64>(ReferenceCellType::Triangle, 4, Continuity::Continuous);
-        lagrange::create::<f64>(ReferenceCellType::Triangle, 5, Continuity::Continuous);
+        lagrange::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
+        lagrange::create::<f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
+        lagrange::create::<f64>(ReferenceCellType::Triangle, 4, Continuity::Standard);
+        lagrange::create::<f64>(ReferenceCellType::Triangle, 5, Continuity::Standard);
 
         lagrange::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Discontinuous);
         lagrange::create::<f64>(ReferenceCellType::Triangle, 3, Continuity::Discontinuous);
@@ -473,10 +473,10 @@ mod test {
 
     #[test]
     fn test_lagrange_higher_degree_interval() {
-        lagrange::create::<f64>(ReferenceCellType::Interval, 2, Continuity::Continuous);
-        lagrange::create::<f64>(ReferenceCellType::Interval, 3, Continuity::Continuous);
-        lagrange::create::<f64>(ReferenceCellType::Interval, 4, Continuity::Continuous);
-        lagrange::create::<f64>(ReferenceCellType::Interval, 5, Continuity::Continuous);
+        lagrange::create::<f64>(ReferenceCellType::Interval, 2, Continuity::Standard);
+        lagrange::create::<f64>(ReferenceCellType::Interval, 3, Continuity::Standard);
+        lagrange::create::<f64>(ReferenceCellType::Interval, 4, Continuity::Standard);
+        lagrange::create::<f64>(ReferenceCellType::Interval, 5, Continuity::Standard);
 
         lagrange::create::<f64>(ReferenceCellType::Interval, 2, Continuity::Discontinuous);
         lagrange::create::<f64>(ReferenceCellType::Interval, 3, Continuity::Discontinuous);
@@ -486,10 +486,10 @@ mod test {
 
     #[test]
     fn test_lagrange_higher_degree_quadrilateral() {
-        lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 2, Continuity::Continuous);
-        lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 3, Continuity::Continuous);
-        lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 4, Continuity::Continuous);
-        lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 5, Continuity::Continuous);
+        lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 2, Continuity::Standard);
+        lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 3, Continuity::Standard);
+        lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 4, Continuity::Standard);
+        lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 5, Continuity::Standard);
 
         lagrange::create::<f64>(
             ReferenceCellType::Quadrilateral,
@@ -545,8 +545,7 @@ mod test {
 
     #[test]
     fn test_lagrange_1_quadrilateral() {
-        let e =
-            lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 1, Continuity::Continuous);
+        let e = lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
         let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
         let mut points = rlst_dynamic_array2!(f64, [6, 2]);
@@ -588,8 +587,7 @@ mod test {
 
     #[test]
     fn test_lagrange_2_quadrilateral() {
-        let e =
-            lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 2, Continuity::Continuous);
+        let e = lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 2, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
         let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
         let mut points = rlst_dynamic_array2!(f64, [6, 2]);
@@ -661,7 +659,7 @@ mod test {
 
     #[test]
     fn test_raviart_thomas_1_triangle() {
-        let e = raviart_thomas::create(ReferenceCellType::Triangle, 1, Continuity::Continuous);
+        let e = raviart_thomas::create(ReferenceCellType::Triangle, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
         let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
         let mut points = rlst_dynamic_array2!(f64, [6, 2]);
