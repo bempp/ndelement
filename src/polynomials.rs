@@ -438,7 +438,7 @@ pub fn polynomial_count(cell_type: ReferenceCellType, degree: usize) -> usize {
         ReferenceCellType::Triangle => (degree + 1) * (degree + 2) / 2,
         ReferenceCellType::Quadrilateral => (degree + 1) * (degree + 1),
         _ => {
-            panic!("Unsupported cell type");
+            panic!("Unsupported cell type: {cell_type:?}");
         }
     }
 }
@@ -450,7 +450,7 @@ pub fn derivative_count(cell_type: ReferenceCellType, derivatives: usize) -> usi
         ReferenceCellType::Triangle => (derivatives + 1) * (derivatives + 2) / 2,
         ReferenceCellType::Quadrilateral => (derivatives + 1) * (derivatives + 2) / 2,
         _ => {
-            panic!("Unsupported cell type");
+            panic!("Unsupported cell type: {cell_type:?}");
         }
     }
 }
@@ -492,7 +492,7 @@ pub fn tabulate_legendre_polynomials<
             tabulate_legendre_polynomials_quadrilateral(points, degree, derivatives, data)
         }
         _ => {
-            panic!("Unsupported cell type");
+            panic!("Unsupported cell type: {cell_type:?}");
         }
     };
 }
