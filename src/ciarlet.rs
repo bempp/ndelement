@@ -4,6 +4,7 @@ use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_pol
 use crate::reference_cell;
 use crate::traits::FiniteElement;
 use crate::types::{Continuity, MapType, ReferenceCellType};
+use itertools::izip;
 use rlst::{
     rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray, MatrixInverse, RandomAccessByRef,
     RandomAccessMut, RlstScalar, Shape, VectorContainer,
@@ -43,6 +44,7 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse> {
     dim: usize,
     coefficients: Array<T, BaseArray<T, VectorContainer<T>, 3>, 3>,
     entity_dofs: [Vec<Vec<usize>>; 4],
+    entity_closure_dofs: [Vec<Vec<usize>>; 4],
     interpolation_points: EntityPoints<T::Real>,
     interpolation_weights: EntityWeights<T>,
 }
@@ -210,6 +212,25 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
                 dof += pts.shape()[0];
             }
         }
+        let connectivity = reference_cell::connectivity(cell_type);
+        let mut entity_closure_dofs = [vec![], vec![], vec![], vec![]];
+        for (edim, (ecdofs, connectivity_edim)) in
+            izip!(entity_closure_dofs.iter_mut(), &connectivity).enumerate()
+        {
+            for connectivity_edim_eindex in connectivity_edim {
+                let mut cdofs = vec![];
+                for (edim2, connectivity_edim_eindex_edim2) in
+                    connectivity_edim_eindex.iter().take(edim + 1).enumerate()
+                {
+                    for index in connectivity_edim_eindex_edim2 {
+                        for i in &entity_dofs[edim2][*index] {
+                            cdofs.push(*i)
+                        }
+                    }
+                }
+                ecdofs.push(cdofs);
+            }
+        }
         CiarletElement::<T> {
             cell_type,
             degree,
@@ -221,6 +242,7 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
             dim,
             coefficients,
             entity_dofs,
+            entity_closure_dofs,
             interpolation_points: new_pts,
             interpolation_weights: new_wts,
         }
@@ -303,6 +325,13 @@ impl<T: RlstScalar + MatrixInverse> FiniteElement for CiarletElement<T> {
     fn entity_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]> {
         if entity_dim < 4 && entity_number < self.entity_dofs[entity_dim].len() {
             Some(&self.entity_dofs[entity_dim][entity_number])
+        } else {
+            None
+        }
+    }
+    fn entity_closure_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]> {
+        if entity_dim < 4 && entity_number < self.entity_closure_dofs[entity_dim].len() {
+            Some(&self.entity_closure_dofs[entity_dim][entity_number])
         } else {
             None
         }
