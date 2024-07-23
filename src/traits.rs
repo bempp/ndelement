@@ -38,6 +38,9 @@ pub trait FiniteElement {
     /// The DOFs that are associated with a subentity of the reference cell
     fn entity_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
 
+    /// The DOFs that are associated with a closure of a subentity of the reference cell
+    fn entity_closure_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
+
     /// The push forward / pull back map to use for this element
     fn map_type(&self) -> Self::MapType;
 
