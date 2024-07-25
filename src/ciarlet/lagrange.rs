@@ -31,17 +31,17 @@ pub fn create<T: RlstScalar + MatrixInverse>(
         }
         for (d, counts) in entity_counts.iter().enumerate() {
             for _e in 0..*counts {
-                x[d].push(rlst_dynamic_array2!(T::Real, [0, tdim]));
+                x[d].push(rlst_dynamic_array2!(T::Real, [tdim, 0]));
                 m[d].push(rlst_dynamic_array3!(T, [0, 1, 0]));
             }
         }
-        let mut midp = rlst_dynamic_array2!(T::Real, [1, tdim]);
+        let mut midp = rlst_dynamic_array2!(T::Real, [tdim, 1]);
         let nvertices = entity_counts[0];
         for i in 0..tdim {
             for vertex in &vertices {
-                *midp.get_mut([0, i]).unwrap() += num::cast::<_, T::Real>(vertex[i]).unwrap();
+                *midp.get_mut([i, 0]).unwrap() += num::cast::<_, T::Real>(vertex[i]).unwrap();
             }
-            *midp.get_mut([0, i]).unwrap() /= num::cast::<_, T::Real>(nvertices).unwrap();
+            *midp.get_mut([i, 0]).unwrap() /= num::cast::<_, T::Real>(nvertices).unwrap();
         }
         x[tdim].push(midp);
         let mut mentry = rlst_dynamic_array3!(T, [1, 1, 1]);
@@ -52,9 +52,9 @@ pub fn create<T: RlstScalar + MatrixInverse>(
         let faces = reference_cell::faces(cell_type);
         // TODO: GLL points
         for vertex in &vertices {
-            let mut pts = rlst_dynamic_array2!(T::Real, [1, tdim]);
+            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, 1]);
             for (i, v) in vertex.iter().enumerate() {
-                *pts.get_mut([0, i]).unwrap() = num::cast::<_, T::Real>(*v).unwrap();
+                *pts.get_mut([i, 0]).unwrap() = num::cast::<_, T::Real>(*v).unwrap();
             }
             x[0].push(pts);
             let mut mentry = rlst_dynamic_array3!(T, [1, 1, 1]);
@@ -62,7 +62,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
             m[0].push(mentry);
         }
         for e in &edges {
-            let mut pts = rlst_dynamic_array2!(T::Real, [degree - 1, tdim]);
+            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, degree - 1]);
             let [vn0, vn1] = e[..] else {
                 panic!();
             };
@@ -73,7 +73,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
             for i in 1..degree {
                 *ident.get_mut([i - 1, 0, i - 1]).unwrap() = T::from(1.0).unwrap();
                 for j in 0..tdim {
-                    *pts.get_mut([i - 1, j]).unwrap() = num::cast::<_, T::Real>(v0[j]).unwrap()
+                    *pts.get_mut([j, i - 1]).unwrap() = num::cast::<_, T::Real>(v0[j]).unwrap()
                         + num::cast::<_, T::Real>(i).unwrap()
                             / num::cast::<_, T::Real>(degree).unwrap()
                             * num::cast::<_, T::Real>(v1[j] - v0[j]).unwrap();
@@ -99,7 +99,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
                     panic!("Unsupported face type");
                 }
             };
-            let mut pts = rlst_dynamic_array2!(T::Real, [npts, tdim]);
+            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, npts]);
 
             let [vn0, vn1, vn2] = faces[e][..3] else {
                 panic!();
@@ -114,7 +114,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
                     for i0 in 1..degree {
                         for i1 in 1..degree - i0 {
                             for j in 0..tdim {
-                                *pts.get_mut([n, j]).unwrap() = num::cast::<_, T::Real>(v0[j])
+                                *pts.get_mut([j, n]).unwrap() = num::cast::<_, T::Real>(v0[j])
                                     .unwrap()
                                     + num::cast::<_, T::Real>(i0).unwrap()
                                         / num::cast::<_, T::Real>(degree).unwrap()
@@ -132,7 +132,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
                     for i0 in 1..degree {
                         for i1 in 1..degree {
                             for j in 0..tdim {
-                                *pts.get_mut([n, j]).unwrap() = num::cast::<_, T::Real>(v0[j])
+                                *pts.get_mut([j, n]).unwrap() = num::cast::<_, T::Real>(v0[j])
                                     .unwrap()
                                     + num::cast::<_, T::Real>(i0).unwrap()
                                         / num::cast::<_, T::Real>(degree).unwrap()

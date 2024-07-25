@@ -583,7 +583,7 @@ mod test {
 
         let rule =
             simplex_rule(bempp::traits::types::ReferenceCellType::Quadrilateral, 85).unwrap();
-        let mut points = rlst_dynamic_array2!(f64, [rule.npoints, 2]);
+        let mut points = rlst_dynamic_array2!(f64, [2, rule.npoints]);
         for i in 0..rule.npoints {
             for j in 0..2 {
                 *points.get_mut([j, i]).unwrap() = rule.points[i * 2 + j];
