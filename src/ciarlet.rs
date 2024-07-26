@@ -88,7 +88,6 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
         }
 
         let new_pts = if continuity == Continuity::Discontinuous {
-            println!("A");
             let mut new_pts: EntityPoints<T::Real> = [vec![], vec![], vec![], vec![]];
             let mut all_pts = rlst_dynamic_array2![T::Real, [tdim, npts]];
             for (i, pts_i) in interpolation_points.iter().take(tdim).enumerate() {
