@@ -1,4 +1,6 @@
 //! Types
+#[cfg(feature = "mpi")]
+use mpi::traits::Equivalence;
 
 /// Continuity type
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -52,6 +54,28 @@ pub enum ReferenceCellType {
     Prism = 6,
     /// A square-based pyramid
     Pyramid = 7,
+}
+
+#[cfg(feature = "mpi")]
+unsafe impl Equivalence for Continuity {
+    type Out = <u8 as Equivalence>::Out;
+    fn equivalent_datatype() -> <u8 as Equivalence>::Out {
+        <u8 as Equivalence>::equivalent_datatype()
+    }
+}
+#[cfg(feature = "mpi")]
+unsafe impl Equivalence for MapType {
+    type Out = <u8 as Equivalence>::Out;
+    fn equivalent_datatype() -> <u8 as Equivalence>::Out {
+        <u8 as Equivalence>::equivalent_datatype()
+    }
+}
+#[cfg(feature = "mpi")]
+unsafe impl Equivalence for ReferenceCellType {
+    type Out = <u8 as Equivalence>::Out;
+    fn equivalent_datatype() -> <u8 as Equivalence>::Out {
+        <u8 as Equivalence>::equivalent_datatype()
+    }
 }
 
 impl ReferenceCellType {
