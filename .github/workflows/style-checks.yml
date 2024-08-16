@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        feature-flags: ['--features "mpi,strict"', '--features "strict"', '--features "serde,strict"' '']
+        feature-flags: ['--features "mpi,strict"', '--features "strict"', '--features "serde,strict"', '']
     steps:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
