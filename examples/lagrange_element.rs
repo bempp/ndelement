@@ -5,9 +5,6 @@ use ndelement::{
 };
 use rlst::{rlst_dynamic_array2, rlst_dynamic_array4, RawAccess};
 
-extern crate blas_src;
-extern crate lapack_src;
-
 fn main() {
     // Create a P2 element on a triangle
     let element = lagrange::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);

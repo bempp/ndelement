@@ -2,9 +2,6 @@ use ndelement::ciarlet::LagrangeElementFamily;
 use ndelement::traits::{ElementFamily, FiniteElement};
 use ndelement::types::{Continuity, ReferenceCellType};
 
-extern crate blas_src;
-extern crate lapack_src;
-
 fn main() {
     // Create the degree 2 Lagrange element family. A family is a set of finite elements with the
     // same family type, degree, and continuity across a set of cells
