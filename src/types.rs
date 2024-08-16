@@ -3,6 +3,7 @@
 use mpi::traits::Equivalence;
 
 /// Continuity type
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(u8)]
 pub enum Continuity {
@@ -17,6 +18,7 @@ pub enum Continuity {
 }
 
 /// The map type used by an element
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(u8)]
 pub enum MapType {
@@ -35,6 +37,7 @@ pub enum MapType {
 }
 
 /// The type of a reference cell
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(u8)]
 pub enum ReferenceCellType {

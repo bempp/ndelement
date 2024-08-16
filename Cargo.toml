@@ -1,5 +1,6 @@
 [features]
 mpi = ["dep:mpi"]
+serde = ["dep:serde"]
 strict = []
 
 [package]
@@ -32,6 +33,7 @@ log = "0.4"
 rayon = "1.9"
 rand = "0.8.5"
 rlst = "0.2.0"
+serde = { version = "1", features = ["derive"], optional = true }
 thiserror="1.*"
 
 [dev-dependencies]
