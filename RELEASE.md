@@ -1,14 +1,16 @@
 # Making a release
 
-To make a new release of ndgrid, follow the following steps:
+To make a new release of ndelement, follow the following steps:
 
 0) If you are yet to make a release on your current computer, run `cargo login` and copy an API
    key from https://crates.io/me
 
-1) Checkout the branch `release` and merge the branch `main` into the branch `release`:
+1) Checkout the `main` branch and `git pull`, then checkout a new branch called `release-v[x].[y].[z]`
+   (where `[x]`, `[y]`, and `[z]` are defined in the next step):
    ```bash
-   git checkout release
-   git merge main
+   git checkout main
+   git pull
+   git checkout -b release-v[x].[y].[z]
    ```
 
 2) Update the version number in `Cargo.toml`.
@@ -19,9 +21,10 @@ To make a new release of ndgrid, follow the following steps:
 
 4) In `Cargo.toml`, check that the `rlst` dependency is at the latest version.
 
-5) Commit your changes and push to GitHub. Wait to see if the CI tests pass.
+5) Commit your changes and push to GitHub, open a pull request to merge changes back into main, and merge the
+   pull request.
 
-6) [Create a release on GitHub](https://github.com/bempp/ndgrid/releases/new) from the `release` branch.
+6) [Create a release on GitHub](https://github.com/bempp/ndelement/releases/new) from the `main` branch.
    The release tag and title should be `v[x].[y].[z]` (where `[x]`, `[y]` and `[z]` are as in step 2).
    In the "Describe this release" box, you should bullet point the main changes since the last
    release.
