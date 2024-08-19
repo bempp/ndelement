@@ -349,6 +349,7 @@ impl<T: RlstScalar + MatrixInverse> FiniteElement for CiarletElement<T> {
 mod test {
     use super::*;
     use approx::*;
+    use paste::paste;
     use rlst::rlst_dynamic_array4;
 
     fn check_dofs(e: impl FiniteElement<CellType = ReferenceCellType>) {
@@ -735,4 +736,47 @@ mod test {
         }
         check_dofs(e);
     }
+
+    macro_rules! test_entity_closure_dofs {
+        ($cell:ident, $degree:expr) => {
+            paste! {
+                #[test]
+                fn [<test_entity_closure_dofs_ $cell:lower _ $degree>]() {
+                    let e = lagrange::create::<f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard);
+                    let c = reference_cell::connectivity(ReferenceCellType::[<$cell>]);
+                    println!("{c:?}");
+
+                    for (dim, entities) in c.iter().enumerate() {
+                        for (n, entity) in entities.iter().enumerate() {
+                            let ecd = e.entity_closure_dofs(dim, n).unwrap();
+                            let mut len = 0;
+                            for (sub_dim, sub_entities) in entity.iter().take(dim + 1).enumerate() {
+                                for sub_entity in sub_entities {
+                                    let dofs = e.entity_dofs(sub_dim, *sub_entity).unwrap();
+                                    len += dofs.len();
+                                    for dof in dofs {
+                                        assert!(ecd.contains(dof));
+                                    }
+                                }
+                            }
+                            assert_eq!(ecd.len(), len);
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    test_entity_closure_dofs!(Interval, 2);
+    test_entity_closure_dofs!(Interval, 3);
+    test_entity_closure_dofs!(Interval, 4);
+    test_entity_closure_dofs!(Interval, 5);
+    test_entity_closure_dofs!(Triangle, 2);
+    test_entity_closure_dofs!(Triangle, 3);
+    test_entity_closure_dofs!(Triangle, 4);
+    test_entity_closure_dofs!(Triangle, 5);
+    test_entity_closure_dofs!(Quadrilateral, 2);
+    test_entity_closure_dofs!(Quadrilateral, 3);
+    test_entity_closure_dofs!(Quadrilateral, 4);
+    test_entity_closure_dofs!(Quadrilateral, 5);
 }
