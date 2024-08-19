@@ -442,10 +442,7 @@ mod test {
     use paste::paste;
 
     macro_rules! test_cell {
-
-        ($($cell:ident),+) => {
-
-        $(
+        ($cell:ident) => {
             paste! {
 
                 #[test]
@@ -504,19 +501,15 @@ mod test {
                         }
                     }
                 }
-
             }
-        )*
         };
     }
 
-    test_cell!(
-        Interval,
-        Triangle,
-        Quadrilateral,
-        Tetrahedron,
-        Hexahedron,
-        Prism,
-        Pyramid
-    );
+    test_cell!(Interval);
+    test_cell!(Triangle);
+    test_cell!(Quadrilateral);
+    test_cell!(Tetrahedron);
+    test_cell!(Hexahedron);
+    test_cell!(Prism);
+    test_cell!(Pyramid);
 }
