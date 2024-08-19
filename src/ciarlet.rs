@@ -54,10 +54,10 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse> {
 impl<T: RlstScalar + MatrixInverse> Debug for CiarletElement<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_tuple("CiarletElement")
-         .field(&self.family_name)
-         .field(&self.cell_type)
-         .field(&self.degree)
-         .finish()
+            .field(&self.family_name)
+            .field(&self.cell_type)
+            .field(&self.degree)
+            .finish()
     }
 }
 
