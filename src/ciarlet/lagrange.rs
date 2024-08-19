@@ -159,6 +159,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
         }
     }
     CiarletElement::<T>::create(
+        "Lagrange".to_string(),
         cell_type,
         degree,
         vec![],

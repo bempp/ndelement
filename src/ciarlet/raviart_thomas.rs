@@ -80,6 +80,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
     }
 
     CiarletElement::create(
+        "Raviart-Thomas".to_string(),
         cell_type,
         degree,
         vec![2],

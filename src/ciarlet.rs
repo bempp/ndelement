@@ -9,6 +9,7 @@ use rlst::{
     rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray, MatrixInverse, RandomAccessByRef,
     RandomAccessMut, RlstScalar, Shape, VectorContainer,
 };
+use std::fmt::{Debug, Formatter};
 
 pub mod lagrange;
 pub mod raviart_thomas;
@@ -34,6 +35,7 @@ fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usi
 
 /// A Ciarlet element
 pub struct CiarletElement<T: RlstScalar + MatrixInverse> {
+    family_name: String,
     cell_type: ReferenceCellType,
     degree: usize,
     embedded_superdegree: usize,
@@ -49,10 +51,21 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse> {
     interpolation_weights: EntityWeights<T>,
 }
 
+impl<T: RlstScalar + MatrixInverse> Debug for CiarletElement<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_tuple("CiarletElement")
+            .field(&self.family_name)
+            .field(&self.cell_type)
+            .field(&self.degree)
+            .finish()
+    }
+}
+
 impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
     /// Create a Ciarlet element
     #[allow(clippy::too_many_arguments)]
     pub fn create(
+        family_name: String,
         cell_type: ReferenceCellType,
         degree: usize,
         value_shape: Vec<usize>,
@@ -232,6 +245,7 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
             }
         }
         CiarletElement::<T> {
+            family_name,
             cell_type,
             degree,
             embedded_superdegree,
