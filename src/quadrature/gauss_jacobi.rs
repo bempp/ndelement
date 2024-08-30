@@ -162,6 +162,32 @@ fn make_quadrature_triangle_collapsed<T: RlstScalar<Real = T> + FloatConst + Par
     QuadratureRule::new(pts, wts)
 }
 
+fn make_quadrature_tetrahedron_collapsed<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
+    m: usize,
+) -> QuadratureRule<T> {
+    let one = T::from(1.0).unwrap();
+
+    let (ptx, wtx) = compute_gauss_jacobi_rule(T::zero(), m);
+    let (pty, wty) = compute_gauss_jacobi_rule(T::from(1).unwrap(), m);
+    let (ptz, wtz) = compute_gauss_jacobi_rule(T::from(2).unwrap(), m);
+
+    let mut pts = vec![T::zero(); m.pow(3) * 3];
+    let mut wts = vec![T::zero(); m.pow(3)];
+
+    for (i, (px, wx)) in izip!(&ptx, &wtx).enumerate() {
+        for (j, (py, wy)) in izip!(&pty, &wty).enumerate() {
+            for (k, (pz, wz)) in izip!(&ptz, &wtz).enumerate() {
+                let index = i * wty.len() * wtz.len() + j * wtz.len() + k;
+                pts[3 * index] = T::from(0.125).unwrap() * (one + *px) * (one - *py) * (one - *pz);
+                pts[3 * index + 1] = T::from(0.25).unwrap() * (one + *py) * (one - *pz);
+                pts[3 * index + 1] = T::from(0.5).unwrap() * (one + *pz);
+                wts[index] = *wx * *wy * *wz * T::from(0.015625).unwrap();
+            }
+        }
+    }
+    QuadratureRule::new(pts, wts)
+}
+
 /// Get the points and weights for a Gauss-Jacobi quadrature rule
 pub fn make_gauss_jacobi_quadrature<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
     celltype: ReferenceCellType,
@@ -187,8 +213,8 @@ pub fn make_gauss_jacobi_quadrature<T: RlstScalar<Real = T> + FloatConst + Parti
         }
         ReferenceCellType::Hexahedron => {
             let rule = make_quadrature_line::<T>(np);
-            let mut pts = vec![T::zero(); np.pow(2) * 3];
-            let mut wts = vec![T::zero(); np.pow(2)];
+            let mut pts = vec![T::zero(); np.pow(3) * 3];
+            let mut wts = vec![T::zero(); np.pow(3)];
 
             for (i, (pi, wi)) in izip!(rule.points(), rule.weights()).enumerate() {
                 for (j, (pj, wj)) in izip!(rule.points(), rule.weights()).enumerate() {
@@ -204,6 +230,7 @@ pub fn make_gauss_jacobi_quadrature<T: RlstScalar<Real = T> + FloatConst + Parti
             QuadratureRule::new(pts, wts)
         }
         ReferenceCellType::Triangle => make_quadrature_triangle_collapsed::<T>(np),
+        ReferenceCellType::Tetrahedron => make_quadrature_tetrahedron_collapsed::<T>(np),
         _ => {
             panic!("Unsupported cell type");
         }
