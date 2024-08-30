@@ -1,7 +1,7 @@
 //! Gauss-Jacobi quadrature
 //!
 //! Adapted from the C++ code by Chris Richardson
-//! https://github.com/FEniCS/basix/blob/main/cpp/basix/quadrature.cpp
+//! <https://github.com/FEniCS/basix/blob/main/cpp/basix/quadrature.cpp>
 use super::QuadratureRule;
 use crate::traits::QuadratureRule as QuadratureRuleTrait;
 use crate::types::{Array2D, ReferenceCellType};
