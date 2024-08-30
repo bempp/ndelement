@@ -500,124 +500,63 @@ pub fn tabulate_legendre_polynomials<
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::{quadrature::make_gauss_jacobi_quadrature, traits::QuadratureRule};
     use approx::*;
-    use bempp::quadrature::simplex_rules::simplex_rule;
-    use rlst::{rlst_dynamic_array2, rlst_dynamic_array3};
+    use paste::paste;
+    use rlst::{rlst_array_from_slice2, rlst_dynamic_array2, rlst_dynamic_array3};
+    macro_rules! test_orthogonal {
+        ($cell:ident, $degree:expr) => {
+            paste! {
+                #[test]
+                fn [<test_orthogonal_ $cell:lower _ $degree>]() {
+                    let rule = make_gauss_jacobi_quadrature(
+                        ReferenceCellType::[<$cell>],
+                        2 * [<$degree>],
+                    );
 
-    #[test]
-    fn test_legendre_interval() {
-        let degree = 6;
+                    let points = rlst_array_from_slice2!(rule.points(), [rule.dim(), rule.npoints()]);
 
-        let rule = simplex_rule(
-            bempp::traits::types::ReferenceCellType::Interval,
-            degree + 1,
-        )
-        .unwrap();
+                    let mut data = rlst_dynamic_array3!(
+                        f64,
+                        legendre_shape(ReferenceCellType::[<$cell>], &points, [<$degree>], 0,)
+                    );
+                    tabulate_legendre_polynomials(ReferenceCellType::[<$cell>], &points, [<$degree>], 0, &mut data);
 
-        let mut points = rlst_dynamic_array2!(f64, [1, rule.npoints]);
-        for (i, j) in rule.points.iter().enumerate() {
-            *points.get_mut([0, i]).unwrap() = *j;
-        }
-
-        let mut data = rlst_dynamic_array3!(
-            f64,
-            legendre_shape(ReferenceCellType::Interval, &points, degree, 0,)
-        );
-        tabulate_legendre_polynomials(ReferenceCellType::Interval, &points, degree, 0, &mut data);
-
-        for i in 0..degree + 1 {
-            for j in 0..degree + 1 {
-                let mut product = 0.0;
-                for k in 0..rule.npoints {
-                    product += data.get([0, i, k]).unwrap()
-                        * data.get([0, j, k]).unwrap()
-                        * rule.weights[k];
-                }
-                if i == j {
-                    assert_relative_eq!(product, 1.0, epsilon = 1e-12);
-                } else {
-                    assert_relative_eq!(product, 0.0, epsilon = 1e-12);
+                    for i in 0..[<$degree>] + 1 {
+                        for j in 0..[<$degree>] + 1 {
+                            let mut product = 0.0;
+                            for k in 0..rule.npoints() {
+                                product += data.get([0, i, k]).unwrap()
+                                    * data.get([0, j, k]).unwrap()
+                                    * rule.weights()[k];
+                            }
+                            if i == j {
+                                assert_relative_eq!(product, 1.0, epsilon = 1e-12);
+                            } else {
+                                assert_relative_eq!(product, 0.0, epsilon = 1e-12);
+                            }
+                        }
+                    }
                 }
             }
-        }
+        };
     }
 
-    #[test]
-    fn test_legendre_triangle() {
-        let degree = 5;
-
-        let rule = simplex_rule(bempp::traits::types::ReferenceCellType::Triangle, 79).unwrap();
-        let mut points = rlst_dynamic_array2!(f64, [2, rule.npoints]);
-        for i in 0..rule.npoints {
-            for j in 0..2 {
-                *points.get_mut([j, i]).unwrap() = rule.points[i * 2 + j];
-            }
-        }
-
-        let mut data = rlst_dynamic_array3!(
-            f64,
-            legendre_shape(ReferenceCellType::Triangle, &points, degree, 0,)
-        );
-        tabulate_legendre_polynomials(ReferenceCellType::Triangle, &points, degree, 0, &mut data);
-
-        for i in 0..data.shape()[1] {
-            for j in 0..data.shape()[1] {
-                let mut product = 0.0;
-                for k in 0..rule.npoints {
-                    product += data.get([0, i, k]).unwrap()
-                        * data.get([0, j, k]).unwrap()
-                        * rule.weights[k];
-                }
-                if i == j {
-                    assert_relative_eq!(product, 1.0, epsilon = 1e-12);
-                } else {
-                    assert_relative_eq!(product, 0.0, epsilon = 1e-12);
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn test_legendre_quadrilateral() {
-        let degree = 5;
-
-        let rule =
-            simplex_rule(bempp::traits::types::ReferenceCellType::Quadrilateral, 85).unwrap();
-        let mut points = rlst_dynamic_array2!(f64, [2, rule.npoints]);
-        for i in 0..rule.npoints {
-            for j in 0..2 {
-                *points.get_mut([j, i]).unwrap() = rule.points[i * 2 + j];
-            }
-        }
-
-        let mut data = rlst_dynamic_array3!(
-            f64,
-            legendre_shape(ReferenceCellType::Quadrilateral, &points, degree, 0,)
-        );
-        tabulate_legendre_polynomials(
-            ReferenceCellType::Quadrilateral,
-            &points,
-            degree,
-            0,
-            &mut data,
-        );
-
-        for i in 0..data.shape()[1] {
-            for j in 0..data.shape()[1] {
-                let mut product = 0.0;
-                for k in 0..rule.npoints {
-                    product += data.get([0, i, k]).unwrap()
-                        * data.get([0, j, k]).unwrap()
-                        * rule.weights[k];
-                }
-                if i == j {
-                    assert_relative_eq!(product, 1.0, epsilon = 1e-12);
-                } else {
-                    assert_relative_eq!(product, 0.0, epsilon = 1e-12);
-                }
-            }
-        }
-    }
+    test_orthogonal!(Interval, 2);
+    test_orthogonal!(Interval, 3);
+    test_orthogonal!(Interval, 4);
+    test_orthogonal!(Interval, 5);
+    test_orthogonal!(Interval, 6);
+    test_orthogonal!(Triangle, 2);
+    test_orthogonal!(Triangle, 3);
+    test_orthogonal!(Triangle, 4);
+    test_orthogonal!(Triangle, 5);
+    test_orthogonal!(Triangle, 6);
+    test_orthogonal!(Quadrilateral, 2);
+    test_orthogonal!(Quadrilateral, 3);
+    test_orthogonal!(Quadrilateral, 4);
+    test_orthogonal!(Quadrilateral, 5);
+    test_orthogonal!(Quadrilateral, 6);
 
     #[test]
     fn test_legendre_interval_derivative() {

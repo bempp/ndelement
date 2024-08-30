@@ -28,7 +28,6 @@ rlst = "0.2.0"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
-bempp = "0.1.0"
 paste = "1.*"
 approx = "0.5"
 

@@ -60,3 +60,17 @@ pub trait ElementFamily {
     /// Get an elenent for a cell type
     fn element(&self, cell_type: Self::CellType) -> Self::FiniteElement;
 }
+
+pub trait QuadratureRule {
+    //! A quadrature rule
+    /// The scalar type
+    type T: RlstScalar;
+    /// Quadrature points
+    fn points(&self) -> &[Self::T];
+    /// Quadrature weights
+    fn weights(&self) -> &[Self::T];
+    /// Number of quadrature points
+    fn npoints(&self) -> usize;
+    /// Topological dimension of cell (ie number of components of each point)
+    fn dim(&self) -> usize;
+}
