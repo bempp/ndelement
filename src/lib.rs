@@ -4,7 +4,7 @@
 
 pub mod ciarlet;
 pub mod polynomials;
+pub mod quadrature;
 pub mod reference_cell;
 pub mod traits;
 pub mod types;
-pub mod quadrature;
