@@ -1,6 +1,12 @@
 //! Types
 #[cfg(feature = "mpi")]
 use mpi::traits::Equivalence;
+use rlst::{Array, BaseArray, VectorContainer};
+
+/// An N-dimensional array
+pub type ArrayND<const N: usize, T> = Array<T, BaseArray<T, VectorContainer<T>, N>, N>;
+/// A 2-dimensional array
+pub type Array2D<T> = ArrayND<2, T>;
 
 /// Continuity type
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
