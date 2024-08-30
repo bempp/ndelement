@@ -26,7 +26,6 @@ mpi = { version = "0.8.*", optional = true }
 num = "0.4"
 rlst = "0.2.0"
 serde = { version = "1", features = ["derive"], optional = true }
-libm = "0.2"
 
 [dev-dependencies]
 paste = "1.*"
