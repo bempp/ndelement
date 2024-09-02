@@ -10,7 +10,9 @@ pub fn polynomial_count(cell_type: ReferenceCellType, degree: usize) -> usize {
     match cell_type {
         ReferenceCellType::Interval => degree + 1,
         ReferenceCellType::Triangle => (degree + 1) * (degree + 2) / 2,
-        ReferenceCellType::Quadrilateral => (degree + 1) * (degree + 1),
+        ReferenceCellType::Quadrilateral => (degree + 1).pow(2),
+        ReferenceCellType::Tetrahedron => (degree + 1) * (degree + 2) * (degree + 3) / 6,
+        ReferenceCellType::Hexahedron => (degree + 1).pow(3),
         _ => {
             panic!("Unsupported cell type: {cell_type:?}");
         }
@@ -91,6 +93,11 @@ mod test {
     test_orthogonal!(Quadrilateral, 4);
     test_orthogonal!(Quadrilateral, 5);
     test_orthogonal!(Quadrilateral, 6);
+    test_orthogonal!(Tetrahedron, 2);
+    test_orthogonal!(Tetrahedron, 3);
+    test_orthogonal!(Tetrahedron, 4);
+    test_orthogonal!(Tetrahedron, 5);
+    test_orthogonal!(Tetrahedron, 6);
 
     #[test]
     fn test_legendre_interval_derivative() {

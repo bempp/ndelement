@@ -1,8 +1,24 @@
 //! Orthonormal polynomials
-use super::derivative_count;
+//!
+//! Adapted from the C++ code by Chris Richardson and Matthew Scroggs
+//! <https://github.com/FEniCS/basix/blob/main/cpp/basix/polyset.cpp>
+use super::{derivative_count, polynomial_count};
 use crate::types::ReferenceCellType;
 use rlst::RlstScalar;
 use rlst::{RandomAccessByRef, RandomAccessMut, Shape};
+
+fn tri_index(i: usize, j: usize) -> usize {
+    (i + j + 1) * (i + j) / 2 + j
+}
+
+fn quad_index(i: usize, j: usize, n: usize) -> usize {
+    j * (n + 1) + i
+}
+
+fn tet_index(i: usize, j: usize, k: usize) -> usize {
+  (i + j + k) * (i + j + k + 1) * (i + j + k + 2) / 6 + (j + k) * (j + k + 1) / 2 + k
+}
+
 
 /// Tabulate orthonormal polynomials on a interval
 fn tabulate_interval<
@@ -15,10 +31,10 @@ fn tabulate_interval<
     derivatives: usize,
     data: &mut Array3Mut,
 ) {
-    assert_eq!(data.shape()[0], derivatives + 1);
-    assert_eq!(data.shape()[1], degree + 1);
-    assert_eq!(data.shape()[2], points.shape()[1]);
-    assert_eq!(points.shape()[0], 1);
+    debug_assert!(data.shape()[0] == derivatives + 1);
+    debug_assert!(data.shape()[1] == degree + 1);
+    debug_assert!(data.shape()[2] == points.shape()[1]);
+    debug_assert!(points.shape()[0] == 1);
 
     for i in 0..data.shape()[2] {
         *data.get_mut([0, 0, i]).unwrap() = T::from(1.0).unwrap();
@@ -65,14 +81,6 @@ fn tabulate_interval<
     }
 }
 
-fn tri_index(i: usize, j: usize) -> usize {
-    (i + j + 1) * (i + j) / 2 + j
-}
-
-fn quad_index(i: usize, j: usize, n: usize) -> usize {
-    j * (n + 1) + i
-}
-
 /// Tabulate orthonormal polynomials on a quadrilateral
 fn tabulate_quadrilateral<
     T: RlstScalar,
@@ -84,10 +92,10 @@ fn tabulate_quadrilateral<
     derivatives: usize,
     data: &mut Array3Mut,
 ) {
-    assert_eq!(data.shape()[0], (derivatives + 1) * (derivatives + 2) / 2);
-    assert_eq!(data.shape()[1], (degree + 1) * (degree + 1));
-    assert_eq!(data.shape()[2], points.shape()[1]);
-    assert_eq!(points.shape()[0], 2);
+    debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) / 2);
+    debug_assert!(data.shape()[1] == (degree + 1) * (degree + 1));
+    debug_assert!(data.shape()[2] == points.shape()[1]);
+    debug_assert!(points.shape()[0] == 2);
 
     for i in 0..data.shape()[2] {
         *data
@@ -237,10 +245,10 @@ fn tabulate_triangle<
     derivatives: usize,
     data: &mut Array3Mut,
 ) {
-    assert_eq!(data.shape()[0], (derivatives + 1) * (derivatives + 2) / 2);
-    assert_eq!(data.shape()[1], (degree + 1) * (degree + 2) / 2);
-    assert_eq!(data.shape()[2], points.shape()[1]);
-    assert_eq!(points.shape()[0], 2);
+    debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) / 2);
+    debug_assert!(data.shape()[1] == (degree + 1) * (degree + 2) / 2);
+    debug_assert!(data.shape()[2] == points.shape()[1]);
+    debug_assert!(points.shape()[0] == 2);
 
     for i in 0..data.shape()[2] {
         *data.get_mut([tri_index(0, 0), tri_index(0, 0), i]).unwrap() =
@@ -432,197 +440,162 @@ fn tabulate_triangle<
     }
 }
 
-/// The number of polynomials
-pub fn polynomial_count(cell_type: ReferenceCellType, degree: usize) -> usize {
-    match cell_type {
-        ReferenceCellType::Interval => degree + 1,
-        ReferenceCellType::Triangle => (degree + 1) * (degree + 2) / 2,
-        ReferenceCellType::Quadrilateral => (degree + 1) * (degree + 1),
-        _ => {
-            panic!("Unsupported cell type: {cell_type:?}");
+/// Tabulate orthonormal polynomials on a interval
+fn tabulate_tetrahedron<
+    T: RlstScalar,
+    Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
+    Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
+>(
+    points: &Array2,
+    degree: usize,
+    derivatives: usize,
+    data: &mut Array3Mut,
+) {
+    debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) * (derivatives + 3) / 6);
+    debug_assert!(data.shape()[1] == (degree + 1) * (degree + 2) * (degree + 3) / 6);
+    debug_assert!(data.shape()[2] == points.shape()[1]);
+    debug_assert!(points.shape()[0] == 3);
+
+    for i in 0..data.shape()[2] {
+        *data.get_mut([tet_index(0, 0, 0), tet_index(0, 0, 0), i]).unwrap() =
+            T::sqrt(T::from(6.0).unwrap());
+    }
+
+    for k in 1..data.shape()[0] {
+        for i in 0..data.shape()[2] {
+            *data.get_mut([k, tet_index(0, 0, 0), i]).unwrap() = T::from(0.0).unwrap();
         }
     }
-}
 
-/*
-template <typename T>
-void tabulate_polyset_tetrahedron_derivs(
-    MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<
-        T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 3>>
-        P,
-    std::size_t n, std::size_t nderiv,
-    MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<
-        const T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>
-        x)
-{
-  assert(x.extent(1) == 3);
-  assert(P.extent(0) == (nderiv + 1) * (nderiv + 2) * (nderiv + 3) / 6);
-  assert(P.extent(1) == (n + 1) * (n + 2) * (n + 3) / 6);
-  assert(P.extent(2) == x.extent(0));
+    for kx in 0..derivatives + 1 {
+        for ky in 0..derivatives + 1 - kx {
+            for kz in 0..derivatives + 1 - kx - ky {
+                for p in 1..degree + 1 {
+                    let a = T::from(2 * p - 1).unwrap() / T::from(p).unwrap();
+                    for i in 0..points.shape()[1] {
+                        *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() =
+                            (T::from(*points.get([0, i]).unwrap()).unwrap() * T::from(2.0).unwrap()
+                            + T::from(*points.get([1, i]).unwrap()).unwrap()
+                            + T::from(*points.get([2, i]).unwrap()).unwrap()
+                            - T::from(1.0).unwrap()
+                            ) * a * *data.get([tet_index(kx, ky, kz), tet_index(0, 0, p - 1), i]).unwrap();
+                    }
+                    if kx > 0 {
+                        for i in 0..points.shape()[1] {
+                            let d = *data.get([tet_index(kx - 1, ky, kz), tet_index(0, 0, p - 1), i]).unwrap();
+                            *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() +=
+                                T::from(2 * kx).unwrap() * a * d;
+                        }                    
+                    }
+                    if ky > 0 {
+                        for i in 0..points.shape()[1] {
+                            let d = 
+                                *data.get([tet_index(kx, ky - 1, kz), tet_index(0, 0, p - 1), i]).unwrap();
+                            *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() +=
+                                T::from(ky).unwrap() * a * d;
+                        }                    
+                    }
+                    if kz > 0 {
+                        for i in 0..points.shape()[1] {
+                            let d = 
+                                *data.get([tet_index(kx, ky, kz - 1), tet_index(0, 0, p - 1), i]).unwrap();
+                            *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() +=
+                                T::from(kz).unwrap() * a * d;
+                        }                    
+                    }
+                    if p > 1 {
+                        for i in 0..points.shape()[1] {
+                            let d = 
+                                *data.get([tet_index(kx, ky, kz), tet_index(0, 0, p - 2), i]).unwrap();
+                            *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() -=
+                                (T::from(*points.get([1, i]).unwrap()).unwrap() + T::from(*points.get([2, i]).unwrap()).unwrap() - T::from(1.0).unwrap()).powi(2) * d * 
+                                (a - T::from(1.0).unwrap());                            
+                        }
+                        if ky > 0 {
+                            for i in 0..points.shape()[1] {
+                                let d = 
+                                    *data.get([tet_index(kx, ky - 1, kz), tet_index(0, 0, p - 2), i]).unwrap();
+                                *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() -=
+                                    T::from(ky * 2).unwrap() * (
+                                        T::from(*points.get([1, i]).unwrap()).unwrap() + 
+                                        T::from(*points.get([2, i]).unwrap()).unwrap() - T::from(1.0).unwrap()
+                                    ) * d * 
+                                    (a - T::from(1.0).unwrap());
 
-  auto x0 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-      x, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 0);
-  auto x1 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-      x, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 1);
-  auto x2 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-      x, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 2);
+                            }
+                        }
+                        if ky > 1 {
+                            for i in 0..points.shape()[1] {
+                                let d = 
+                                    *data.get([tet_index(kx, ky - 2, kz), tet_index(0, 0, p - 2), i]).unwrap();
+                                *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() -=
+                                    T::from(ky * (ky - 1)).unwrap() * d * 
+                                    (a - T::from(1.0).unwrap());
 
-  // Traverse derivatives in increasing order
-  std::fill(P.data_handle(), P.data_handle() + P.size(), 0.0);
-  for (std::size_t i = 0; i < P.extent(2); ++i)
-    P(idx(0, 0, 0), 0, i) = 1.0;
+                            }
+                        }
+                        if kz > 0 {
+                            for i in 0..points.shape()[1] {
+                                let d = 
+                                    *data.get([tet_index(kx, ky, kz - 1), tet_index(0, 0, p - 2), i]).unwrap();
+                                *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() -=
+                                    T::from(kz * 2).unwrap() * (
+                                        T::from(*points.get([1, i]).unwrap()).unwrap() + 
+                                        T::from(*points.get([2, i]).unwrap()).unwrap() - T::from(1.0).unwrap()
+                                    ) * d * 
+                                    (a - T::from(1.0).unwrap());
 
-  if (n == 0)
-  {
-    for (std::size_t i = 0; i < P.extent(2); ++i)
-      P(idx(0, 0, 0), 0, i) = std::sqrt(6);
-    return;
-  }
+                            }
+                        }
+                        if kz > 1 {
+                            for i in 0..points.shape()[1] {
+                                let d = 
+                                    *data.get([tet_index(kx, ky, kz - 2), tet_index(0, 0, p - 2), i]).unwrap();
+                                *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() -=
+                                    T::from(kz * (kz - 1)).unwrap() * d * 
+                                    (a - T::from(1.0).unwrap());
 
-  for (std::size_t kx = 0; kx <= nderiv; ++kx)
-  {
-    for (std::size_t ky = 0; ky <= nderiv - kx; ++ky)
-    {
-      for (std::size_t kz = 0; kz <= nderiv - kx - ky; ++kz)
-      {
-        for (std::size_t p = 1; p <= n; ++p)
-        {
-          auto p00 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-              P, idx(kx, ky, kz), idx(0, 0, p),
-              MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-          auto p0m1 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-              P, idx(kx, ky, kz), idx(0, 0, p - 1),
-              MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-          T a = static_cast<T>(2 * p - 1) / static_cast<T>(p);
-          for (std::size_t i = 0; i < p00.size(); ++i)
-          {
-            p00[i] = ((x0[i] * 2.0 - 1.0)
-                      + 0.5 * ((x1[i] * 2.0 - 1.0) + (x2[i] * 2.0 - 1.0)) + 1.0)
-                     * a * p0m1[i];
-          }
+                            }
+                        }
+                        if ky > 0 && kz > 0 {
+                            for i in 0..points.shape()[1] {
+                                let d = 
+                                    *data.get([tet_index(kx, ky - 1, kz - 1), tet_index(0, 0, p - 2), i]).unwrap();
+                                *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap() -=
+                                    T::from(2 * ky * kz).unwrap() * d * 
+                                    (a - T::from(1.0).unwrap());
+                            }
+                        }
+                    }
+                }
+                for p in 0..degree {
+                    for i in 0..points.shape()[1] {
+                        let d = *data.get([tet_index(kx, ky, kz), tet_index(0, 0, p), i]).unwrap();
+                        *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 1, p), i]).unwrap() =
+                            d * (
+                                T::from(*points.get([1, i]).unwrap()).unwrap() * T::from(2 * p + 3).unwrap()
+                                + T::from(*points.get([2, i]).unwrap()).unwrap() - T::from(2.5).unwrap());
+                    }
+                    if ky > 0 {
+                        for i in 0..points.shape()[1] {
+                            let d = *data.get([tet_index(kx, ky - 1, kz), tet_index(0, 0, p), i]).unwrap();
+                            *data.get_mut([tet_index(kx, ky, kz), tet_index(0, 1, p), i]).unwrap() +=
+                                T::from(2 * ky).unwrap() * d * (T::from(p).unwrap() + T::from(1.5).unwrap());
+                        }
+                    }
+                    if kz > 0 {
+                        // TODO
+                        /*
+                        auto p0z = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
+                            P, idx(kx, ky, kz - 1), idx(0, 0, p),
+                            MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+                        for (std::size_t i = 0; i < p10.size(); ++i)
+                          p10[i] += kz * p0z[i];
+                        */
+                    }
 
-          if (kx > 0)
-          {
-            auto p0m1x = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                P, idx(kx - 1, ky, kz), idx(0, 0, p - 1),
-                MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-            for (std::size_t i = 0; i < p00.size(); ++i)
-              p00[i] += 2 * kx * a * p0m1x[i];
-          }
-
-          if (ky > 0)
-          {
-            auto p0m1y = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                P, idx(kx, ky - 1, kz), idx(0, 0, p - 1),
-                MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-            for (std::size_t i = 0; i < p00.size(); ++i)
-              p00[i] += ky * a * p0m1y[i];
-          }
-
-          if (kz > 0)
-          {
-            auto p0m1z = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                P, idx(kx, ky, kz - 1), idx(0, 0, p - 1),
-                MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-            for (std::size_t i = 0; i < p00.size(); ++i)
-              p00[i] += kz * a * p0m1z[i];
-          }
-
-          if (p > 1)
-          {
-            auto p0m2 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                P, idx(kx, ky, kz), idx(0, 0, p - 2),
-                MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-            for (std::size_t i = 0; i < p00.size(); ++i)
-            {
-              T f2 = x1[i] + x2[i] - 1.0;
-              p00[i] -= f2 * f2 * p0m2[i] * (a - 1.0);
-            }
-            if (ky > 0)
-            {
-              auto p0m2y = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                  P, idx(kx, ky - 1, kz), idx(0, 0, p - 2),
-                  MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-              for (std::size_t i = 0; i < p00.size(); ++i)
-              {
-                p00[i] -= ky * ((x1[i] * 2.0 - 1.0) + (x2[i] * 2.0 - 1.0))
-                          * p0m2y[i] * (a - 1.0);
-              }
-            }
-
-            if (ky > 1)
-            {
-              auto p0m2y2 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                  P, idx(kx, ky - 2, kz), idx(0, 0, p - 2),
-                  MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-              for (std::size_t i = 0; i < p00.size(); ++i)
-                p00[i] -= ky * (ky - 1) * p0m2y2[i] * (a - 1.0);
-            }
-
-            if (kz > 0)
-            {
-              auto p0m2z = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                  P, idx(kx, ky, kz - 1), idx(0, 0, p - 2),
-                  MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-              for (std::size_t i = 0; i < p00.size(); ++i)
-                p00[i] -= kz * ((x1[i] * 2.0 - 1.0) + (x2[i] * 2.0 - 1.0))
-                          * p0m2z[i] * (a - 1.0);
-            }
-
-            if (kz > 1)
-            {
-              auto p0m2z2 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                  P, idx(kx, ky, kz - 2), idx(0, 0, p - 2),
-                  MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-              for (std::size_t i = 0; i < p00.size(); ++i)
-                p00[i] -= kz * (kz - 1) * p0m2z2[i] * (a - 1.0);
-            }
-
-            if (ky > 0 and kz > 0)
-            {
-              auto p0m2yz = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                  P, idx(kx, ky - 1, kz - 1), idx(0, 0, p - 2),
-                  MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-              for (std::size_t i = 0; i < p00.size(); ++i)
-                p00[i] -= 2.0 * ky * kz * p0m2yz[i] * (a - 1.0);
-            }
-          }
-        }
-
-        for (std::size_t p = 0; p < n; ++p)
-        {
-          auto p10 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-              P, idx(kx, ky, kz), idx(0, 1, p),
-              MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-          auto p00 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-              P, idx(kx, ky, kz), idx(0, 0, p),
-              MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-          for (std::size_t i = 0; i < p10.size(); ++i)
-            p10[i]
-                = p00[i]
-                  * ((1.0 + (x1[i] * 2.0 - 1.0)) * p
-                     + (2.0 + (x1[i] * 2.0 - 1.0) * 3.0 + (x2[i] * 2.0 - 1.0))
-                           * 0.5);
-          if (ky > 0)
-          {
-            auto p0y = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                P, idx(kx, ky - 1, kz), idx(0, 0, p),
-                MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-            for (std::size_t i = 0; i < p10.size(); ++i)
-              p10[i] += 2 * ky * p0y[i] * (1.5 + p);
-          }
-
-          if (kz > 0)
-          {
-            auto p0z = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
-                P, idx(kx, ky, kz - 1), idx(0, 0, p),
-                MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
-            for (std::size_t i = 0; i < p10.size(); ++i)
-              p10[i] += kz * p0z[i];
-          }
-
-          for (std::size_t q = 1; q < n - p; ++q)
-          {
+                    for (std::size_t q = 1; q < n - p; ++q)
+                    {
             auto [aq, bq, cq] = jrc<T>(2 * p + 1, q);
             auto pq1 = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(
                 P, idx(kx, ky, kz), idx(0, q + 1, p),
@@ -756,10 +729,11 @@ void tabulate_polyset_tetrahedron_derivs(
                 *= std::sqrt(2 * (p + 0.5) * (p + q + 1.0) * (p + q + r + 1.5))
                    * 2;
       }
-    }
-  }
-}
 */
+            }
+        }
+    }
+}
 
 /// The shape of a table containing the values of Legendre polynomials
 pub fn shape<T, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
@@ -793,6 +767,7 @@ pub fn tabulate<
         ReferenceCellType::Quadrilateral => {
             tabulate_quadrilateral(points, degree, derivatives, data)
         }
+        ReferenceCellType::Tetrahedron => tabulate_tetrahedron(points, degree, derivatives, data),
         _ => {
             panic!("Unsupported cell type: {cell_type:?}");
         }
