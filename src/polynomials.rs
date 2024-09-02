@@ -33,6 +33,7 @@ pub fn derivative_count(cell_type: ReferenceCellType, derivatives: usize) -> usi
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::types::{Array2D, ReferenceCellType};
     use crate::{quadrature::make_gauss_jacobi_quadrature, traits::QuadratureRule};
     use approx::*;
     use paste::paste;
@@ -100,129 +101,170 @@ mod test {
     test_orthogonal!(Tetrahedron, 5);
     test_orthogonal!(Tetrahedron, 6);
 
-    #[test]
-    fn test_legendre_interval_derivative() {
-        let degree = 6;
-
-        let epsilon = 1e-10;
-        let mut points = rlst_dynamic_array2!(f64, [1, 20]);
-        for i in 0..10 {
-            *points.get_mut([0, 2 * i]).unwrap() = i as f64 / 10.0;
-            *points.get_mut([0, 2 * i + 1]).unwrap() = points.get([0, 2 * i]).unwrap() + epsilon;
-        }
-
-        let mut data = rlst_dynamic_array3!(
-            f64,
-            legendre_shape(ReferenceCellType::Interval, &points, degree, 1,)
-        );
-        tabulate_legendre_polynomials(ReferenceCellType::Interval, &points, degree, 1, &mut data);
-
-        for i in 0..degree + 1 {
-            for k in 0..points.shape()[1] / 2 {
-                assert_relative_eq!(
-                    *data.get([1, i, 2 * k]).unwrap(),
-                    (data.get([0, i, 2 * k + 1]).unwrap() - data.get([0, i, 2 * k]).unwrap())
-                        / epsilon,
-                    epsilon = 1e-4
-                );
+    fn generate_points(cell: ReferenceCellType, epsilon: f64) -> Array2D<f64> {
+        match cell {
+            ReferenceCellType::Interval => {
+                let mut points = rlst_dynamic_array2!(f64, [1, 20]);
+                for i in 0..10 {
+                    *points.get_mut([0, 2 * i]).unwrap() = i as f64 / 10.0;
+                    *points.get_mut([0, 2 * i + 1]).unwrap() =
+                        points.get([0, 2 * i]).unwrap() + epsilon;
+                }
+                points
+            }
+            ReferenceCellType::Triangle => {
+                let mut points = rlst_dynamic_array2!(f64, [2, 165]);
+                let mut index = 0;
+                for i in 0..10 {
+                    for j in 0..10 - i {
+                        *points.get_mut([0, 3 * index]).unwrap() = i as f64 / 10.0;
+                        *points.get_mut([1, 3 * index]).unwrap() = j as f64 / 10.0;
+                        *points.get_mut([0, 3 * index + 1]).unwrap() =
+                            *points.get([0, 3 * index]).unwrap() + epsilon;
+                        *points.get_mut([1, 3 * index + 1]).unwrap() =
+                            *points.get([1, 3 * index]).unwrap();
+                        *points.get_mut([0, 3 * index + 2]).unwrap() =
+                            *points.get([0, 3 * index]).unwrap();
+                        *points.get_mut([1, 3 * index + 2]).unwrap() =
+                            *points.get([1, 3 * index]).unwrap() + epsilon;
+                        index += 1;
+                    }
+                }
+                points
+            }
+            ReferenceCellType::Quadrilateral => {
+                let mut points = rlst_dynamic_array2!(f64, [2, 300]);
+                for i in 0..10 {
+                    for j in 0..10 {
+                        let index = 10 * i + j;
+                        *points.get_mut([0, 3 * index]).unwrap() = i as f64 / 10.0;
+                        *points.get_mut([1, 3 * index]).unwrap() = j as f64 / 10.0;
+                        *points.get_mut([0, 3 * index + 1]).unwrap() =
+                            *points.get([0, 3 * index]).unwrap() + epsilon;
+                        *points.get_mut([1, 3 * index + 1]).unwrap() =
+                            *points.get([1, 3 * index]).unwrap();
+                        *points.get_mut([0, 3 * index + 2]).unwrap() =
+                            *points.get([0, 3 * index]).unwrap();
+                        *points.get_mut([1, 3 * index + 2]).unwrap() =
+                            *points.get([1, 3 * index]).unwrap() + epsilon;
+                    }
+                }
+                points
+            }
+            ReferenceCellType::Tetrahedron => {
+                let mut points = rlst_dynamic_array2!(f64, [2, 140]);
+                let mut index = 0;
+                for i in 0..5 {
+                    for j in 0..5 - i {
+                        for k in 0..5 - i - j {
+                            *points.get_mut([0, 4 * index]).unwrap() = i as f64 / 5.0;
+                            *points.get_mut([1, 4 * index]).unwrap() = j as f64 / 5.0;
+                            *points.get_mut([2, 4 * index]).unwrap() = k as f64 / 5.0;
+                            *points.get_mut([0, 4 * index + 1]).unwrap() =
+                                *points.get([0, 4 * index]).unwrap() + epsilon;
+                            *points.get_mut([1, 4 * index + 1]).unwrap() =
+                                *points.get([1, 4 * index]).unwrap();
+                            *points.get_mut([2, 4 * index + 1]).unwrap() =
+                                *points.get([2, 4 * index]).unwrap();
+                            *points.get_mut([0, 4 * index + 2]).unwrap() =
+                                *points.get([0, 4 * index]).unwrap();
+                            *points.get_mut([1, 4 * index + 2]).unwrap() =
+                                *points.get([1, 4 * index]).unwrap() + epsilon;
+                            *points.get_mut([2, 4 * index + 2]).unwrap() =
+                                *points.get([2, 4 * index]).unwrap();
+                            *points.get_mut([0, 4 * index + 2]).unwrap() =
+                                *points.get([0, 4 * index]).unwrap();
+                            *points.get_mut([1, 4 * index + 2]).unwrap() =
+                                *points.get([1, 4 * index]).unwrap();
+                            *points.get_mut([2, 4 * index + 2]).unwrap() =
+                                *points.get([2, 4 * index]).unwrap() + epsilon;
+                            index += 1;
+                        }
+                    }
+                }
+                points
+            }
+            ReferenceCellType::Hexahedron => {
+                let mut points = rlst_dynamic_array2!(f64, [2, 5000]);
+                for i in 0..5 {
+                    for j in 0..5 {
+                        for k in 0..5 {
+                            let index = 100 * i + 10 * j + k;
+                            *points.get_mut([0, 4 * index]).unwrap() = i as f64 / 5.0;
+                            *points.get_mut([1, 4 * index]).unwrap() = j as f64 / 5.0;
+                            *points.get_mut([2, 4 * index]).unwrap() = k as f64 / 5.0;
+                            *points.get_mut([0, 4 * index + 1]).unwrap() =
+                                *points.get([0, 4 * index]).unwrap() + epsilon;
+                            *points.get_mut([1, 4 * index + 1]).unwrap() =
+                                *points.get([1, 4 * index]).unwrap();
+                            *points.get_mut([2, 4 * index + 1]).unwrap() =
+                                *points.get([2, 4 * index]).unwrap();
+                            *points.get_mut([0, 4 * index + 2]).unwrap() =
+                                *points.get([0, 4 * index]).unwrap();
+                            *points.get_mut([1, 4 * index + 2]).unwrap() =
+                                *points.get([1, 4 * index]).unwrap() + epsilon;
+                            *points.get_mut([2, 4 * index + 2]).unwrap() =
+                                *points.get([2, 4 * index]).unwrap();
+                            *points.get_mut([0, 4 * index + 2]).unwrap() =
+                                *points.get([0, 4 * index]).unwrap();
+                            *points.get_mut([1, 4 * index + 2]).unwrap() =
+                                *points.get([1, 4 * index]).unwrap();
+                            *points.get_mut([2, 4 * index + 2]).unwrap() =
+                                *points.get([2, 4 * index]).unwrap() + epsilon;
+                        }
+                    }
+                }
+                points
+            }
+            _ => {
+                panic!("Unsupported cell type: {cell:?}");
             }
         }
     }
+    macro_rules! test_orthogonal {
+        ($cell:ident, $degree:expr) => {
+            paste! {
+                #[test]
+                fn [<test_legendre_derivatives_ $cell:lower _ $degree>]() {
+                    let dim = reference_cell::dim(ReferenceCellType::[<$cell>]);
+                    let epsilon = 1e-10;
+                    let points = generate_points(ReferenceCellType::[<$cell>], epsilon);
 
-    #[test]
-    fn test_legendre_triangle_derivative() {
-        let degree = 6;
+                    let mut data = rlst_dynamic_array3!(
+                        f64,
+                        legendre_shape(ReferenceCellType::[<$cell>], &points, [<$degree>], 1,)
+                    );
+                    tabulate_legendre_polynomials(ReferenceCellType::[<$cell>], &points, [<$degree>], 1, &mut data);
 
-        let epsilon = 1e-10;
-        let mut points = rlst_dynamic_array2!(f64, [2, 165]);
-        let mut index = 0;
-        for i in 0..10 {
-            for j in 0..10 - i {
-                *points.get_mut([0, 3 * index]).unwrap() = i as f64 / 10.0;
-                *points.get_mut([1, 3 * index]).unwrap() = j as f64 / 10.0;
-                *points.get_mut([0, 3 * index + 1]).unwrap() =
-                    *points.get([0, 3 * index]).unwrap() + epsilon;
-                *points.get_mut([1, 3 * index + 1]).unwrap() = *points.get([1, 3 * index]).unwrap();
-                *points.get_mut([0, 3 * index + 2]).unwrap() = *points.get([0, 3 * index]).unwrap();
-                *points.get_mut([1, 3 * index + 2]).unwrap() =
-                    *points.get([1, 3 * index]).unwrap() + epsilon;
-                index += 1;
+                    for i in 0..[<$degree>] + 1 {
+                        for k in 0..points.shape()[1] / (dim + 1) {
+                            for d in 1..dim + 1 {
+                                assert_relative_eq!(
+                                    *data.get([d, i, (dim + 1) * k]).unwrap(),
+                                    (data.get([0, i, (dim + 1) * k + d]).unwrap() - data.get([0, i, (dim + 1) * k]).unwrap())
+                                        / epsilon,
+                                    epsilon = 1e-4
+                                );
+                            }
+                        }
+                    }
+                }
             }
-        }
-
-        let mut data = rlst_dynamic_array3!(
-            f64,
-            legendre_shape(ReferenceCellType::Triangle, &points, degree, 1,)
-        );
-        tabulate_legendre_polynomials(ReferenceCellType::Triangle, &points, degree, 1, &mut data);
-
-        for i in 0..degree + 1 {
-            for k in 0..points.shape()[1] / 3 {
-                assert_relative_eq!(
-                    *data.get([1, i, 3 * k]).unwrap(),
-                    (data.get([0, i, 3 * k + 1]).unwrap() - data.get([0, i, 3 * k]).unwrap())
-                        / epsilon,
-                    epsilon = 1e-4
-                );
-                assert_relative_eq!(
-                    *data.get([2, i, 3 * k]).unwrap(),
-                    (data.get([0, i, 3 * k + 2]).unwrap() - data.get([0, i, 3 * k]).unwrap())
-                        / epsilon,
-                    epsilon = 1e-4
-                );
-            }
-        }
+        };
     }
 
-    #[test]
-    fn test_legendre_quadrilateral_derivative() {
-        let degree = 6;
-
-        let epsilon = 1e-10;
-        let mut points = rlst_dynamic_array2!(f64, [2, 300]);
-        for i in 0..10 {
-            for j in 0..10 {
-                let index = 10 * i + j;
-                *points.get_mut([0, 3 * index]).unwrap() = i as f64 / 10.0;
-                *points.get_mut([1, 3 * index]).unwrap() = j as f64 / 10.0;
-                *points.get_mut([0, 3 * index + 1]).unwrap() =
-                    *points.get([0, 3 * index]).unwrap() + epsilon;
-                *points.get_mut([1, 3 * index + 1]).unwrap() = *points.get([1, 3 * index]).unwrap();
-                *points.get_mut([0, 3 * index + 2]).unwrap() = *points.get([0, 3 * index]).unwrap();
-                *points.get_mut([1, 3 * index + 2]).unwrap() =
-                    *points.get([1, 3 * index]).unwrap() + epsilon;
-            }
-        }
-
-        let mut data = rlst_dynamic_array3!(
-            f64,
-            legendre_shape(ReferenceCellType::Quadrilateral, &points, degree, 1,)
-        );
-        tabulate_legendre_polynomials(
-            ReferenceCellType::Quadrilateral,
-            &points,
-            degree,
-            1,
-            &mut data,
-        );
-
-        for i in 0..degree + 1 {
-            for k in 0..points.shape()[1] / 3 {
-                assert_relative_eq!(
-                    *data.get([1, i, 3 * k]).unwrap(),
-                    (data.get([0, i, 3 * k + 1]).unwrap() - data.get([0, i, 3 * k]).unwrap())
-                        / epsilon,
-                    epsilon = 1e-4
-                );
-                assert_relative_eq!(
-                    *data.get([2, i, 3 * k]).unwrap(),
-                    (data.get([0, i, 3 * k + 2]).unwrap() - data.get([0, i, 3 * k]).unwrap())
-                        / epsilon,
-                    epsilon = 1e-4
-                );
-            }
-        }
-    }
+    test_orthogonal!(Interval, 3);
+    test_orthogonal!(Interval, 4);
+    test_orthogonal!(Interval, 5);
+    test_orthogonal!(Interval, 6);
+    test_orthogonal!(Triangle, 3);
+    test_orthogonal!(Triangle, 4);
+    test_orthogonal!(Triangle, 5);
+    test_orthogonal!(Triangle, 6);
+    test_orthogonal!(Quadrilateral, 3);
+    test_orthogonal!(Quadrilateral, 4);
+    test_orthogonal!(Quadrilateral, 5);
+    test_orthogonal!(Quadrilateral, 6);
 
     #[test]
     fn test_legendre_interval_against_known_polynomials() {
