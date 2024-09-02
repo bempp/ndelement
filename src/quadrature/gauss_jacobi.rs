@@ -180,7 +180,7 @@ fn make_quadrature_tetrahedron_collapsed<T: RlstScalar<Real = T> + FloatConst + 
                 let index = i * wty.len() * wtz.len() + j * wtz.len() + k;
                 pts[3 * index] = T::from(0.125).unwrap() * (one + *px) * (one - *py) * (one - *pz);
                 pts[3 * index + 1] = T::from(0.25).unwrap() * (one + *py) * (one - *pz);
-                pts[3 * index + 1] = T::from(0.5).unwrap() * (one + *pz);
+                pts[3 * index + 2] = T::from(0.5).unwrap() * (one + *pz);
                 wts[index] = *wx * *wy * *wz * T::from(0.015625).unwrap();
             }
         }

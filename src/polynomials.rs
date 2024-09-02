@@ -40,6 +40,7 @@ mod test {
         rlst_array_from_slice2, rlst_dynamic_array2, rlst_dynamic_array3, RandomAccessByRef,
         RandomAccessMut, Shape,
     };
+
     macro_rules! test_orthogonal {
         ($cell:ident, $degree:expr) => {
             paste! {
