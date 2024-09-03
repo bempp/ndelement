@@ -186,6 +186,20 @@ pub fn faces(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     }
 }
 
+/// The faces of the reference cell
+pub fn volumes(cell: ReferenceCellType) -> Vec<Vec<usize>> {
+    match cell {
+        ReferenceCellType::Point => vec![],
+        ReferenceCellType::Interval => vec![],
+        ReferenceCellType::Triangle => vec![],
+        ReferenceCellType::Quadrilateral => vec![],
+        ReferenceCellType::Tetrahedron => vec![vec![0, 1, 2, 3]],
+        ReferenceCellType::Hexahedron => vec![vec![0, 1, 2, 3, 4, 5, 6, 7]],
+        ReferenceCellType::Prism => vec![vec![0, 1, 2, 3, 4, 5]],
+        ReferenceCellType::Pyramid => vec![vec![0, 1, 2, 3, 4]],
+    }
+}
+
 /// The types of the subentities of the reference cell
 pub fn entity_types(cell: ReferenceCellType) -> Vec<Vec<ReferenceCellType>> {
     match cell {
