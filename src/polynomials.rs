@@ -152,7 +152,7 @@ mod test {
                 points
             }
             ReferenceCellType::Tetrahedron => {
-                let mut points = rlst_dynamic_array2!(f64, [2, 140]);
+                let mut points = rlst_dynamic_array2!(f64, [3, 140]);
                 let mut index = 0;
                 for i in 0..5 {
                     for j in 0..5 - i {
@@ -172,11 +172,11 @@ mod test {
                                 *points.get([1, 4 * index]).unwrap() + epsilon;
                             *points.get_mut([2, 4 * index + 2]).unwrap() =
                                 *points.get([2, 4 * index]).unwrap();
-                            *points.get_mut([0, 4 * index + 2]).unwrap() =
+                            *points.get_mut([0, 4 * index + 3]).unwrap() =
                                 *points.get([0, 4 * index]).unwrap();
-                            *points.get_mut([1, 4 * index + 2]).unwrap() =
+                            *points.get_mut([1, 4 * index + 3]).unwrap() =
                                 *points.get([1, 4 * index]).unwrap();
-                            *points.get_mut([2, 4 * index + 2]).unwrap() =
+                            *points.get_mut([2, 4 * index + 3]).unwrap() =
                                 *points.get([2, 4 * index]).unwrap() + epsilon;
                             index += 1;
                         }
@@ -185,7 +185,7 @@ mod test {
                 points
             }
             ReferenceCellType::Hexahedron => {
-                let mut points = rlst_dynamic_array2!(f64, [2, 5000]);
+                let mut points = rlst_dynamic_array2!(f64, [3, 5000]);
                 for i in 0..5 {
                     for j in 0..5 {
                         for k in 0..5 {
@@ -205,11 +205,11 @@ mod test {
                                 *points.get([1, 4 * index]).unwrap() + epsilon;
                             *points.get_mut([2, 4 * index + 2]).unwrap() =
                                 *points.get([2, 4 * index]).unwrap();
-                            *points.get_mut([0, 4 * index + 2]).unwrap() =
+                            *points.get_mut([0, 4 * index + 3]).unwrap() =
                                 *points.get([0, 4 * index]).unwrap();
-                            *points.get_mut([1, 4 * index + 2]).unwrap() =
+                            *points.get_mut([1, 4 * index + 3]).unwrap() =
                                 *points.get([1, 4 * index]).unwrap();
-                            *points.get_mut([2, 4 * index + 2]).unwrap() =
+                            *points.get_mut([2, 4 * index + 3]).unwrap() =
                                 *points.get([2, 4 * index]).unwrap() + epsilon;
                         }
                     }
@@ -221,7 +221,7 @@ mod test {
             }
         }
     }
-    macro_rules! test_orthogonal {
+    macro_rules! test_derivatives {
         ($cell:ident, $degree:expr) => {
             paste! {
                 #[test]
@@ -253,18 +253,30 @@ mod test {
         };
     }
 
-    test_orthogonal!(Interval, 3);
-    test_orthogonal!(Interval, 4);
-    test_orthogonal!(Interval, 5);
-    test_orthogonal!(Interval, 6);
-    test_orthogonal!(Triangle, 3);
-    test_orthogonal!(Triangle, 4);
-    test_orthogonal!(Triangle, 5);
-    test_orthogonal!(Triangle, 6);
-    test_orthogonal!(Quadrilateral, 3);
-    test_orthogonal!(Quadrilateral, 4);
-    test_orthogonal!(Quadrilateral, 5);
-    test_orthogonal!(Quadrilateral, 6);
+    test_derivatives!(Interval, 1);
+    test_derivatives!(Interval, 2);
+    test_derivatives!(Interval, 3);
+    test_derivatives!(Interval, 4);
+    test_derivatives!(Interval, 5);
+    test_derivatives!(Interval, 6);
+    test_derivatives!(Triangle, 1);
+    test_derivatives!(Triangle, 2);
+    test_derivatives!(Triangle, 3);
+    test_derivatives!(Triangle, 4);
+    test_derivatives!(Triangle, 5);
+    test_derivatives!(Triangle, 6);
+    test_derivatives!(Quadrilateral, 1);
+    test_derivatives!(Quadrilateral, 2);
+    test_derivatives!(Quadrilateral, 3);
+    test_derivatives!(Quadrilateral, 4);
+    test_derivatives!(Quadrilateral, 5);
+    test_derivatives!(Quadrilateral, 6);
+    test_derivatives!(Tetrahedron, 1);
+    test_derivatives!(Tetrahedron, 2);
+    test_derivatives!(Tetrahedron, 3);
+    test_derivatives!(Tetrahedron, 4);
+    test_derivatives!(Tetrahedron, 5);
+    test_derivatives!(Tetrahedron, 6);
 
     #[test]
     fn test_legendre_interval_against_known_polynomials() {

@@ -480,6 +480,9 @@ fn tabulate_tetrahedron<
                 for p in 1..degree + 1 {
                     let a = T::from(2 * p - 1).unwrap() / T::from(p).unwrap();
                     for i in 0..points.shape()[1] {
+                        let d = *data
+                            .get([tet_index(kx, ky, kz), tet_index(0, 0, p - 1), i])
+                            .unwrap();
                         *data
                             .get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i])
                             .unwrap() = (T::from(*points.get([0, i]).unwrap()).unwrap()
@@ -488,9 +491,7 @@ fn tabulate_tetrahedron<
                             + T::from(*points.get([2, i]).unwrap()).unwrap()
                             - T::from(1.0).unwrap())
                             * a
-                            * *data
-                                .get([tet_index(kx, ky, kz), tet_index(0, 0, p - 1), i])
-                                .unwrap();
+                            * d;
                     }
                     if kx > 0 {
                         for i in 0..points.shape()[1] {
@@ -529,8 +530,10 @@ fn tabulate_tetrahedron<
                                 .unwrap();
                             *data
                                 .get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i])
-                                .unwrap() -= (T::from(*points.get([1, i]).unwrap()).unwrap()
-                                + T::from(*points.get([2, i]).unwrap()).unwrap()
+                                .unwrap() -= (T::from(
+                                *points.get([1, i]).unwrap() + *points.get([2, i]).unwrap(),
+                            )
+                            .unwrap()
                                 - T::from(1.0).unwrap())
                             .powi(2)
                                 * d
@@ -544,8 +547,10 @@ fn tabulate_tetrahedron<
                                 *data
                                     .get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i])
                                     .unwrap() -= T::from(ky * 2).unwrap()
-                                    * (T::from(*points.get([1, i]).unwrap()).unwrap()
-                                        + T::from(*points.get([2, i]).unwrap()).unwrap()
+                                    * (T::from(
+                                        *points.get([1, i]).unwrap() + *points.get([2, i]).unwrap(),
+                                    )
+                                    .unwrap()
                                         - T::from(1.0).unwrap())
                                     * d
                                     * (a - T::from(1.0).unwrap());
@@ -571,8 +576,10 @@ fn tabulate_tetrahedron<
                                 *data
                                     .get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i])
                                     .unwrap() -= T::from(kz * 2).unwrap()
-                                    * (T::from(*points.get([1, i]).unwrap()).unwrap()
-                                        + T::from(*points.get([2, i]).unwrap()).unwrap()
+                                    * (T::from(
+                                        *points.get([1, i]).unwrap() + *points.get([2, i]).unwrap(),
+                                    )
+                                    .unwrap()
                                         - T::from(1.0).unwrap())
                                     * d
                                     * (a - T::from(1.0).unwrap());
@@ -762,7 +769,11 @@ fn tabulate_tetrahedron<
                                             .get([tet_index(kx, ky, kz - 1), tet_index(r, q, p), i])
                                             .unwrap();
                                         *data
-                                            .get_mut([tet_index(kx, ky, kz), tet_index(r, q, p), i])
+                                            .get_mut([
+                                                tet_index(kx, ky, kz),
+                                                tet_index(r + 1, q, p),
+                                                i,
+                                            ])
                                             .unwrap() += T::from(2 * kz).unwrap() * ar * d;
                                     }
                                 }
