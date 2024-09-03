@@ -19,6 +19,10 @@ fn tet_index(i: usize, j: usize, k: usize) -> usize {
     (i + j + k) * (i + j + k + 1) * (i + j + k + 2) / 6 + (j + k) * (j + k + 1) / 2 + k
 }
 
+fn hex_index(i: usize, j: usize, k: usize, n: usize) -> usize {
+    k * (n + 1) * (n + 1) + j * (n + 1) + i
+}
+
 /// The coefficients in the Jacobi Polynomial recurrence relation
 fn jrc<T: RlstScalar>(a: usize, n: usize) -> (T, T, T) {
     (
@@ -31,7 +35,7 @@ fn jrc<T: RlstScalar>(a: usize, n: usize) -> (T, T, T) {
     )
 }
 
-/// Tabulate orthonormal polynomials on a interval
+/// Tabulate orthonormal polynomials on an interval
 fn tabulate_interval<
     T: RlstScalar,
     Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
@@ -56,9 +60,9 @@ fn tabulate_interval<
         }
     }
 
-    for k in 0..derivatives + 1 {
-        for p in 1..degree + 1 {
-            let a = T::from(1.0).unwrap() - T::from(1.0).unwrap() / T::from(p).unwrap();
+    for k in 0..=derivatives {
+        for p in 1..=degree {
+            let a = T::from(p - 1).unwrap() / T::from(p).unwrap();
             let b = (a + T::from(1.0).unwrap())
                 * ((T::from(2.0).unwrap() * T::from(p).unwrap() + T::from(1.0).unwrap())
                     / (T::from(2.0).unwrap() * T::from(p).unwrap() - T::from(1.0).unwrap()))
@@ -115,7 +119,7 @@ fn tabulate_quadrilateral<
     }
 
     // Tabulate polynomials in x
-    for k in 1..derivatives + 1 {
+    for k in 1..=derivatives {
         for i in 0..data.shape()[2] {
             *data
                 .get_mut([tri_index(k, 0), quad_index(0, 0, degree), i])
@@ -123,8 +127,8 @@ fn tabulate_quadrilateral<
         }
     }
 
-    for k in 0..derivatives + 1 {
-        for p in 1..degree + 1 {
+    for k in 0..=derivatives {
+        for p in 1..=degree {
             let a = T::from(1.0).unwrap() - T::from(1.0).unwrap() / T::from(p).unwrap();
             let b = (a + T::from(1.0).unwrap())
                 * ((T::from(2.0).unwrap() * T::from(p).unwrap() + T::from(1.0).unwrap())
@@ -170,7 +174,7 @@ fn tabulate_quadrilateral<
     }
 
     // Tabulate polynomials in y
-    for k in 1..derivatives + 1 {
+    for k in 1..=derivatives {
         for i in 0..data.shape()[2] {
             *data
                 .get_mut([tri_index(0, k), quad_index(0, 0, degree), i])
@@ -178,8 +182,8 @@ fn tabulate_quadrilateral<
         }
     }
 
-    for k in 0..derivatives + 1 {
-        for p in 1..degree + 1 {
+    for k in 0..=derivatives {
+        for p in 1..=degree {
             let a = T::from(1.0).unwrap() - T::from(1.0).unwrap() / T::from(p).unwrap();
             let b = (a + T::from(1.0).unwrap())
                 * ((T::from(2.0).unwrap() * T::from(p).unwrap() + T::from(1.0).unwrap())
@@ -225,10 +229,10 @@ fn tabulate_quadrilateral<
     }
 
     // Fill in the rest of the values as products
-    for kx in 0..derivatives + 1 {
-        for ky in 0..derivatives + 1 - kx {
-            for px in 1..degree + 1 {
-                for py in 1..degree + 1 {
+    for kx in 0..=derivatives {
+        for ky in 0..=derivatives - kx {
+            for px in 1..=degree {
+                for py in 1..=degree {
                     for i in 0..data.shape()[2] {
                         let d = *data
                             .get([tri_index(0, ky), quad_index(0, py, degree), i])
@@ -272,9 +276,9 @@ fn tabulate_triangle<
         }
     }
 
-    for kx in 0..derivatives + 1 {
-        for ky in 0..derivatives + 1 - kx {
-            for p in 1..degree + 1 {
+    for kx in 0..=derivatives {
+        for ky in 0..=derivatives - kx {
+            for p in 1..=degree {
                 let a = T::from(2.0).unwrap() - T::from(1.0).unwrap() / T::from(p).unwrap();
                 let scale1 = T::sqrt(
                     (T::from(p).unwrap() + T::from(0.5).unwrap())
@@ -446,7 +450,7 @@ fn tabulate_triangle<
     }
 }
 
-/// Tabulate orthonormal polynomials on a interval
+/// Tabulate orthonormal polynomials on a tetrahedron
 fn tabulate_tetrahedron<
     T: RlstScalar,
     Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
@@ -474,10 +478,10 @@ fn tabulate_tetrahedron<
         }
     }
 
-    for kx in 0..derivatives + 1 {
-        for ky in 0..derivatives + 1 - kx {
-            for kz in 0..derivatives + 1 - kx - ky {
-                for p in 1..degree + 1 {
+    for kx in 0..=derivatives {
+        for ky in 0..=derivatives - kx {
+            for kz in 0..=derivatives - kx - ky {
+                for p in 1..=degree {
                     let a = T::from(2 * p - 1).unwrap() / T::from(p).unwrap();
                     for i in 0..points.shape()[1] {
                         let d = *data
@@ -789,15 +793,235 @@ fn tabulate_tetrahedron<
     for p in 0..=degree {
         for q in 0..=degree - p {
             for r in 0..=degree - p - q {
-                for i in 0..data.shape()[0] {
-                    for j in 0..data.shape()[2] {
-                        *data.get_mut([i, tet_index(r, q, p), j]).unwrap() *= T::sqrt(
-                            (T::from(p).unwrap() + T::from(0.5).unwrap())
-                                * T::from(p + q + 1).unwrap()
-                                * (T::from(p + q + r).unwrap() + T::from(1.5).unwrap()),
-                        ) * T::from(2)
-                            .unwrap()
-                            / T::sqrt(T::from(3).unwrap());
+                let norm = T::sqrt(
+                    (T::from(p).unwrap() + T::from(0.5).unwrap())
+                        * T::from(p + q + 1).unwrap()
+                        * (T::from(p + q + r).unwrap() + T::from(1.5).unwrap()),
+                ) * T::from(2).unwrap()
+                    / T::sqrt(T::from(3).unwrap());
+                for j in 0..data.shape()[2] {
+                    for i in 0..data.shape()[0] {
+                        *data.get_mut([i, tet_index(r, q, p), j]).unwrap() *= norm;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Tabulate orthonormal polynomials on a hexahedron
+fn tabulate_hexahedron<
+    T: RlstScalar,
+    Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
+    Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
+>(
+    points: &Array2,
+    degree: usize,
+    derivatives: usize,
+    data: &mut Array3Mut,
+) {
+    debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) * (derivatives + 3) / 6);
+    debug_assert!(data.shape()[1] == (degree + 1) * (degree + 1) * (degree + 1));
+    debug_assert!(data.shape()[2] == points.shape()[1]);
+    debug_assert!(points.shape()[0] == 3);
+
+    for i in 0..data.shape()[2] {
+        *data
+            .get_mut([tet_index(0, 0, 0), hex_index(0, 0, 0, degree), i])
+            .unwrap() = T::from(1.0).unwrap();
+    }
+
+    // Tabulate polynomials in x
+    for k in 1..=derivatives {
+        for i in 0..data.shape()[2] {
+            *data
+                .get_mut([tet_index(k, 0, 0), hex_index(0, 0, 0, degree), i])
+                .unwrap() = T::from(0.0).unwrap();
+        }
+    }
+
+    for k in 0..=derivatives {
+        for p in 1..=degree {
+            let a = T::from(1.0).unwrap() - T::from(1.0).unwrap() / T::from(p).unwrap();
+            let b = (a + T::from(1.0).unwrap())
+                * ((T::from(2.0).unwrap() * T::from(p).unwrap() + T::from(1.0).unwrap())
+                    / (T::from(2.0).unwrap() * T::from(p).unwrap() - T::from(1.0).unwrap()))
+                .sqrt();
+            for i in 0..data.shape()[2] {
+                let d = *data
+                    .get([tet_index(k, 0, 0), hex_index(p - 1, 0, 0, degree), i])
+                    .unwrap();
+                *data
+                    .get_mut([tet_index(k, 0, 0), hex_index(p, 0, 0, degree), i])
+                    .unwrap() = (T::from(*points.get([0, i]).unwrap()).unwrap()
+                    * T::from(2.0).unwrap()
+                    - T::from(1.0).unwrap())
+                    * d
+                    * b;
+            }
+            if p > 1 {
+                let c = a
+                    * ((T::from(2.0).unwrap() * T::from(p).unwrap() + T::from(1.0).unwrap())
+                        / (T::from(2.0).unwrap() * T::from(p).unwrap() - T::from(3.0).unwrap()))
+                    .sqrt();
+                for i in 0..data.shape()[2] {
+                    let d = *data
+                        .get([tet_index(k, 0, 0), hex_index(p - 2, 0, 0, degree), i])
+                        .unwrap();
+                    *data
+                        .get_mut([tet_index(k, 0, 0), hex_index(p, 0, 0, degree), i])
+                        .unwrap() -= d * c;
+                }
+            }
+            if k > 0 {
+                for i in 0..data.shape()[2] {
+                    let d = *data
+                        .get([tet_index(k - 1, 0, 0), hex_index(p - 1, 0, 0, degree), i])
+                        .unwrap();
+                    *data
+                        .get_mut([tet_index(k, 0, 0), hex_index(p, 0, 0, degree), i])
+                        .unwrap() += T::from(2.0).unwrap() * T::from(k).unwrap() * d * b;
+                }
+            }
+        }
+    }
+
+    // Tabulate polynomials in y
+    for k in 1..=derivatives {
+        for i in 0..data.shape()[2] {
+            *data
+                .get_mut([tet_index(0, k, 0), hex_index(0, 0, 0, degree), i])
+                .unwrap() = T::from(0.0).unwrap();
+        }
+    }
+
+    for k in 0..=derivatives {
+        for p in 1..=degree {
+            let a = T::from(1.0).unwrap() - T::from(1.0).unwrap() / T::from(p).unwrap();
+            let b = (a + T::from(1.0).unwrap())
+                * ((T::from(2.0).unwrap() * T::from(p).unwrap() + T::from(1.0).unwrap())
+                    / (T::from(2.0).unwrap() * T::from(p).unwrap() - T::from(1.0).unwrap()))
+                .sqrt();
+            for i in 0..data.shape()[2] {
+                let d = *data
+                    .get([tet_index(0, k, 0), hex_index(0, p - 1, 0, degree), i])
+                    .unwrap();
+                *data
+                    .get_mut([tet_index(0, k, 0), hex_index(0, p, 0, degree), i])
+                    .unwrap() = (T::from(*points.get([1, i]).unwrap()).unwrap()
+                    * T::from(2.0).unwrap()
+                    - T::from(1.0).unwrap())
+                    * d
+                    * b;
+            }
+            if p > 1 {
+                let c = a
+                    * ((T::from(2.0).unwrap() * T::from(p).unwrap() + T::from(1.0).unwrap())
+                        / (T::from(2.0).unwrap() * T::from(p).unwrap() - T::from(3.0).unwrap()))
+                    .sqrt();
+                for i in 0..data.shape()[2] {
+                    let d = *data
+                        .get([tet_index(0, k, 0), hex_index(0, p - 2, 0, degree), i])
+                        .unwrap();
+                    *data
+                        .get_mut([tet_index(0, k, 0), hex_index(0, p, 0, degree), i])
+                        .unwrap() -= d * c;
+                }
+            }
+            if k > 0 {
+                for i in 0..data.shape()[2] {
+                    let d = *data
+                        .get([tet_index(0, k - 1, 0), hex_index(0, p - 1, 0, degree), i])
+                        .unwrap();
+                    *data
+                        .get_mut([tet_index(0, k, 0), hex_index(0, p, 0, degree), i])
+                        .unwrap() += T::from(2.0).unwrap() * T::from(k).unwrap() * d * b;
+                }
+            }
+        }
+    }
+
+    // Tabulate polynomials in z
+    for k in 1..=derivatives {
+        for i in 0..data.shape()[2] {
+            *data
+                .get_mut([tet_index(0, 0, k), hex_index(0, 0, 0, degree), i])
+                .unwrap() = T::from(0.0).unwrap();
+        }
+    }
+
+    for k in 0..=derivatives {
+        for p in 1..=degree {
+            let a = T::from(1.0).unwrap() - T::from(1.0).unwrap() / T::from(p).unwrap();
+            let b = (a + T::from(1.0).unwrap())
+                * ((T::from(2.0).unwrap() * T::from(p).unwrap() + T::from(1.0).unwrap())
+                    / (T::from(2.0).unwrap() * T::from(p).unwrap() - T::from(1.0).unwrap()))
+                .sqrt();
+            for i in 0..data.shape()[2] {
+                let d = *data
+                    .get([tet_index(0, 0, k), hex_index(0, 0, p - 1, degree), i])
+                    .unwrap();
+                *data
+                    .get_mut([tet_index(0, 0, k), hex_index(0, 0, p, degree), i])
+                    .unwrap() = (T::from(*points.get([2, i]).unwrap()).unwrap()
+                    * T::from(2.0).unwrap()
+                    - T::from(1.0).unwrap())
+                    * d
+                    * b;
+            }
+            if p > 1 {
+                let c = a
+                    * ((T::from(2.0).unwrap() * T::from(p).unwrap() + T::from(1.0).unwrap())
+                        / (T::from(2.0).unwrap() * T::from(p).unwrap() - T::from(3.0).unwrap()))
+                    .sqrt();
+                for i in 0..data.shape()[2] {
+                    let d = *data
+                        .get([tet_index(0, 0, k), hex_index(0, 0, p - 2, degree), i])
+                        .unwrap();
+                    *data
+                        .get_mut([tet_index(0, 0, k), hex_index(0, 0, p, degree), i])
+                        .unwrap() -= d * c;
+                }
+            }
+            if k > 0 {
+                for i in 0..data.shape()[2] {
+                    let d = *data
+                        .get([tet_index(0, 0, k - 1), hex_index(0, 0, p - 1, degree), i])
+                        .unwrap();
+                    *data
+                        .get_mut([tet_index(0, 0, k), hex_index(0, 0, p, degree), i])
+                        .unwrap() += T::from(2.0).unwrap() * T::from(k).unwrap() * d * b;
+                }
+            }
+        }
+    }
+
+    // Fill in the rest of the values as products
+    for kx in 0..=derivatives {
+        for ky in 0..=derivatives - kx {
+            for kz in 0..=derivatives - kx - ky {
+                for px in 1..=degree {
+                    for py in 1..=degree {
+                        for pz in 1..=degree {
+                            for i in 0..data.shape()[2] {
+                                let dx = *data
+                                    .get([tet_index(kx, 0, 0), hex_index(px, 0, 0, degree), i])
+                                    .unwrap();
+                                let dy = *data
+                                    .get([tet_index(0, ky, 0), hex_index(0, py, 0, degree), i])
+                                    .unwrap();
+                                let dz = *data
+                                    .get([tet_index(0, 0, kz), hex_index(0, 0, pz, degree), i])
+                                    .unwrap();
+                                *data
+                                    .get_mut([
+                                        tet_index(kx, ky, kz),
+                                        hex_index(px, py, pz, degree),
+                                        i,
+                                    ])
+                                    .unwrap() = dx * dy * dz;
+                            }
+                        }
                     }
                 }
             }
@@ -838,6 +1062,7 @@ pub fn tabulate<
             tabulate_quadrilateral(points, degree, derivatives, data)
         }
         ReferenceCellType::Tetrahedron => tabulate_tetrahedron(points, degree, derivatives, data),
+        ReferenceCellType::Hexahedron => tabulate_hexahedron(points, degree, derivatives, data),
         _ => {
             panic!("Unsupported cell type: {cell_type:?}");
         }
