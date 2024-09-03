@@ -1000,9 +1000,9 @@ fn tabulate_hexahedron<
     for kx in 0..=derivatives {
         for ky in 0..=derivatives - kx {
             for kz in 0..=derivatives - kx - ky {
-                for px in 1..=degree {
-                    for py in 1..=degree {
-                        for pz in 1..=degree {
+                for px in 0..=degree {
+                    for py in if px == 0 { 1 } else { 0 }..=degree {
+                        for pz in if px * py == 0 { 1 } else { 0 }..=degree {
                             for i in 0..data.shape()[2] {
                                 let dx = *data
                                     .get([tet_index(kx, 0, 0), hex_index(px, 0, 0, degree), i])

@@ -50,6 +50,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
     } else {
         let edges = reference_cell::edges(cell_type);
         let faces = reference_cell::faces(cell_type);
+        let volumes = reference_cell::volumes(cell_type);
         // TODO: GLL points
         for vertex in &vertices {
             let mut pts = rlst_dynamic_array2!(T::Real, [tdim, 1]);
@@ -156,6 +157,100 @@ pub fn create<T: RlstScalar + MatrixInverse>(
             }
             x[2].push(pts);
             m[2].push(ident);
+        }
+        for (e, volume_type) in reference_cell::entity_types(cell_type)[3]
+            .iter()
+            .enumerate()
+        {
+            let npts = match volume_type {
+                ReferenceCellType::Tetrahedron => {
+                    if degree > 2 {
+                        (degree - 1) * (degree - 2) * (degree - 3) / 6
+                    } else {
+                        0
+                    }
+                }
+                ReferenceCellType::Hexahedron => (degree - 1).pow(3),
+                _ => {
+                    panic!("Unsupported face type");
+                }
+            };
+            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, npts]);
+
+            match volume_type {
+                ReferenceCellType::Tetrahedron => {
+                    let [vn0, vn1, vn2, vn3] = volumes[e][..4] else {
+                        panic!();
+                    };
+                    let v0 = &vertices[vn0];
+                    let v1 = &vertices[vn1];
+                    let v2 = &vertices[vn2];
+                    let v3 = &vertices[vn3];
+
+                    let mut n = 0;
+                    for i0 in 1..degree {
+                        for i1 in 1..degree - i0 {
+                            for i2 in 1..degree - i0 - i1 {
+                                for j in 0..tdim {
+                                    *pts.get_mut([j, n]).unwrap() = num::cast::<_, T::Real>(v0[j])
+                                        .unwrap()
+                                        + num::cast::<_, T::Real>(i0).unwrap()
+                                            / num::cast::<_, T::Real>(degree).unwrap()
+                                            * num::cast::<_, T::Real>(v1[j] - v0[j]).unwrap()
+                                        + num::cast::<_, T::Real>(i1).unwrap()
+                                            / num::cast::<_, T::Real>(degree).unwrap()
+                                            * num::cast::<_, T::Real>(v2[j] - v0[j]).unwrap()
+                                        + num::cast::<_, T::Real>(i2).unwrap()
+                                            / num::cast::<_, T::Real>(degree).unwrap()
+                                            * num::cast::<_, T::Real>(v3[j] - v0[j]).unwrap();
+                                }
+                                n += 1;
+                            }
+                        }
+                    }
+                }
+                ReferenceCellType::Hexahedron => {
+                    let [vn0, vn1, vn2, _, vn3] = volumes[e][..5] else {
+                        panic!();
+                    };
+                    let v0 = &vertices[vn0];
+                    let v1 = &vertices[vn1];
+                    let v2 = &vertices[vn2];
+                    let v3 = &vertices[vn3];
+
+                    let mut n = 0;
+                    for i0 in 1..degree {
+                        for i1 in 1..degree {
+                            for i2 in 1..degree {
+                                for j in 0..tdim {
+                                    *pts.get_mut([j, n]).unwrap() = num::cast::<_, T::Real>(v0[j])
+                                        .unwrap()
+                                        + num::cast::<_, T::Real>(i0).unwrap()
+                                            / num::cast::<_, T::Real>(degree).unwrap()
+                                            * num::cast::<_, T::Real>(v1[j] - v0[j]).unwrap()
+                                        + num::cast::<_, T::Real>(i1).unwrap()
+                                            / num::cast::<_, T::Real>(degree).unwrap()
+                                            * num::cast::<_, T::Real>(v2[j] - v0[j]).unwrap()
+                                        + num::cast::<_, T::Real>(i2).unwrap()
+                                            / num::cast::<_, T::Real>(degree).unwrap()
+                                            * num::cast::<_, T::Real>(v3[j] - v0[j]).unwrap();
+                                }
+                                n += 1;
+                            }
+                        }
+                    }
+                }
+                _ => {
+                    panic!("Unsupported face type.");
+                }
+            };
+
+            let mut ident = rlst_dynamic_array3!(T, [npts, 1, npts]);
+            for i in 0..npts {
+                *ident.get_mut([i, 0, i]).unwrap() = T::from(1.0).unwrap();
+            }
+            x[3].push(pts);
+            m[3].push(ident);
         }
     }
     CiarletElement::<T>::create(
