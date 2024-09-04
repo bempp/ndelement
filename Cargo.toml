@@ -31,6 +31,9 @@ serde = { version = "1", features = ["derive"], optional = true }
 paste = "1.*"
 approx = "0.5"
 
+[build-dependencies]
+cbindgen = "0.26.0"
+
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
