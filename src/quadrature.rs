@@ -1,6 +1,8 @@
 //! Quadrature
 mod gauss_jacobi;
-pub use gauss_jacobi::{make_quadrature as make_gauss_jacobi_quadrature, npoints as gauss_jacobi_quadrature_npoints};
+pub use gauss_jacobi::{
+    make_quadrature as make_gauss_jacobi_quadrature, npoints as gauss_jacobi_quadrature_npoints,
+};
 
 use crate::traits::QuadratureRule as QuadratureRuleTrait;
 use rlst::RlstScalar;

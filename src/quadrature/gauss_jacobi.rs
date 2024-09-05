@@ -12,12 +12,7 @@ use std::cmp::PartialOrd;
 
 /// Evaluate the nth Jacobi polynomial and derivatives with weight
 /// parameters (a, 0) at points x
-fn compute_deriv<T: RlstScalar<Real = T>>(
-    a: T,
-    n: usize,
-    nderiv: usize,
-    x: &[T],
-) -> Array2D<T> {
+fn compute_deriv<T: RlstScalar<Real = T>>(a: T, n: usize, nderiv: usize, x: &[T]) -> Array2D<T> {
     let mut j_all = rlst_dynamic_array3!(T, [nderiv + 1, n + 1, x.len()]);
 
     let one = T::from(1.0).unwrap();
@@ -73,10 +68,7 @@ fn compute_deriv<T: RlstScalar<Real = T>>(
 /// Computes the m roots of \f$P_{m}^{a,0}\f$ on [-1,1] by Newton's
 /// method. The initial guesses are the Chebyshev points.  Algorithm
 /// implemented from the pseudocode given by Karniadakis and Sherwin.
-fn compute_points<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
-    a: T,
-    m: usize,
-) -> Vec<T> {
+fn compute_points<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(a: T, m: usize) -> Vec<T> {
     let eps = T::from(1.0e-8).unwrap();
     let max_iter = 100;
     let two = T::from(2.0).unwrap();
@@ -189,10 +181,7 @@ fn make_quadrature_tetrahedron_collapsed<T: RlstScalar<Real = T> + FloatConst + 
 }
 
 /// Get the number of quadrature points for a given rule
-pub fn npoints(
-    celltype: ReferenceCellType,
-    m: usize,
-) -> usize {
+pub fn npoints(celltype: ReferenceCellType, m: usize) -> usize {
     let np = (m + 2) / 2;
     match celltype {
         ReferenceCellType::Interval => np,
