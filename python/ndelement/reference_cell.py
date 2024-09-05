@@ -115,18 +115,24 @@ def entity_counts(cell: ReferenceCellType) -> typing.List[int]:
     return [int(i) for i in counts]
 
 
-def connectivity(cell: ReferenceCellType) -> typing.List[typing.List[typing.List[typing.List[int]]]]:
+def connectivity(
+    cell: ReferenceCellType,
+) -> typing.List[typing.List[typing.List[typing.List[int]]]]:
     """Get the connectivity of a reference cell."""
     tdim = dim(cell)
-    ec = entity_counts(cell)[:tdim + 1]
+    ec = entity_counts(cell)[: tdim + 1]
     c = []
     for dim0, n in enumerate(ec):
         c_i = []
         for index0 in range(n):
             c_ij = []
             for dim1 in range(tdim + 1):
-                entry = np.empty(_lib.connectivity_size(cell.value, dim0, index0, dim1), dtype=np.uintp)
-                _lib.connectivity(cell.value, dim0, index0, dim1, _ffi.cast("uintptr_t* ", entry.ctypes.data))
+                entry = np.empty(
+                    _lib.connectivity_size(cell.value, dim0, index0, dim1), dtype=np.uintp
+                )
+                _lib.connectivity(
+                    cell.value, dim0, index0, dim1, _ffi.cast("uintptr_t* ", entry.ctypes.data)
+                )
                 c_ij.append([int(i) for i in entry])
             c_i.append(c_ij)
         c.append(c_i)
