@@ -54,53 +54,52 @@ def midpoint(cell: ReferenceCellType, dtype: typing.Type[np.floating] = np.float
     return point
 
 
-def edges(cell: ReferenceCellType) -> typing.List[npt.NDArray[np.uint64]]:
+def edges(cell: ReferenceCellType) -> typing.List[typing.List[int]]:
     """Get the edges of a reference cell."""
     edges = []
-    e = np.empty(2 * entity_counts(cell)[1], dtype=np.uint64)
-    _lib.faces(cell.value, _ffi.cast("uintptr_t* ", e.ctypes.data))
+    e = np.empty(2 * entity_counts(cell)[1], dtype=np.uintp)
+    _lib.edges(cell.value, _ffi.cast("uintptr_t* ", e.ctypes.data))
     for i in range(entity_counts(cell)[1]):
-        edges.append(e[2 * i : 2 * i + 2])
+        edges.append([int(j) for j in e[2 * i : 2 * i + 2]])
     return edges
 
 
-def faces(cell: ReferenceCellType) -> typing.List[npt.NDArray[np.uint64]]:
+def faces(cell: ReferenceCellType) -> typing.List[typing.List[int]]:
     """Get the faces of a reference cell."""
     faces = []
     flen = 0
     for t in entity_types(cell)[2]:
         flen += entity_counts(t)[0]
-    f = np.empty(flen, dtype=np.uint64)
+    f = np.empty(flen, dtype=np.uintp)
     _lib.faces(cell.value, _ffi.cast("uintptr_t* ", f.ctypes.data))
     start = 0
     for t in entity_types(cell)[2]:
         n = entity_counts(t)[0]
-        faces.append(f[start : start + n])
+        faces.append([int(i) for i in f[start : start + n]])
         start += n
     return faces
 
 
-def volumes(cell: ReferenceCellType) -> typing.List[npt.NDArray[np.uint64]]:
+def volumes(cell: ReferenceCellType) -> typing.List[typing.List[int]]:
     """Get the volumes of a reference cell."""
     volumes = []
     vlen = 0
     for t in entity_types(cell)[3]:
         vlen += entity_counts(t)[0]
-    v = np.empty(vlen, dtype=np.uint64)
+    v = np.empty(vlen, dtype=np.uintp)
     _lib.volumes(cell.value, _ffi.cast("uintptr_t* ", v.ctypes.data))
     start = 0
     for t in entity_types(cell)[3]:
         n = entity_counts(t)[0]
-        volumes.append(v[start : start + n])
+        volumes.append([int(i) for i in v[start : start + n]])
         start += n
     return volumes
 
 
 def entity_types(cell: ReferenceCellType) -> typing.List[typing.List[ReferenceCellType]]:
     """Get the types of the sub-entities of a reference cell."""
-    # TODO: should int be uintptr_t?
     t = np.empty(sum(entity_counts(cell)), dtype=np.uint8)
-    _lib.entity_types(cell.value, _ffi.cast("uintptr_t* ", t.ctypes.data))
+    _lib.entity_types(cell.value, _ffi.cast("uint8_t* ", t.ctypes.data))
     types = []
     start = 0
     for n in entity_counts(cell):
@@ -109,11 +108,26 @@ def entity_types(cell: ReferenceCellType) -> typing.List[typing.List[ReferenceCe
     return types
 
 
-def entity_counts(cell: ReferenceCellType) -> npt.NDArray[np.uint64]:
+def entity_counts(cell: ReferenceCellType) -> typing.List[int]:
     """Get the number of the sub-entities of each dimension for a reference cell."""
-    counts = np.empty(4, dtype=np.uint64)
+    counts = np.empty(4, dtype=np.uintp)
     _lib.entity_counts(cell.value, _ffi.cast("uintptr_t* ", counts.ctypes.data))
-    return counts
+    return [int(i) for i in counts]
 
 
-# TODO: connectivity
+def connectivity(cell: ReferenceCellType) -> typing.List[typing.List[typing.List[typing.List[int]]]]:
+    """Get the connectivity of a reference cell."""
+    tdim = dim(cell)
+    ec = entity_counts(cell)[:tdim + 1]
+    c = []
+    for dim0, n in enumerate(ec):
+        c_i = []
+        for index0 in range(n):
+            c_ij = []
+            for dim1 in range(tdim + 1):
+                entry = np.empty(_lib.connectivity_size(cell.value, dim0, index0, dim1), dtype=np.uintp)
+                _lib.connectivity(cell.value, dim0, index0, dim1, _ffi.cast("uintptr_t* ", entry.ctypes.data))
+                c_ij.append([int(i) for i in entry])
+            c_i.append(c_ij)
+        c.append(c_i)
+    return c
