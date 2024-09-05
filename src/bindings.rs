@@ -104,7 +104,8 @@ pub mod reference_cell {
             *ec.add(i) = *e;
         }
     }
-    pub unsafe extern "C" fn connetivity_size(
+    #[no_mangle]
+    pub unsafe extern "C" fn connectivity_size(
         cell: u8,
         dim0: usize,
         index0: usize,
@@ -115,7 +116,7 @@ pub mod reference_cell {
             .len()
     }
     #[no_mangle]
-    pub unsafe extern "C" fn connetivity(
+    pub unsafe extern "C" fn connectivity(
         cell: u8,
         dim0: usize,
         index0: usize,
