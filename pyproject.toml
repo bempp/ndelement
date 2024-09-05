@@ -17,7 +17,9 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "maturin", "numpy", "cffi",
+    "maturin>=1.5.1",
+    "numpy",
+    "cffi",
     'patchelf; platform_system == "Linux"',
 ]
 packages = ["ndelement"]
