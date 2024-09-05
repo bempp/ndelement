@@ -12,7 +12,7 @@ use std::cmp::PartialOrd;
 
 /// Evaluate the nth Jacobi polynomial and derivatives with weight
 /// parameters (a, 0) at points x
-fn compute_jacobi_deriv<T: RlstScalar<Real = T>>(
+fn compute_deriv<T: RlstScalar<Real = T>>(
     a: T,
     n: usize,
     nderiv: usize,
@@ -73,7 +73,7 @@ fn compute_jacobi_deriv<T: RlstScalar<Real = T>>(
 /// Computes the m roots of \f$P_{m}^{a,0}\f$ on [-1,1] by Newton's
 /// method. The initial guesses are the Chebyshev points.  Algorithm
 /// implemented from the pseudocode given by Karniadakis and Sherwin.
-fn compute_gauss_jacobi_points<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
+fn compute_points<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
     a: T,
     m: usize,
 ) -> Vec<T> {
@@ -93,7 +93,7 @@ fn compute_gauss_jacobi_points<T: RlstScalar<Real = T> + FloatConst + PartialOrd
 
         for _ in 0..max_iter {
             let s = x.iter().take(k).map(|i| one / (x[k] - *i)).sum::<T>();
-            let f = compute_jacobi_deriv(a, m, 1, &x[k..k + 1]);
+            let f = compute_deriv(a, m, 1, &x[k..k + 1]);
             let delta = f[[0, 0]] / (f[[1, 0]] - f[[0, 0]] * s);
             x[k] -= delta;
             if delta.abs() < eps {
@@ -105,15 +105,15 @@ fn compute_gauss_jacobi_points<T: RlstScalar<Real = T> + FloatConst + PartialOrd
 }
 
 /// Note: computes on [-1, 1]
-fn compute_gauss_jacobi_rule<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
+fn compute_rule<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
     a: T,
     m: usize,
 ) -> (Vec<T>, Vec<T>) {
     let one = T::from(1.0).unwrap();
     let two = T::from(2.0).unwrap();
 
-    let pts = compute_gauss_jacobi_points(a, m);
-    let j_d = compute_jacobi_deriv(a, m, 1, &pts);
+    let pts = compute_points(a, m);
+    let j_d = compute_deriv(a, m, 1, &pts);
     let a1 = T::pow(two, a + one);
     let wts = pts
         .iter()
@@ -127,7 +127,7 @@ fn compute_gauss_jacobi_rule<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
 fn make_quadrature_line<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
     m: usize,
 ) -> QuadratureRule<T> {
-    let (mut pts, mut wts) = compute_gauss_jacobi_rule(T::zero(), m);
+    let (mut pts, mut wts) = compute_rule(T::zero(), m);
 
     let half = T::from(0.5).unwrap();
     let one = T::from(1.0).unwrap();
@@ -145,8 +145,8 @@ fn make_quadrature_triangle_collapsed<T: RlstScalar<Real = T> + FloatConst + Par
 ) -> QuadratureRule<T> {
     let one = T::from(1.0).unwrap();
 
-    let (ptx, wtx) = compute_gauss_jacobi_rule(T::zero(), m);
-    let (pty, wty) = compute_gauss_jacobi_rule(T::from(1).unwrap(), m);
+    let (ptx, wtx) = compute_rule(T::zero(), m);
+    let (pty, wty) = compute_rule(T::from(1).unwrap(), m);
 
     let mut pts = vec![T::zero(); m.pow(2) * 2];
     let mut wts = vec![T::zero(); m.pow(2)];
@@ -167,9 +167,9 @@ fn make_quadrature_tetrahedron_collapsed<T: RlstScalar<Real = T> + FloatConst + 
 ) -> QuadratureRule<T> {
     let one = T::from(1.0).unwrap();
 
-    let (ptx, wtx) = compute_gauss_jacobi_rule(T::zero(), m);
-    let (pty, wty) = compute_gauss_jacobi_rule(T::from(1).unwrap(), m);
-    let (ptz, wtz) = compute_gauss_jacobi_rule(T::from(2).unwrap(), m);
+    let (ptx, wtx) = compute_rule(T::zero(), m);
+    let (pty, wty) = compute_rule(T::from(1).unwrap(), m);
+    let (ptz, wtz) = compute_rule(T::from(2).unwrap(), m);
 
     let mut pts = vec![T::zero(); m.pow(3) * 3];
     let mut wts = vec![T::zero(); m.pow(3)];
@@ -188,8 +188,26 @@ fn make_quadrature_tetrahedron_collapsed<T: RlstScalar<Real = T> + FloatConst + 
     QuadratureRule::new(pts, wts)
 }
 
+/// Get the number of quadrature points for a given rule
+pub fn npoints(
+    celltype: ReferenceCellType,
+    m: usize,
+) -> usize {
+    let np = (m + 2) / 2;
+    match celltype {
+        ReferenceCellType::Interval => np,
+        ReferenceCellType::Quadrilateral => np.pow(2),
+        ReferenceCellType::Hexahedron => np.pow(3),
+        ReferenceCellType::Triangle => np.pow(2),
+        ReferenceCellType::Tetrahedron => np.pow(3),
+        _ => {
+            panic!("Unsupported cell type");
+        }
+    }
+}
+
 /// Get the points and weights for a Gauss-Jacobi quadrature rule
-pub fn make_gauss_jacobi_quadrature<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
+pub fn make_quadrature<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
     celltype: ReferenceCellType,
     m: usize,
 ) -> QuadratureRule<T> {
