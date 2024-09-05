@@ -20,13 +20,16 @@ def test_midpoint():
     assert np.allclose(midpoint(ReferenceCellType.Hexahedron), [1 / 2, 1 / 2, 1 / 2])
 
 
-@pytest.mark.parametrize("cell", [
-    ReferenceCellType.Interval,
-    ReferenceCellType.Triangle,
-    ReferenceCellType.Quadrilateral,
-    ReferenceCellType.Tetrahedron,
-    ReferenceCellType.Hexahedron,
-])
+@pytest.mark.parametrize(
+    "cell",
+    [
+        ReferenceCellType.Interval,
+        ReferenceCellType.Triangle,
+        ReferenceCellType.Quadrilateral,
+        ReferenceCellType.Tetrahedron,
+        ReferenceCellType.Hexahedron,
+    ],
+)
 def test_vertices_and_midpoint(cell):
     v = vertices(cell)
     m = midpoint(cell)
