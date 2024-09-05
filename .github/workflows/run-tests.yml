@@ -49,6 +49,11 @@ jobs:
           chmod +x examples.sh
           ./examples.sh
 
+  run-tests-python:
+    name: Run Python tests
+    runs-on: ubuntu-latest
+    strategy:
+
   check-dependencies:
     name: Check dependencies
     runs-on: ubuntu-latest
