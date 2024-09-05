@@ -253,3 +253,134 @@ pub mod polynomials {
         tabulate_legendre_polynomials(cell, points, npts, degree, derivatives, data);
     }
 }
+
+pub mod ciarlet {
+    use crate::{ciarlet, ciarlet::CiarletElement, reference_cell};
+    use crate::{
+        traits::{ElementFamily, FiniteElement},
+        types::{Continuity, ReferenceCellType},
+    };
+    use rlst::{c32, c64, MatrixInverse, RlstScalar};
+    use std::ffi::c_void;
+
+    #[derive(Debug, PartialEq, Clone, Copy)]
+    pub enum DType {
+        F32,
+        F64,
+        C32,
+        C64,
+    }
+
+    #[derive(Debug, PartialEq, Clone, Copy)]
+    pub enum ElementType {
+        Lagrange,
+        RaviartThomas,
+    }
+
+    pub struct CiarletElementWrapper {
+        pub element: *const c_void,
+        pub dtype: DType,
+    }
+
+    pub struct ElementFamilyWrapper {
+        pub family: *const c_void,
+        pub etype: ElementType,
+        pub dtype: DType,
+    }
+
+    unsafe fn ciarlet_value_size_internal<T: RlstScalar + MatrixInverse>(
+        element: *const CiarletElementWrapper,
+    ) -> usize {
+        (*((*element).element as *const CiarletElement<T>)).value_size()
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_value_size(element: *const CiarletElementWrapper) -> usize {
+        match (*element).dtype {
+            DType::F32 => ciarlet_value_size_internal::<f32>(element),
+            DType::F64 => ciarlet_value_size_internal::<f64>(element),
+            DType::C32 => ciarlet_value_size_internal::<c32>(element),
+            DType::C64 => ciarlet_value_size_internal::<c64>(element),
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn lagrange_element_family_new_f64(
+        degree: usize,
+        continuity: u8,
+    ) -> *const ElementFamilyWrapper {
+        let family = Box::into_raw(Box::new(ciarlet::LagrangeElementFamily::<f64>::new(
+            degree,
+            Continuity::from(continuity).expect("Invalid continuity"),
+        ))) as *mut c_void;
+
+        Box::into_raw(Box::new(ElementFamilyWrapper {
+            family,
+            etype: ElementType::Lagrange,
+            dtype: DType::F64,
+        }))
+    }
+
+    unsafe fn element_family_element_internal<
+        T: RlstScalar + MatrixInverse,
+        F: ElementFamily<T = T, CellType = ReferenceCellType>,
+    >(
+        family: *const ElementFamilyWrapper,
+        cell: u8,
+    ) -> *const CiarletElementWrapper {
+        let element = Box::into_raw(Box::new(
+            (*((*family).family as *const F))
+                .element(ReferenceCellType::from(cell).expect("Invalid cell type")),
+        )) as *mut c_void;
+
+        Box::into_raw(Box::new(CiarletElementWrapper {
+            element,
+            dtype: (*family).dtype,
+        }))
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn element_family_element(
+        family: *const ElementFamilyWrapper,
+        cell: u8,
+    ) -> *const CiarletElementWrapper {
+        match (*family).etype {
+            ElementType::Lagrange => match (*family).dtype {
+                DType::F32 => element_family_element_internal::<
+                    f32,
+                    ciarlet::LagrangeElementFamily<f32>,
+                >(family, cell),
+                DType::F64 => element_family_element_internal::<
+                    f64,
+                    ciarlet::LagrangeElementFamily<f64>,
+                >(family, cell),
+                DType::C32 => element_family_element_internal::<
+                    c32,
+                    ciarlet::LagrangeElementFamily<c32>,
+                >(family, cell),
+                DType::C64 => element_family_element_internal::<
+                    c64,
+                    ciarlet::LagrangeElementFamily<c64>,
+                >(family, cell),
+            },
+            ElementType::RaviartThomas => match (*family).dtype {
+                DType::F32 => element_family_element_internal::<
+                    f32,
+                    ciarlet::RaviartThomasElementFamily<f32>,
+                >(family, cell),
+                DType::F64 => element_family_element_internal::<
+                    f64,
+                    ciarlet::RaviartThomasElementFamily<f64>,
+                >(family, cell),
+                DType::C32 => element_family_element_internal::<
+                    c32,
+                    ciarlet::RaviartThomasElementFamily<c32>,
+                >(family, cell),
+                DType::C64 => element_family_element_internal::<
+                    c64,
+                    ciarlet::RaviartThomasElementFamily<c64>,
+                >(family, cell),
+            },
+        }
+    }
+}
