@@ -61,13 +61,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        run: pip install uv maturin
+        run: pip install uv maturin>=1.7
       - name: Make virtual environment
         run: |
           uv venv .venv
           uv pip install pip pytest
       - name: Install python package
-        run: maturin develop
+        run: |
+          ls
+          source .venv/bin/activate
+          maturin develop
       - name: Run Python tests
         run: |
           source .venv/bin/activate
