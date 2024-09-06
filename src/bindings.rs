@@ -278,9 +278,10 @@ pub mod ciarlet {
     }
 
     #[derive(Debug, PartialEq, Clone, Copy)]
+    #[repr(u8)]
     pub enum ElementType {
-        Lagrange,
-        RaviartThomas,
+        Lagrange = 0,
+        RaviartThomas = 1,
     }
 
     #[repr(C)]
