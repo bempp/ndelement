@@ -48,6 +48,10 @@ class CiarletElement(object):
         """Initialise."""
         self._rs_element = rs_element
 
+    def __def__(self):
+        """Delete object."""
+        _lib.ciarlet_free_element(self._rs_element)
+
     @property
     def dtype(self):
         """Data type."""
@@ -180,6 +184,10 @@ class ElementFamily(object):
     def __init__(self, rs_family):
         """Initialise."""
         self._rs_family = rs_family
+
+    def __def__(self):
+        """Delete object."""
+        _lib.ciarlet_free_family(self._rs_family)
 
     def element(self, cell: ReferenceCellType) -> CiarletElement:
         return CiarletElement(_lib.element_family_element(self._rs_family, cell.value))

@@ -294,6 +294,48 @@ pub mod ciarlet {
         pub dtype: DType,
     }
 
+    impl Drop for CiarletElementWrapper {
+        let Self { family, dtype } = self;
+        match dtype {
+            DType::F32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::CiarletElement<f32>)});
+            DType::F64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::CiarletElement<f64>)});
+            DType::C32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::CiarletElement<c32>)});
+            DType::C64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::CiarletElement<c64>)});
+        }
+
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_free_element(e: *mut CiarletElementWrapper) {
+        assert!(!e.is_null());
+        unsafe { drop(Box::from_raw(e)) }
+    }
+
+    impl Drop for ElementFamilyWrapper {
+        let Self { family, etype, dtype } = self;
+        match etype {
+            ElementType::Lagrange => match dtype {
+                DType::F32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::LagrangeElementFamily<f32>)});
+                DType::F64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::LagrangeElementFamily<f64>)});
+                DType::C32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::LagrangeElementFamily<c32>)});
+                DType::C64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::LagrangeElementFamily<c64>)});
+            },
+            ElementType::RaviartThomas => match dtype {
+                DType::F32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::RaviartThomasElementFamily<f32>)});
+                DType::F64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::RaviartThomasElementFamily<f64>)});
+                DType::C32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::RaviartThomasElementFamily<c32>)});
+                DType::C64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::RaviartThomasElementFamily<c64>)});
+            },
+        }
+
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_free_family(f: *mut ElementFamilyWrapper) {
+        assert!(!f.is_null());
+        unsafe { drop(Box::from_raw(f)) }
+    }
+
     unsafe fn extract_element<T: RlstScalar + MatrixInverse>(
         element: *const CiarletElementWrapper,
     ) -> *const CiarletElement<T> {
