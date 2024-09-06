@@ -255,20 +255,23 @@ pub mod polynomials {
 }
 
 pub mod ciarlet {
-    use crate::{ciarlet, ciarlet::CiarletElement, reference_cell};
+    use crate::{ciarlet, ciarlet::CiarletElement};
+    use crate::reference_cell;
     use crate::{
         traits::{ElementFamily, FiniteElement},
         types::{Continuity, ReferenceCellType},
     };
-    use rlst::{c32, c64, MatrixInverse, RlstScalar};
+    use rlst::{c32, c64, MatrixInverse, RlstScalar, RawAccess, Shape, rlst_array_from_slice2, rlst_array_from_slice_mut4};
     use std::ffi::c_void;
+    use std::slice::{from_raw_parts, from_raw_parts_mut};
 
     #[derive(Debug, PartialEq, Clone, Copy)]
+    #[repr(u8)]
     pub enum DType {
-        F32,
-        F64,
-        C32,
-        C64,
+        F32 = 0,
+        F64 = 1,
+        C32 = 2,
+        C64 = 3,
     }
 
     #[derive(Debug, PartialEq, Clone, Copy)]
@@ -288,37 +291,236 @@ pub mod ciarlet {
         pub dtype: DType,
     }
 
-    unsafe fn ciarlet_value_size_internal<T: RlstScalar + MatrixInverse>(
+    unsafe fn extract_element<T: RlstScalar + MatrixInverse>(
         element: *const CiarletElementWrapper,
-    ) -> usize {
-        (*((*element).element as *const CiarletElement<T>)).value_size()
+    ) -> *const CiarletElement<T> {
+        (*element).element as *const CiarletElement<T>
     }
 
     #[no_mangle]
     pub unsafe extern "C" fn ciarlet_value_size(element: *const CiarletElementWrapper) -> usize {
         match (*element).dtype {
-            DType::F32 => ciarlet_value_size_internal::<f32>(element),
-            DType::F64 => ciarlet_value_size_internal::<f64>(element),
-            DType::C32 => ciarlet_value_size_internal::<c32>(element),
-            DType::C64 => ciarlet_value_size_internal::<c64>(element),
+            DType::F32 => (*extract_element::<f32>(element)).value_size(),
+            DType::F64 => (*extract_element::<f64>(element)).value_size(),
+            DType::C32 => (*extract_element::<c32>(element)).value_size(),
+            DType::C64 => (*extract_element::<c64>(element)).value_size(),
         }
     }
 
     #[no_mangle]
-    pub unsafe extern "C" fn lagrange_element_family_new_f64(
-        degree: usize,
-        continuity: u8,
-    ) -> *const ElementFamilyWrapper {
-        let family = Box::into_raw(Box::new(ciarlet::LagrangeElementFamily::<f64>::new(
-            degree,
-            Continuity::from(continuity).expect("Invalid continuity"),
-        ))) as *mut c_void;
+    pub unsafe extern "C" fn ciarlet_degree(element: *const CiarletElementWrapper) -> usize {
+        match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).degree(),
+            DType::F64 => (*extract_element::<f64>(element)).degree(),
+            DType::C32 => (*extract_element::<c32>(element)).degree(),
+            DType::C64 => (*extract_element::<c64>(element)).degree(),
+        }
+    }
 
-        Box::into_raw(Box::new(ElementFamilyWrapper {
-            family,
-            etype: ElementType::Lagrange,
-            dtype: DType::F64,
-        }))
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_embedded_superdegree(element: *const CiarletElementWrapper) -> usize {
+        match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).embedded_superdegree(),
+            DType::F64 => (*extract_element::<f64>(element)).embedded_superdegree(),
+            DType::C32 => (*extract_element::<c32>(element)).embedded_superdegree(),
+            DType::C64 => (*extract_element::<c64>(element)).embedded_superdegree(),
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_dim(element: *const CiarletElementWrapper) -> usize {
+        match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).dim(),
+            DType::F64 => (*extract_element::<f64>(element)).dim(),
+            DType::C32 => (*extract_element::<c32>(element)).dim(),
+            DType::C64 => (*extract_element::<c64>(element)).dim(),
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_continuity(element: *const CiarletElementWrapper) -> u8 {
+        match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).continuity() as u8,
+            DType::F64 => (*extract_element::<f64>(element)).continuity() as u8,
+            DType::C32 => (*extract_element::<c32>(element)).continuity() as u8,
+            DType::C64 => (*extract_element::<c64>(element)).continuity() as u8,
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_map_type(element: *const CiarletElementWrapper) -> u8 {
+        match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).map_type() as u8,
+            DType::F64 => (*extract_element::<f64>(element)).map_type() as u8,
+            DType::C32 => (*extract_element::<c32>(element)).map_type() as u8,
+            DType::C64 => (*extract_element::<c64>(element)).map_type() as u8,
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_cell_type(element: *const CiarletElementWrapper) -> u8 {
+        match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).cell_type() as u8,
+            DType::F64 => (*extract_element::<f64>(element)).cell_type() as u8,
+            DType::C32 => (*extract_element::<c32>(element)).cell_type() as u8,
+            DType::C64 => (*extract_element::<c64>(element)).cell_type() as u8,
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_value_shape(element: *const CiarletElementWrapper, shape: *mut usize) {
+        for (i, j) in match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).value_shape(),
+            DType::F64 => (*extract_element::<f64>(element)).value_shape(),
+            DType::C32 => (*extract_element::<c32>(element)).value_shape(),
+            DType::C64 => (*extract_element::<c64>(element)).value_shape(),
+        }.iter().enumerate() {
+            *shape.add(i) = *j;
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_value_rank(element: *const CiarletElementWrapper) -> usize {
+        match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).value_shape(),
+            DType::F64 => (*extract_element::<f64>(element)).value_shape(),
+            DType::C32 => (*extract_element::<c32>(element)).value_shape(),
+            DType::C64 => (*extract_element::<c64>(element)).value_shape(),
+        }.len()
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_entity_dofs_size(element: *const CiarletElementWrapper, entity_dim: usize, entity_number: usize) -> usize {
+        match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).entity_dofs(entity_dim, entity_number),
+            DType::F64 => (*extract_element::<f64>(element)).entity_dofs(entity_dim, entity_number),
+            DType::C32 => (*extract_element::<c32>(element)).entity_dofs(entity_dim, entity_number),
+            DType::C64 => (*extract_element::<c64>(element)).entity_dofs(entity_dim, entity_number),
+        }.unwrap().len()
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_entity_dofs(element: *const CiarletElementWrapper, entity_dim: usize, entity_number: usize, entity_dofs: *mut usize) {
+        for (i, dof) in match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).entity_dofs(entity_dim, entity_number),
+            DType::F64 => (*extract_element::<f64>(element)).entity_dofs(entity_dim, entity_number),
+            DType::C32 => (*extract_element::<c32>(element)).entity_dofs(entity_dim, entity_number),
+            DType::C64 => (*extract_element::<c64>(element)).entity_dofs(entity_dim, entity_number),
+        }.unwrap().iter().enumerate() {
+            *entity_dofs.add(i) = *dof;
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_entity_closure_dofs_size(element: *const CiarletElementWrapper, entity_dim: usize, entity_number: usize) -> usize {
+        match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).entity_closure_dofs(entity_dim, entity_number),
+            DType::F64 => (*extract_element::<f64>(element)).entity_closure_dofs(entity_dim, entity_number),
+            DType::C32 => (*extract_element::<c32>(element)).entity_closure_dofs(entity_dim, entity_number),
+            DType::C64 => (*extract_element::<c64>(element)).entity_closure_dofs(entity_dim, entity_number),
+        }.unwrap().len()
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_entity_closure_dofs(element: *const CiarletElementWrapper, entity_dim: usize, entity_number: usize, entity_dofs: *mut usize) {
+        for (i, dof) in match (*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).entity_closure_dofs(entity_dim, entity_number),
+            DType::F64 => (*extract_element::<f64>(element)).entity_closure_dofs(entity_dim, entity_number),
+            DType::C32 => (*extract_element::<c32>(element)).entity_closure_dofs(entity_dim, entity_number),
+            DType::C64 => (*extract_element::<c64>(element)).entity_closure_dofs(entity_dim, entity_number),
+        }.unwrap().iter().enumerate() {
+            *entity_dofs.add(i) = *dof;
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_interpolation_npoints(element: *const CiarletElementWrapper, entity_dim: usize, entity_index: usize) -> usize {
+        match(*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).interpolation_points()[entity_dim][entity_index].shape()[1],
+            DType::F64 => (*extract_element::<f64>(element)).interpolation_points()[entity_dim][entity_index].shape()[1],
+            DType::C32 => (*extract_element::<c32>(element)).interpolation_points()[entity_dim][entity_index].shape()[1],
+            DType::C64 => (*extract_element::<c64>(element)).interpolation_points()[entity_dim][entity_index].shape()[1],
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_interpolation_ndofs(element: *const CiarletElementWrapper, entity_dim: usize, entity_index: usize) -> usize {
+        match(*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).interpolation_weights()[entity_dim][entity_index].shape()[0],
+            DType::F64 => (*extract_element::<f64>(element)).interpolation_weights()[entity_dim][entity_index].shape()[0],
+            DType::C32 => (*extract_element::<c32>(element)).interpolation_weights()[entity_dim][entity_index].shape()[0],
+            DType::C64 => (*extract_element::<c64>(element)).interpolation_weights()[entity_dim][entity_index].shape()[0],
+        }
+    }
+
+    unsafe fn ciarlet_interpolation_points_internal<T: RlstScalar + MatrixInverse>(element: *const CiarletElementWrapper, entity_dim: usize, entity_index: usize, points: *mut T::Real) {
+        for (i, j) in (*extract_element::<T>(element)).interpolation_points()[entity_dim][entity_index].data().iter().enumerate() {
+            *points.add(i) = *j;
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_interpolation_points(element: *const CiarletElementWrapper, entity_dim: usize, entity_index: usize, points: *mut c_void) {
+        match (*element).dtype {
+            DType::F32 => ciarlet_interpolation_points_internal::<f32>(element, entity_dim, entity_index, points as *mut f32),
+            DType::F64 => ciarlet_interpolation_points_internal::<f64>(element, entity_dim, entity_index, points as *mut f64),
+            DType::C32 => ciarlet_interpolation_points_internal::<c32>(element, entity_dim, entity_index, points as *mut f32),
+            DType::C64 => ciarlet_interpolation_points_internal::<c64>(element, entity_dim, entity_index, points as *mut f64),
+        }
+    }
+
+    unsafe fn ciarlet_interpolation_weights_internal<T: RlstScalar + MatrixInverse>(element: *const CiarletElementWrapper, entity_dim: usize, entity_index: usize, weights: *mut T) {
+        for (i, j) in (*extract_element::<T>(element)).interpolation_weights()[entity_dim][entity_index].data().iter().enumerate() {
+            *weights.add(i) = *j;
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_interpolation_weights(element: *const CiarletElementWrapper, entity_dim: usize, entity_index: usize, weights: *mut c_void) {
+        match (*element).dtype {
+            DType::F32 => ciarlet_interpolation_weights_internal::<f32>(element, entity_dim, entity_index, weights as *mut f32),
+            DType::F64 => ciarlet_interpolation_weights_internal::<f64>(element, entity_dim, entity_index, weights as *mut f64),
+            DType::C32 => ciarlet_interpolation_weights_internal::<c32>(element, entity_dim, entity_index, weights as *mut c32),
+            DType::C64 => ciarlet_interpolation_weights_internal::<c64>(element, entity_dim, entity_index, weights as *mut c64),
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_element_dtype(element: *const CiarletElementWrapper) -> u8 {
+        (*element).dtype as u8
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_tabulate_array_shape(element: *const CiarletElementWrapper, nderivs: usize, npoints: usize, shape: *mut usize) {
+        for (i, j) in match(*element).dtype {
+            DType::F32 => (*extract_element::<f32>(element)).tabulate_array_shape(nderivs, npoints),
+            DType::F64 => (*extract_element::<f64>(element)).tabulate_array_shape(nderivs, npoints),
+            DType::C32 => (*extract_element::<c32>(element)).tabulate_array_shape(nderivs, npoints),
+            DType::C64 => (*extract_element::<c64>(element)).tabulate_array_shape(nderivs, npoints),
+        }.iter().enumerate() {
+            *shape.add(i) = *j;
+        }
+    }
+
+    unsafe fn ciarlet_tabulate_internal<T: RlstScalar + MatrixInverse>(element: *const CiarletElementWrapper, points: *const T::Real, npoints: usize, nderivs: usize, data: *mut T) {
+        let element = extract_element::<T>(element);
+        let tdim = reference_cell::dim((*element).cell_type());
+        let points = rlst_array_from_slice2!(from_raw_parts(points, npoints * tdim), [tdim, npoints]);
+        let shape = (*element).tabulate_array_shape(nderivs, npoints);
+        let mut data = rlst_array_from_slice_mut4!(
+            from_raw_parts_mut(data, shape[0] * shape[1] * shape[2] * shape[3]),
+            shape
+        );
+        (*element).tabulate(&points, nderivs, &mut data);
+    }
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_tabulate(element: *const CiarletElementWrapper, points: *const c_void, npoints: usize, nderivs: usize, data: *mut c_void) {
+        match(*element).dtype {
+            DType::F32 => ciarlet_tabulate_internal::<f32>(element, points as *const f32, npoints, nderivs, data as *mut f32),
+            DType::F64 => ciarlet_tabulate_internal::<f64>(element, points as *const f64, npoints, nderivs, data as *mut f64),
+            DType::C32 => ciarlet_tabulate_internal::<c32>(element, points as *const f32, npoints, nderivs, data as *mut c32),
+            DType::C64 => ciarlet_tabulate_internal::<c64>(element, points as *const f64, npoints, nderivs, data as *mut c64),
+        }
     }
 
     unsafe fn element_family_element_internal<
@@ -382,5 +584,73 @@ pub mod ciarlet {
                 >(family, cell),
             },
         }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn lagrange_element_family_new_f32(
+        degree: usize,
+        continuity: u8,
+    ) -> *const ElementFamilyWrapper {
+        let family = Box::into_raw(Box::new(ciarlet::LagrangeElementFamily::<f32>::new(
+            degree,
+            Continuity::from(continuity).expect("Invalid continuity"),
+        ))) as *mut c_void;
+
+        Box::into_raw(Box::new(ElementFamilyWrapper {
+            family,
+            etype: ElementType::Lagrange,
+            dtype: DType::F32,
+        }))
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn lagrange_element_family_new_f64(
+        degree: usize,
+        continuity: u8,
+    ) -> *const ElementFamilyWrapper {
+        let family = Box::into_raw(Box::new(ciarlet::LagrangeElementFamily::<f64>::new(
+            degree,
+            Continuity::from(continuity).expect("Invalid continuity"),
+        ))) as *mut c_void;
+
+        Box::into_raw(Box::new(ElementFamilyWrapper {
+            family,
+            etype: ElementType::Lagrange,
+            dtype: DType::F64,
+        }))
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn raviart_thomas_element_family_new_f32(
+        degree: usize,
+        continuity: u8,
+    ) -> *const ElementFamilyWrapper {
+        let family = Box::into_raw(Box::new(ciarlet::RaviartThomasElementFamily::<f32>::new(
+            degree,
+            Continuity::from(continuity).expect("Invalid continuity"),
+        ))) as *mut c_void;
+
+        Box::into_raw(Box::new(ElementFamilyWrapper {
+            family,
+            etype: ElementType::RaviartThomas,
+            dtype: DType::F32,
+        }))
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn raviart_thomas_element_family_new_f64(
+        degree: usize,
+        continuity: u8,
+    ) -> *const ElementFamilyWrapper {
+        let family = Box::into_raw(Box::new(ciarlet::RaviartThomasElementFamily::<f64>::new(
+            degree,
+            Continuity::from(continuity).expect("Invalid continuity"),
+        ))) as *mut c_void;
+
+        Box::into_raw(Box::new(ElementFamilyWrapper {
+            family,
+            etype: ElementType::RaviartThomas,
+            dtype: DType::F64,
+        }))
     }
 }
