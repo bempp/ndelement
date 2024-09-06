@@ -48,7 +48,7 @@ class CiarletElement(object):
         """Initialise."""
         self._rs_element = rs_element
 
-    def __def__(self):
+    def __del__(self):
         """Delete object."""
         _lib.ciarlet_free_element(self._rs_element)
 
@@ -185,7 +185,7 @@ class ElementFamily(object):
         """Initialise."""
         self._rs_family = rs_family
 
-    def __def__(self):
+    def __del__(self):
         """Delete object."""
         _lib.ciarlet_free_family(self._rs_family)
 
