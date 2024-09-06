@@ -283,26 +283,37 @@ pub mod ciarlet {
         RaviartThomas,
     }
 
+    #[repr(C)]
     pub struct CiarletElementWrapper {
         pub element: *const c_void,
         pub dtype: DType,
     }
 
+    #[repr(C)]
     pub struct ElementFamilyWrapper {
-        pub family: *const c_void,
         pub etype: ElementType,
         pub dtype: DType,
+        pub family: *const c_void,
     }
 
     impl Drop for CiarletElementWrapper {
-        let Self { family, dtype } = self;
-        match dtype {
-            DType::F32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::CiarletElement<f32>)});
-            DType::F64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::CiarletElement<f64>)});
-            DType::C32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::CiarletElement<c32>)});
-            DType::C64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::CiarletElement<c64>)});
+        fn drop(&mut self) {
+            let Self { element, dtype } = self;
+            match dtype {
+                DType::F32 => {
+                    drop(unsafe { Box::from_raw(*element as *mut ciarlet::CiarletElement<f32>) })
+                }
+                DType::F64 => {
+                    drop(unsafe { Box::from_raw(*element as *mut ciarlet::CiarletElement<f64>) })
+                }
+                DType::C32 => {
+                    drop(unsafe { Box::from_raw(*element as *mut ciarlet::CiarletElement<c32>) })
+                }
+                DType::C64 => {
+                    drop(unsafe { Box::from_raw(*element as *mut ciarlet::CiarletElement<c64>) })
+                }
+            }
         }
-
     }
 
     #[no_mangle]
@@ -312,22 +323,43 @@ pub mod ciarlet {
     }
 
     impl Drop for ElementFamilyWrapper {
-        let Self { family, etype, dtype } = self;
-        match etype {
-            ElementType::Lagrange => match dtype {
-                DType::F32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::LagrangeElementFamily<f32>)});
-                DType::F64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::LagrangeElementFamily<f64>)});
-                DType::C32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::LagrangeElementFamily<c32>)});
-                DType::C64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::LagrangeElementFamily<c64>)});
-            },
-            ElementType::RaviartThomas => match dtype {
-                DType::F32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::RaviartThomasElementFamily<f32>)});
-                DType::F64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::RaviartThomasElementFamily<f64>)});
-                DType::C32 => drop(unsafe{Box::from_raw(*data as *const ciarlet::RaviartThomasElementFamily<c32>)});
-                DType::C64 => drop(unsafe{Box::from_raw(*data as *const ciarlet::RaviartThomasElementFamily<c64>)});
-            },
+        fn drop(&mut self) {
+            let Self {
+                family,
+                etype,
+                dtype,
+            } = self;
+            match etype {
+                ElementType::Lagrange => match dtype {
+                    DType::F32 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::LagrangeElementFamily<f32>)
+                    }),
+                    DType::F64 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::LagrangeElementFamily<f64>)
+                    }),
+                    DType::C32 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::LagrangeElementFamily<c32>)
+                    }),
+                    DType::C64 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::LagrangeElementFamily<c64>)
+                    }),
+                },
+                ElementType::RaviartThomas => match dtype {
+                    DType::F32 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::RaviartThomasElementFamily<f32>)
+                    }),
+                    DType::F64 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::RaviartThomasElementFamily<f64>)
+                    }),
+                    DType::C32 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::RaviartThomasElementFamily<c32>)
+                    }),
+                    DType::C64 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::RaviartThomasElementFamily<c64>)
+                    }),
+                },
+            }
         }
-
     }
 
     #[no_mangle]
