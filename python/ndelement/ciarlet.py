@@ -10,18 +10,21 @@ from enum import Enum
 
 class Continuity(Enum):
     """Continuity."""
+
     Standard = 0
     Discontinuous = 1
 
 
 class Family(Enum):
     """Element family."""
+
     Lagrange = 0
     RaviartThomas = 1
 
 
 class MapType(Enum):
     """Map type."""
+
     Identity = 0
     CovariantPiola = 1
     ContravariantPiola = 2
@@ -99,14 +102,24 @@ class CiarletElement(object):
 
     def entity_dofs(self, entity_dim: int, entity_index: int) -> typing.List[int]:
         """Get the DOFs associated with an entity."""
-        dofs = np.empty(_lib.ciarlet_entity_dofs_size(self._rs_element, entity_dim, entity_index), dtype=np.uintp)
-        _lib.ciarlet_entity_dofs(self._rs_element, entity_dim, entity_index, _ffi.cast("uintptr_t*", dofs.ctypes.data))
+        dofs = np.empty(
+            _lib.ciarlet_entity_dofs_size(self._rs_element, entity_dim, entity_index),
+            dtype=np.uintp,
+        )
+        _lib.ciarlet_entity_dofs(
+            self._rs_element, entity_dim, entity_index, _ffi.cast("uintptr_t*", dofs.ctypes.data)
+        )
         return [int(i) for i in dofs]
 
     def entity_closure_dofs(self, entity_dim: int, entity_index: int) -> typing.List[int]:
         """Get the DOFs associated with the closure of an entity."""
-        dofs = np.empty(_lib.ciarlet_entity_closure_dofs_size(self._rs_element, entity_dim, entity_index), dtype=np.uintp)
-        _lib.ciarlet_entity_closure_dofs(self._rs_element, entity_dim, entity_index, _ffi.cast("uintptr_t*", dofs.ctypes.data))
+        dofs = np.empty(
+            _lib.ciarlet_entity_closure_dofs_size(self._rs_element, entity_dim, entity_index),
+            dtype=np.uintp,
+        )
+        _lib.ciarlet_entity_closure_dofs(
+            self._rs_element, entity_dim, entity_index, _ffi.cast("uintptr_t*", dofs.ctypes.data)
+        )
         return [int(i) for i in dofs]
 
     def interpolation_points(self) -> typing.List[typing.List[npt.NDArray]]:
@@ -118,7 +131,9 @@ class CiarletElement(object):
             for i in range(n):
                 shape = (_lib.ciarlet_interpolation_npoints(self._rs_element, d, i), tdim)
                 points_di = np.empty(shape, dtype=self.dtype)
-                _lib.ciarlet_interpolation_points(self._rs_element, d, i, _ffi.cast(f"void*", points_di.ctypes.data))
+                _lib.ciarlet_interpolation_points(
+                    self._rs_element, d, i, _ffi.cast("void*", points_di.ctypes.data)
+                )
                 points_d.append(points_di)
             points.append(points_d)
         return points
@@ -126,13 +141,18 @@ class CiarletElement(object):
     def interpolation_weights(self) -> typing.List[typing.List[npt.NDArray]]:
         """Interpolation weights."""
         weights = []
-        tdim = dim(self.cell_type)
         for d, n in enumerate(entity_counts(self.cell_type)):
             weights_d = []
             for i in range(n):
-                shape = (_lib.ciarlet_interpolation_ndofs(self._rs_element, d, i), self.value_size, _lib.ciarlet_interpolation_npoints(self._rs_element, d, i))
+                shape = (
+                    _lib.ciarlet_interpolation_ndofs(self._rs_element, d, i),
+                    self.value_size,
+                    _lib.ciarlet_interpolation_npoints(self._rs_element, d, i),
+                )
                 weights_di = np.empty(shape, dtype=self.dtype)
-                _lib.ciarlet_interpolation_weights(self._rs_element, d, i, _ffi.cast(f"void*", weights_di.ctypes.data))
+                _lib.ciarlet_interpolation_weights(
+                    self._rs_element, d, i, _ffi.cast("void*", weights_di.ctypes.data)
+                )
                 weights_d.append(weights_di)
             weights.append(weights_d)
         return weights
@@ -140,9 +160,17 @@ class CiarletElement(object):
     def tabulate(self, points: npt.NDArray[np.floating], nderivs: int) -> npt.NDArray:
         """Tabulate the basis functions at a set of points."""
         shape = np.empty(4, dtype=np.uintp)
-        _lib.ciarlet_tabulate_array_shape(self._rs_element, nderivs, points.shape[0], _ffi.cast("uintptr_t*", shape.ctypes.data))
+        _lib.ciarlet_tabulate_array_shape(
+            self._rs_element, nderivs, points.shape[0], _ffi.cast("uintptr_t*", shape.ctypes.data)
+        )
         data = np.empty(shape[::-1], dtype=self.dtype)
-        _lib.ciarlet_tabulate(self._rs_element, _ffi.cast("void*", points.ctypes.data), points.shape[0], nderivs, _ffi.cast("void*", data.ctypes.data))
+        _lib.ciarlet_tabulate(
+            self._rs_element,
+            _ffi.cast("void*", points.ctypes.data),
+            points.shape[0],
+            nderivs,
+            _ffi.cast("void*", data.ctypes.data),
+        )
         return data
 
 
@@ -157,7 +185,12 @@ class ElementFamily(object):
         return CiarletElement(_lib.element_family_element(self._rs_family, cell.value))
 
 
-def create_family(family: Family, degree: int, continuity: Continuity = Continuity.Standard, dtype: typing.Type[np.floating] = np.float64) -> ElementFamily:
+def create_family(
+    family: Family,
+    degree: int,
+    continuity: Continuity = Continuity.Standard,
+    dtype: typing.Type[np.floating] = np.float64,
+) -> ElementFamily:
     """Create a new element family."""
     if family == Family.Lagrange:
         if dtype == np.float64:
@@ -168,9 +201,13 @@ def create_family(family: Family, degree: int, continuity: Continuity = Continui
             raise TypeError(f"Unsupported dtype: {dtype}")
     elif family == Family.RaviartThomas:
         if dtype == np.float64:
-            return ElementFamily(_lib.raviart_thomas_element_family_new_f64(degree, continuity.value))
+            return ElementFamily(
+                _lib.raviart_thomas_element_family_new_f64(degree, continuity.value)
+            )
         elif dtype == np.float32:
-            return ElementFamily(_lib.raviart_thomas_element_family_new_f64(degree, continuity.value))
+            return ElementFamily(
+                _lib.raviart_thomas_element_family_new_f64(degree, continuity.value)
+            )
         else:
             raise TypeError(f"Unsupported dtype: {dtype}")
     else:

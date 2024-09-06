@@ -20,6 +20,7 @@ def test_value_size(cell, degree):
 
     assert element.value_size == 1
 
+
 def test_lagrange_2_triangle_tabulate():
     family = create_family(Family.Lagrange, 2)
     element = family.element(ReferenceCellType.Triangle)
@@ -31,36 +32,42 @@ def test_lagrange_2_triangle_tabulate():
     data2 = np.empty(data.shape)
     # Basis functions taken from DefElement
     # (https://defelement.com/elements/examples/triangle-lagrange-equispaced-2.html)
-    for i, function in enumerate([
-        lambda x, y: (x + y - 1)*(2*x + 2*y - 1),
-        lambda x, y: x * (2*x - 1),
-        lambda x, y: y * (2*y - 1),
-        lambda x, y: 4 * x * y,
-        lambda x, y: 4 * (1 - x - y) * y,
-        lambda x, y: 4 * x * (1 - x - y),
-    ]):
+    for i, function in enumerate(
+        [
+            lambda x, y: (x + y - 1) * (2 * x + 2 * y - 1),
+            lambda x, y: x * (2 * x - 1),
+            lambda x, y: y * (2 * y - 1),
+            lambda x, y: 4 * x * y,
+            lambda x, y: 4 * (1 - x - y) * y,
+            lambda x, y: 4 * x * (1 - x - y),
+        ]
+    ):
         for j, p in enumerate(points):
             data2[0, i, j, 0] = function(*p)
     # x-derivatives
-    for i, function in enumerate([
-        lambda x, y: 4*x + 4*y - 3,
-        lambda x, y: 4*x - 1,
-        lambda x, y: 0,
-        lambda x, y: 4 * y,
-        lambda x, y: - 4 * y,
-        lambda x, y: 4 - 8 * x - 4 * y,
-    ]):
+    for i, function in enumerate(
+        [
+            lambda x, y: 4 * x + 4 * y - 3,
+            lambda x, y: 4 * x - 1,
+            lambda x, y: 0,
+            lambda x, y: 4 * y,
+            lambda x, y: -4 * y,
+            lambda x, y: 4 - 8 * x - 4 * y,
+        ]
+    ):
         for j, p in enumerate(points):
             data2[0, i, j, 1] = function(*p)
     # y-derivatives
-    for i, function in enumerate([
-        lambda x, y: 4*x + 4*y - 3,
-        lambda x, y: 0,
-        lambda x, y: 4*y - 1,
-        lambda x, y: 4 * x,
-        lambda x, y: 4 - 4 * x - 8 * y,
-        lambda x, y: - 4 * x,
-    ]):
+    for i, function in enumerate(
+        [
+            lambda x, y: 4 * x + 4 * y - 3,
+            lambda x, y: 0,
+            lambda x, y: 4 * y - 1,
+            lambda x, y: 4 * x,
+            lambda x, y: 4 - 4 * x - 8 * y,
+            lambda x, y: -4 * x,
+        ]
+    ):
         for j, p in enumerate(points):
             data2[0, i, j, 2] = function(*p)
 
@@ -140,7 +147,9 @@ def test_lagrange_1_triangle(continuity):
         assert iw[1][0].shape == (0, 1, 0)
         assert iw[1][1].shape == (0, 1, 0)
         assert iw[1][2].shape == (0, 1, 0)
-        assert np.allclose(iw[2][0], np.array([[[1.0, 0.0, 0.0]], [[0.0, 1.0, 0.0]], [[0.0, 0.0, 1.0]]]))
+        assert np.allclose(
+            iw[2][0], np.array([[[1.0, 0.0, 0.0]], [[0.0, 1.0, 0.0]], [[0.0, 0.0, 1.0]]])
+        )
 
 
 @pytest.mark.parametrize("continuity", [Continuity.Standard, Continuity.Discontinuous])
@@ -149,7 +158,7 @@ def test_raviart_thomas_1_triangle(continuity):
     element = family.element(ReferenceCellType.Triangle)
 
     assert element.value_size == 2
-    assert element.value_shape == (2, )
+    assert element.value_shape == (2,)
     assert element.degree == 1
     assert element.embedded_superdegree == 1
     assert element.dim == 3
@@ -187,4 +196,3 @@ def test_raviart_thomas_1_triangle(continuity):
             assert element.entity_closure_dofs(1, i) == []
         assert element.entity_dofs(2, 0) == [0, 1, 2]
         assert element.entity_closure_dofs(2, 0) == [0, 1, 2]
-
