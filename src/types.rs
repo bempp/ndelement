@@ -104,42 +104,63 @@ impl ReferenceCellType {
     }
 }
 
+impl Continuity {
+    /// Create continuity type from a u8
+    pub fn from(i: u8) -> Option<Continuity> {
+        match i {
+            0 => Some(Continuity::Standard),
+            1 => Some(Continuity::Discontinuous),
+            _ => None,
+        }
+    }
+}
+
+impl MapType {
+    /// Create map type from a u8
+    pub fn from(i: u8) -> Option<MapType> {
+        match i {
+            0 => Some(MapType::Identity),
+            1 => Some(MapType::CovariantPiola),
+            2 => Some(MapType::ContravariantPiola),
+            3 => Some(MapType::L2Piola),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     #[test]
+    fn test_continuity() {
+        for c in [Continuity::Standard, Continuity::Discontinuous] {
+            assert_eq!(c, Continuity::from(c as u8).unwrap());
+        }
+    }
+    #[test]
     fn test_reference_cell_type() {
-        assert_eq!(
+        for c in [
             ReferenceCellType::Point,
-            ReferenceCellType::from(ReferenceCellType::Point as u8).unwrap()
-        );
-        assert_eq!(
             ReferenceCellType::Interval,
-            ReferenceCellType::from(ReferenceCellType::Interval as u8).unwrap()
-        );
-        assert_eq!(
             ReferenceCellType::Triangle,
-            ReferenceCellType::from(ReferenceCellType::Triangle as u8).unwrap()
-        );
-        assert_eq!(
             ReferenceCellType::Quadrilateral,
-            ReferenceCellType::from(ReferenceCellType::Quadrilateral as u8).unwrap()
-        );
-        assert_eq!(
             ReferenceCellType::Tetrahedron,
-            ReferenceCellType::from(ReferenceCellType::Tetrahedron as u8).unwrap()
-        );
-        assert_eq!(
             ReferenceCellType::Hexahedron,
-            ReferenceCellType::from(ReferenceCellType::Hexahedron as u8).unwrap()
-        );
-        assert_eq!(
             ReferenceCellType::Prism,
-            ReferenceCellType::from(ReferenceCellType::Prism as u8).unwrap()
-        );
-        assert_eq!(
             ReferenceCellType::Pyramid,
-            ReferenceCellType::from(ReferenceCellType::Pyramid as u8).unwrap()
-        );
+        ] {
+            assert_eq!(c, ReferenceCellType::from(c as u8).unwrap());
+        }
+    }
+    #[test]
+    fn test_map_type() {
+        for m in [
+            MapType::Identity,
+            MapType::CovariantPiola,
+            MapType::ContravariantPiola,
+            MapType::L2Piola,
+        ] {
+            assert_eq!(m, MapType::from(m as u8).unwrap());
+        }
     }
 }
