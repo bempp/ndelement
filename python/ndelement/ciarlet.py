@@ -64,7 +64,7 @@ class CiarletElement(object):
         return _lib.ciarlet_value_size(self._rs_element)
 
     @property
-    def value_shape(self) -> typing.Tuple[int]:
+    def value_shape(self) -> typing.Tuple[int, ...]:
         """Value size of the element."""
         shape = np.empty(_lib.ciarlet_value_rank(self._rs_element), dtype=np.uintp)
         _lib.ciarlet_value_shape(self._rs_element, _ffi.cast("uintptr_t*", shape.ctypes.data))
