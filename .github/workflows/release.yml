@@ -8,7 +8,8 @@ on:
 jobs:
   python-package:
     name: Make PyPI package
-    runs-on: quay.io/pypa/manylinux_2_28_x86_64
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_28_x86_64
     steps:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
