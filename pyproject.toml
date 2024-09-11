@@ -20,6 +20,7 @@ dependencies = [
     "maturin>=1.7",
     "numpy",
     "cffi",
+    "ctypes",
     'patchelf; platform_system == "Linux"',
 ]
 packages = ["ndelement"]
@@ -31,6 +32,7 @@ repository = "https://github.com/bempp/ndelement"
 [tool.maturin]
 python-source = "python"
 module-name = "ndelement._ndelementrs"
+bindings = "cffi"
 
 [tool.ruff]
 line-length = 100
