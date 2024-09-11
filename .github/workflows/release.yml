@@ -8,7 +8,6 @@ jobs:
   python-package:
     name: Make PyPI package
     runs-on: ubuntu-latest
-    container: quay.io/pypa/manylinux_2_28_x86_64
     steps:
       - uses: actions/checkout@v3
       - uses: PyO3/maturin-action@v1
