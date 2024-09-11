@@ -2,6 +2,7 @@
 mpi = ["dep:mpi"]
 serde = ["dep:serde"]
 strict = []
+python = []
 
 [package]
 name = "ndelement"
@@ -24,7 +25,7 @@ crate-type = ["lib", "cdylib"]
 itertools = "0.13.*"
 mpi = { version = "0.8.*", optional = true }
 num = "0.4"
-rlst = "0.2.0"
+rlst = { version = "0.2.0", default-features = false }
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
