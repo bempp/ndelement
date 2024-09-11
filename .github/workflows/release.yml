@@ -1,0 +1,40 @@
+name: 📦
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  python-package:
+    name: Make PyPI package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - uses: actions/checkout@v3
+      - name: Install LAPACK, OpenBLAS
+        run:
+          sudo apt-get install -y libopenblas-dev liblapack-dev
+
+      - name: Install uv
+        run: pip install uv "maturin>=1.7"
+      - name: Make virtual environment
+        run: |
+          uv venv .venv
+          uv pip install pip pytest
+      - name: Build python package
+        run: |
+          source .venv/bin/activate
+          maturin build
+          auditwheel repair target/wheels/ndelement-0.1.0.dev0-py3-none-manylinux_2_35_x86_64.whl
+      - name: Show
+        run: |
+          auditwheel show target/wheels/ndelement-0.1.0.dev0-py3-none-manylinux_2_35_x86_64.whl
