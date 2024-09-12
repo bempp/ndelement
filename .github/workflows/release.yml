@@ -41,7 +41,7 @@ jobs:
             system: linux
           - runner: ubuntu-latest
             target: ppc64le
-            container: quay.io/pypa/manylinux_2_28_ppc641e:latest
+            container: quay.io/pypa/manylinux_2_28_ppc64le:latest
             system: linux
           #- runner: ubuntu-latest
           #  target: x86_64
