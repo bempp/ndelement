@@ -69,7 +69,7 @@ jobs:
       #- uses: actions/setup-python@v5
       #  with:
       #    python-version: 3.x
-      - run: yum install -y openblas-devel lapack-devel
+      - run: yum -y install openblas-devel lapack-devel python-pip
       - uses: actions/checkout@v4
 
         # TODO: swap to `pip install maturin>=1.7.2` once there's a new release
