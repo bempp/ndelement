@@ -61,7 +61,6 @@ jobs:
           #  system: musllinux
     container: ${{ matrix.platform.container }}
     steps:
-      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -71,9 +70,10 @@ jobs:
         with:
           python-version: 3.x
       - run: yum install -y openblas-devel lapack-devel
+      - uses: actions/checkout@v4
 
         # TODO: swap to `pip install maturin>=1.7.2` once there's a new release
-      - run: pip install git+https://github.com/PyO3/maturin.git
+      - run: python3 -m pip install git+https://github.com/PyO3/maturin.git
 
       - run: maturin build --release --out dist --find-interpreter
 
