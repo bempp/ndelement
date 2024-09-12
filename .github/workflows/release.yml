@@ -69,7 +69,7 @@ jobs:
       - name: Install OpenBLAS, LAPACK
         run: yum -y install openblas-devel lapack-devel
       - name: Install pip
-        run: yum -y install python-pip
+        run: yum -y install python3-pip
       - uses: actions/checkout@v4
 
         # TODO: swap to `pip install maturin>=1.7.2` once there's a new release
