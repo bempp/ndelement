@@ -31,9 +31,9 @@ jobs:
           - target: armv7-unknown-linux-gnueabihf
             container: ghcr.io/rust-cross/manylinux_2_28-cross:armv7
             wheel: wheels-linux-armv7
-          - target: s390x-unknown-linux-gnu
-            container: ghcr.io/rust-cross/manylinux_2_28-cross:s390x
-            wheel: wheels-linux-s390x
+          #- target: s390x-unknown-linux-gnu
+          #  container: ghcr.io/rust-cross/manylinux_2_28-cross:s390x
+          #  wheel: wheels-linux-s390x
           - target: powerpc64le-unknown-linux-gnu
             container: ghcr.io/rust-cross/manylinux2014-cross:ppc64
             wheel: wheels-linux-ppc64le
