@@ -23,7 +23,7 @@ jobs:
             wheel: wheels-linux-x86_64
             package-manager: yum
             python: /opt/python/cp38-cp38/bin/python
-          - target: x86_64-unknown-linux-gnu
+          - target: x86-unknown-linux-gnu
             container: quay.io/pypa/manylinux_2_28_x86_64
             wheel: wheels-linux-x86
             package-manager: yum
@@ -48,7 +48,6 @@ jobs:
         # TODO: swap to `pip install maturin>=1.7.2` once there's a new release
       - name: Install maturin, CFFI
         run: |
-          rustup target add ${{ matrix.platform.target }}
           ${{ matrix.platform.python }} -m pip install git+https://github.com/PyO3/maturin.git
           ${{ matrix.platform.python }} -m pip install cffi
 
