@@ -3,19 +3,32 @@
 ndelement is an open-source library written in Rust that can be used to create n-dimensional finite elements.
 
 ## Using ndelement
+### Rust
 You can use the latest release of ndelement by adding the following to `[dependencies]` section of your Cargo.toml file:
 
 ```toml
 ndelement = "0.1.0"
 ```
 
+### Python
+You can install the latest release of ndelement by running:
+
+```bash
+pip3 install ndelement
+```
+
 ## Documentation
 The latest documentation of the main branch of this repo is available at [bempp.github.io/ndelement/](https://bempp.github.io/ndelement/).
 
 ## Testing
-The functionality of the library can be tested by running:
+The Rust functionality of the library can be tested by running:
 ```bash
 cargo test
+```
+
+The Python functionality of the library can be tested by running:
+```bash
+python -m pytest python/test
 ```
 
 ## Examples

@@ -30,7 +30,7 @@ jobs:
           mpi: ${{ matrix.mpi }}
       - name: Install cargo-mpirun
         run: cargo install cargo-mpirun
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install LAPACK, OpenBLAS
         run:
           sudo apt-get install -y libopenblas-dev liblapack-dev
@@ -60,7 +60,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install uv
         run: pip install uv "maturin>=1.7"
       - name: Make virtual environment
@@ -90,7 +90,7 @@ jobs:
           components: rustfmt
       - name: Install cargo-upgrades
         run: cargo install cargo-upgrades
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check that dependencies are up to date
         run:
           cargo upgrades
