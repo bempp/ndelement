@@ -29,11 +29,11 @@ jobs:
             wheel: wheels-linux-x86
             package-manager: yum
             python: /opt/python/cp38-cp38/bin/python
-          - target: aarch64-unknown-linux-gnu
-            container: ghcr.io/rust-cross/manylinux_2_28-cross:aarch64
-            wheel: wheels-linux-aarch64
-            package-manager: apt
-            python: python
+          #- target: aarch64-unknown-linux-gnu
+          #  container: ghcr.io/rust-cross/manylinux_2_28-cross:aarch64
+          #  wheel: wheels-linux-aarch64
+          #  package-manager: apt
+          #  python: python
           - target: armv7-unknown-linux-gnueabihf
             container: ghcr.io/rust-cross/manylinux_2_28-cross:armv7
             wheel: wheels-linux-armv7
