@@ -22,34 +22,44 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             container: quay.io/pypa/manylinux_2_28_x86_64
             wheel: wheels-linux-x86_64
+            runner: ubuntu-latest
           - target: x86_64-unknown-linux-gnu
             container: quay.io/pypa/manylinux_2_28_x86_64
             wheel: wheels-linux-x86
+            runner: ubuntu-latest
           - target: aarch64-unknown-linux-gnu
             container: ghcr.io/rust-cross/manylinux_2_28-cross:aarch64
             wheel: wheels-linux-aarch64
+            runner: ubuntu-latest
           - target: armv7-unknown-linux-gnueabihf
             container: ghcr.io/rust-cross/manylinux_2_28-cross:armv7
             wheel: wheels-linux-armv7
+            runner: ubuntu-latest
           - target: s390x-unknown-linux-gnu
             container: ghcr.io/rust-cross/manylinux_2_28-cross:s390x
             wheel: wheels-linux-s390x
+            runner: ubuntu-latest
           - target: powerpc64le-unknown-linux-gnu
             container: ghcr.io/rust-cross/manylinux2014-cross:ppc64
             wheel: wheels-linux-ppc64le
+            runner: ubuntu-latest
           - target: x86_64-unknown-linux-musl
             container: ghcr.io/rust-cross/rust-musl-cross:x86_64-musl
             wheel: wheels-musllinux-x86_64
+            runner: ubuntu-latest
           - target: x86_64-unknown-linux-musl
             container: ghcr.io/rust-cross/rust-musl-cross:x86_64-musl
             wheel: wheels-musllinux-x86
+            runner: ubuntu-latest
           - target: aarch64-unknown-linux-musl
             container: ghcr.io/rust-cross/rust-musl-cross:aarch64-musl
             wheel: wheels-musllinux-aarch64
+            runner: ubuntu-latest
           - target: armv7-unknown-linux-musleabihf
             container: ghcr.io/rust-cross/rust-musl-cross:armv7-musleabihf
             wheel: wheels-musllinux-armv7
-    container: ubuntu-latest
+            runner: ubuntu-latest
+    container: ${{ matrix.platform.container }}
     steps:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
