@@ -23,26 +23,26 @@ jobs:
             target: x86_64
             container: quay.io/pypa/manylinux_2_28_x86_64
             system: linux
-          #- runner: ubuntu-latest
-          #  target: x86
-          #  container: quay.io/pypa/manylinux2014_x86_64:latest
-          #  system: linux
-          #- runner: ubuntu-latest
-          #  target: aarch64
-          #  container: quay.io/pypa/manylinux2014_x86_64:latest
-          #  system: linux
-          #- runner: ubuntu-latest
-          #  target: armv7
-          #  container: quay.io/pypa/manylinux2014_x86_64:latest
-          #  system: linux
-          #- runner: ubuntu-latest
-          #  target: s390x
-          #  container: quay.io/pypa/manylinux2014_x86_64:latest
-          #  system: linux
-          #- runner: ubuntu-latest
-          #  target: ppc64le
-          #  container: quay.io/pypa/manylinux2014_x86_64:latest
-          #  system: linux
+          - runner: ubuntu-latest
+            target: x86
+            container: quay.io/pypa/manylinux_2_28_x86_64:latest
+            system: linux
+          - runner: ubuntu-latest
+            target: aarch64
+            container: quay.io/pypa/manylinux_2_28_aarch64:latest
+            system: linux
+          - runner: ubuntu-latest
+            target: armv7
+            container: quay.io/pypa/manylinux_2_28_aarch64:latest
+            system: linux
+          - runner: ubuntu-latest
+            target: s390x
+            container: quay.io/pypa/manylinux_2_28_s390x:latest
+            system: linux
+          - runner: ubuntu-latest
+            target: ppc64le
+            container: quay.io/pypa/manylinux_2_28_ppc641e:latest
+            system: linux
           #- runner: ubuntu-latest
           #  target: x86_64
           #  container: ghcr.io/rust-cross/rust-musl-cross:x86_64-musl
@@ -66,12 +66,12 @@ jobs:
         with:
           toolchain: ${{ matrix.rust-version }}
           components: rustfmt
-      - name: Install OpenBLAS, LAPACK
+      - name: Install OpenBLAS, LAPACK, OpenSSL
         run: yum -y install openblas-devel lapack-devel openssl-devel
       - uses: actions/checkout@v4
 
         # TODO: swap to `pip install maturin>=1.7.2` once there's a new release
-      - name: Install maturin
+      - name: Install maturin, CFFI
         run: |
           /opt/python/cp38-cp38/bin/python -m pip install git+https://github.com/PyO3/maturin.git
           /opt/python/cp38-cp38/bin/python -m pip install cffi
