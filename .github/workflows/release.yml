@@ -66,9 +66,9 @@ jobs:
         with:
           toolchain: ${{ matrix.rust-version }}
           components: rustfmt
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
+      #- uses: actions/setup-python@v5
+      #  with:
+      #    python-version: 3.x
       - run: yum install -y openblas-devel lapack-devel
       - uses: actions/checkout@v4
 
