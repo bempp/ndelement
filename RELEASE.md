@@ -38,3 +38,5 @@ To make a new release of ndelement, follow the following steps:
 
 8) Open a pull request to `main` to update the version numbers in `Cargo.toml` and `pyproject.toml`
    to `[x].[y].[z]-dev`
+
+9) Add the release to the next issue of [Scientific Computing in Rust Monthly](https://github.com/rust-scicomp/scientific-computing-in-rust-monthly)
