@@ -13,7 +13,7 @@ To make a new release of ndelement, follow the following steps:
    git checkout -b release-v[x].[y].[z]
    ```
 
-2) Update the version number in `Cargo.toml`.
+2) Update the version numbers in `Cargo.toml` and `pyproject.toml`.
    The version numbers have the format `[x].[y].[z]`. If you are releasing a major
    version, you should increment `[x]` and set `[y]` and `[z]` to 0.
    If you are releasing a minor version, you should increment `[y]` and set `[z]`
@@ -36,4 +36,5 @@ To make a new release of ndelement, follow the following steps:
    crates.io. Note: this cannot be undone, but you can use `cargo yank` to mark a version as
    unsuitable for use.
 
-8) Open a pull request to `main` to update the version number in `Cargo.toml` to `[x].[y].[z]-dev`
+8) Open a pull request to `main` to update the version numbers in `Cargo.toml` and `pyproject.toml`
+   to `[x].[y].[z]-dev`
