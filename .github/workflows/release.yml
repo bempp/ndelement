@@ -71,9 +71,13 @@ jobs:
       - uses: actions/checkout@v4
 
         # TODO: swap to `pip install maturin>=1.7.2` once there's a new release
-      - run: /opt/python/cp38-cp38/bin/python -m pip install git+https://github.com/PyO3/maturin.git
+      - name: Install maturin
+        run: |
+          /opt/python/cp38-cp38/bin/python -m pip install git+https://github.com/PyO3/maturin.git
+          /opt/python/cp38-cp38/bin/python -m pip install cffi
 
-      - run: /opt/python/cp38-cp38/bin/python -m maturin build --release --out dist -i /opt/python/cp38-cp38/bin/python
+      - name: Build wheel
+        run: /opt/python/cp38-cp38/bin/python -m maturin build --release --out dist -i /opt/python/cp38-cp38/bin/python
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
