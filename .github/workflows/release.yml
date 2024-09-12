@@ -21,7 +21,7 @@ jobs:
         platform:
           - runner: ubuntu-latest
             target: x86_64
-            container: quay.io/pypa/manylinux2014_x86_64:latest
+            container: quay.io/pypa/manylinux_2_28_x86_64
             system: linux
           #- runner: ubuntu-latest
           #  target: x86
