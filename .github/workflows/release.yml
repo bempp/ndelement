@@ -44,7 +44,7 @@ jobs:
             wheel: wheels-linux-s390x
             package-manager: apt
             python: python
-          - target: powerpc64le-unknown-linux-gnu
+          - target: powerpc64-unknown-linux-gnu
             container: ghcr.io/rust-cross/manylinux2014-cross:ppc64
             wheel: wheels-linux-ppc64le
             package-manager: apt
