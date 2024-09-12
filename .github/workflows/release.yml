@@ -67,9 +67,6 @@ jobs:
         with:
           toolchain: ${{ matrix.rust-version }}
           components: rustfmt
-      - name: Install LAPACK, OpenBLAS
-        run:
-          sudo apt-get install -y libopenblas-dev liblapack-dev
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
