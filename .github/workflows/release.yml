@@ -34,15 +34,21 @@ jobs:
             wheel: wheels-linux-aarch64
             package-manager: apt
             python: python
-          #- target: armv7-unknown-linux-gnueabihf
-          #  container: ghcr.io/rust-cross/manylinux_2_28-cross:armv7
-          #  wheel: wheels-linux-armv7
-          #- target: s390x-unknown-linux-gnu
-          #  container: ghcr.io/rust-cross/manylinux_2_28-cross:s390x
-          #  wheel: wheels-linux-s390x
-          #- target: powerpc64le-unknown-linux-gnu
-          #  container: ghcr.io/rust-cross/manylinux2014-cross:ppc64
-          #  wheel: wheels-linux-ppc64le
+          - target: armv7-unknown-linux-gnueabihf
+            container: ghcr.io/rust-cross/manylinux_2_28-cross:armv7
+            wheel: wheels-linux-armv7
+            package-manager: apt
+            python: python
+          - target: s390x-unknown-linux-gnu
+            container: ghcr.io/rust-cross/manylinux_2_28-cross:s390x
+            wheel: wheels-linux-s390x
+            package-manager: apt
+            python: python
+          - target: powerpc64le-unknown-linux-gnu
+            container: ghcr.io/rust-cross/manylinux2014-cross:ppc64
+            wheel: wheels-linux-ppc64le
+            package-manager: apt
+            python: python
           #- target: x86_64-unknown-linux-musl
           #  container: ghcr.io/rust-cross/rust-musl-cross:x86_64-musl
           #  wheel: wheels-musllinux-x86_64
