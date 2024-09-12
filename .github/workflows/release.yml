@@ -61,7 +61,7 @@ jobs:
             system: musllinux
     container: ${{ matrix.platform.container }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v2
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
