@@ -22,21 +22,27 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             container: quay.io/pypa/manylinux_2_28_x86_64
             wheel: wheels-linux-x86_64
+            package-manager: yum
+            python: /opt/python/cp38-cp38/bin/python
           - target: x86_64-unknown-linux-gnu
             container: quay.io/pypa/manylinux_2_28_x86_64
             wheel: wheels-linux-x86
+            package-manager: yum
+            python: /opt/python/cp38-cp38/bin/python
           - target: aarch64-unknown-linux-gnu
             container: ghcr.io/rust-cross/manylinux_2_28-cross:aarch64
             wheel: wheels-linux-aarch64
-          - target: armv7-unknown-linux-gnueabihf
-            container: ghcr.io/rust-cross/manylinux_2_28-cross:armv7
-            wheel: wheels-linux-armv7
+            package-manager: apt
+            python: python
+          #- target: armv7-unknown-linux-gnueabihf
+          #  container: ghcr.io/rust-cross/manylinux_2_28-cross:armv7
+          #  wheel: wheels-linux-armv7
           #- target: s390x-unknown-linux-gnu
           #  container: ghcr.io/rust-cross/manylinux_2_28-cross:s390x
           #  wheel: wheels-linux-s390x
-          - target: powerpc64le-unknown-linux-gnu
-            container: ghcr.io/rust-cross/manylinux2014-cross:ppc64
-            wheel: wheels-linux-ppc64le
+          #- target: powerpc64le-unknown-linux-gnu
+          #  container: ghcr.io/rust-cross/manylinux2014-cross:ppc64
+          #  wheel: wheels-linux-ppc64le
           #- target: x86_64-unknown-linux-musl
           #  container: ghcr.io/rust-cross/rust-musl-cross:x86_64-musl
           #  wheel: wheels-musllinux-x86_64
@@ -56,18 +62,21 @@ jobs:
         with:
           toolchain: ${{ matrix.rust-version }}
           components: rustfmt
+
       - name: Install OpenBLAS, LAPACK, OpenSSL
-        run: yum -y install openblas-devel lapack-devel openssl-devel
+        run: yum -y install openblas-devel lapack-devel openssl-devel (yum)
+        if: matrix.platform.package-manager == "yum"
+
       - uses: actions/checkout@v4
 
         # TODO: swap to `pip install maturin>=1.7.2` once there's a new release
       - name: Install maturin, CFFI
         run: |
-          /opt/python/cp38-cp38/bin/python -m pip install git+https://github.com/PyO3/maturin.git
-          /opt/python/cp38-cp38/bin/python -m pip install cffi
+          ${{ matrix.platform.python }} -m pip install git+https://github.com/PyO3/maturin.git
+          ${{ matrix.platform.python }} -m pip install cffi
 
       - name: Build wheel
-        run: /opt/python/cp38-cp38/bin/python -m maturin build --release --out dist -i /opt/python/cp38-cp38/bin/python --target ${{ matrix.platform.target }}
+        run: ${{ matrix.platform.python }} -m maturin build --release --out dist -i ${{ matrix.platform.python }} --target ${{ matrix.platform.target }}
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
