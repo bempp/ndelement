@@ -103,6 +103,8 @@ jobs:
           path: dist
 
   release:
+    permissions:
+      id-token: write
     name: Release
     runs-on: ubuntu-latest
 #    if: "startsWith(github.ref, 'refs/tags/')"
