@@ -1,4 +1,4 @@
-"""wCiarlet elements."""
+"""Ciarlet elements."""
 
 import typing
 import numpy as np
