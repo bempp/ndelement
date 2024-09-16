@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
 authors = [
-    {name = "Matthew Scroggs", email = "rust@mscroggs.co.uk>"}
+    {name = "Matthew Scroggs", email = "rust@mscroggs.co.uk"}
 ]
 classifiers = [
     "Programming Language :: Rust",
