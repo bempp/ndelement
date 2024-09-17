@@ -7,7 +7,7 @@ ndelement is an open-source library written in Rust that can be used to create n
 You can use the latest release of ndelement by adding the following to `[dependencies]` section of your Cargo.toml file:
 
 ```toml
-ndelement = "0.1.0"
+ndelement = "0.1.1"
 ```
 
 ### Python
