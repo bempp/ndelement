@@ -6,6 +6,7 @@ import numpy.typing as npt
 from ndelement._ndelementrs import lib as _lib, ffi as _ffi
 from ndelement.reference_cell import ReferenceCellType, entity_counts, dim
 from enum import Enum
+from _cffi_backend import _CDataBase
 
 
 class Continuity(Enum):
@@ -44,13 +45,15 @@ _ctypes = {
 class CiarletElement(object):
     """Ciarlet element."""
 
-    def __init__(self, rs_element):
+    def __init__(self, rs_element: _CDataBase, owned: bool = True):
         """Initialise."""
         self._rs_element = rs_element
+        self._owned = owned
 
     def __del__(self):
         """Delete object."""
-        _lib.ciarlet_free_element(self._rs_element)
+        if self._owned:
+            _lib.ciarlet_free_element(self._rs_element)
 
     @property
     def dtype(self):
@@ -181,13 +184,15 @@ class CiarletElement(object):
 class ElementFamily(object):
     """Ciarlet element."""
 
-    def __init__(self, rs_family):
+    def __init__(self, rs_family: _CDataBase, owned: bool = True):
         """Initialise."""
         self._rs_family = rs_family
+        self._owned = owned
 
     def __del__(self):
         """Delete object."""
-        _lib.ciarlet_free_family(self._rs_family)
+        if self._owned:
+            _lib.ciarlet_free_family(self._rs_family)
 
     def element(self, cell: ReferenceCellType) -> CiarletElement:
         return CiarletElement(_lib.element_family_element(self._rs_family, cell.value))
