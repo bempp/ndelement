@@ -2,7 +2,6 @@
 mpi = ["dep:mpi"]
 serde = ["dep:serde"]
 strict = []
-python = ["dep:openssl"]
 sleef = ["rlst/sleef"]
 default = ["sleef"]
 
@@ -29,7 +28,6 @@ mpi = { version = "0.8.*", optional = true }
 num = "0.4"
 rlst = { version = "0.2.0", default-features = false }
 serde = { version = "1", features = ["derive"], optional = true }
-openssl = { version = "0.10", features = ["vendored"], optional = true }
 
 [dev-dependencies]
 paste = "1.*"

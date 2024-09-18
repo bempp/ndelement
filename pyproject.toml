@@ -31,7 +31,7 @@ repository = "https://github.com/bempp/ndelement"
 [tool.maturin]
 python-source = "python"
 module-name = "ndelement._ndelementrs"
-cargo-extra-args = '--features "serde,python"'
+cargo-extra-args = '--features "serde"'
 no-default-features = true
 
 [tool.ruff]
