@@ -1,5 +1,7 @@
 # ndelement
 
+[![DefElement verification](https://defelement.com/badges/ndelement.svg)](https://defelement.com/verification.html)
+
 ndelement is an open-source library written in Rust that can be used to create n-dimensional finite elements.
 
 ## Using ndelement
