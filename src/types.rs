@@ -2,6 +2,7 @@
 #[cfg(feature = "mpi")]
 use mpi::traits::Equivalence;
 use rlst::{Array, BaseArray, VectorContainer};
+use strum_macros::EnumIter;
 
 /// An N-dimensional array
 pub type ArrayND<const N: usize, T> = Array<T, BaseArray<T, VectorContainer<T>, N>, N>;
@@ -44,7 +45,7 @@ pub enum MapType {
 
 /// The type of a reference cell
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(u8)]
 pub enum ReferenceCellType {
     /// A point

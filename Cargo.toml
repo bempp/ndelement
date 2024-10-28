@@ -28,6 +28,8 @@ mpi = { version = "0.8.*", optional = true }
 num = "0.4"
 rlst = { version = "0.2.0", default-features = false }
 serde = { version = "1", features = ["derive"], optional = true }
+strum = "0.26"
+strum_macros = "0.26"
 
 [dev-dependencies]
 paste = "1.*"
