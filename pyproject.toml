@@ -9,9 +9,7 @@ description = "n-dimensional finite element definition library."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
-authors = [
-    {name = "Matthew Scroggs", email = "rust@mscroggs.co.uk"}
-]
+authors = [{ name = "Matthew Scroggs", email = "rust@mscroggs.co.uk" }]
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -20,6 +18,8 @@ dependencies = [
     "maturin>=1.7.2",
     "numpy",
     "cffi",
+    "pytest",
+    "pip",
     'patchelf; platform_system == "Linux"',
 ]
 packages = ["ndelement"]
