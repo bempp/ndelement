@@ -13,7 +13,7 @@ To make a new release of ndelement, follow the following steps:
    git checkout -b release-v[x].[y].[z]
    ```
 
-2) Update the version numbers in `Cargo.toml` and `pyproject.toml`.
+2) Update the version numbers in `Cargo.toml`, `pyproject.toml` and `README.md`.
    The version numbers have the format `[x].[y].[z]`. If you are releasing a major
    version, you should increment `[x]` and set `[y]` and `[z]` to 0.
    If you are releasing a minor version, you should increment `[y]` and set `[z]`
