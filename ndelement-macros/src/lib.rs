@@ -1,8 +1,8 @@
-use itertools::Itertools;
+use itertools::{izip, Itertools};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, Ident, Lit, LitStr, Token};
+use syn::{parse_macro_input, Ident, Lit, LitStr, Token, Type};
 use syn::{Expr, ExprArray};
 
 struct DowncastWithConcreteTypes {
@@ -69,7 +69,7 @@ impl Parse for DowncastWithConcreteTypes {
 }
 
 #[proc_macro]
-pub fn downcast_with_concrete_types(item: TokenStream) -> TokenStream {
+pub fn eval_with_concrete_types(item: TokenStream) -> TokenStream {
     let DowncastWithConcreteTypes {
         var,
         op,
@@ -78,11 +78,23 @@ pub fn downcast_with_concrete_types(item: TokenStream) -> TokenStream {
     } = parse_macro_input!(item as DowncastWithConcreteTypes);
 
     let op = op.replace("{{inner}}", &var.to_string());
-    let mut output = quote!();
+    let mut output = quote! {};
 
-    for current_types in types.iter().map(|x| x.iter()).multi_cartesian_product() {
+    let mut multi_it = types
+        .iter()
+        .map(|x| x.iter())
+        .multi_cartesian_product()
+        .peekable();
+
+    if multi_it.peek().is_none() {
+        panic!("No types were provided.");
+    }
+
+    loop {
         // First do the template substitutions into concrete types. We assume
         // that later types can only depend on earlier types in the `types` array.
+
+        let current_types = multi_it.next().unwrap();
 
         let ntypes = types.len();
 
@@ -95,29 +107,37 @@ pub fn downcast_with_concrete_types(item: TokenStream) -> TokenStream {
             }
         }
 
+        let mut current_op = op.clone();
+
+        // Insert concrete types into `op`.
+        for (key, complete_type) in izip!(keys.iter(), complete_types.iter()) {
+            current_op = current_op.replace(&("{{".to_owned() + key + "}}"), complete_type);
+        }
+
+        // The type that is used for downcasting.
+        let downcast_type: proc_macro2::TokenStream =
+            complete_types.last().unwrap().parse().unwrap();
+
+        let current_op: proc_macro2::TokenStream = current_op.parse().unwrap();
+
         // Now we have the complete types. We can now generate the if statements.
 
-        // output = quote! {
-        //    #output
-        //    if let Some(op) = #var.downcast_ref::<
-        //         #(
-        //              #complete_types ,
-        //         ),*
-        //         >() {
-        //             #op
-        //             }
-        // };
-    }
+        output = quote! {
+           #output
 
-    println!("{}", output);
+           if let Some(#var) = #var.downcast_ref::<#downcast_type>() {
+                    #current_op
+                    }
+        };
+
+        if multi_it.peek().is_some() {
+            output = quote! {
+                #output else
+            };
+        } else {
+            break;
+        }
+    }
 
     output.into()
 }
-
-// How to use this macro:
-// downcast_with_concrete_types!(var, op = "{{inner}}.call(&my_op)" ,dtype = ["f32, f64"], elem = ["Element1<{{dtype}}>", "Element2<{{dtype}}>"]);
-// This expands to the token stream:
-//
-// {
-//  if let Some(inner) =
-// }

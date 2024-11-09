@@ -256,12 +256,13 @@ pub mod polynomials {
 
 pub mod ciarlet {
     use crate::reference_cell;
+    use crate::traits::FiniteElement;
     use crate::{ciarlet, ciarlet::CiarletElement};
     use crate::{
-        traits::{ElementFamily, FiniteElement},
+        traits::ElementFamily,
         types::{Continuity, ReferenceCellType},
     };
-    use ndelement_macros::downcast_with_concrete_types;
+    use ndelement_macros::eval_with_concrete_types;
     use rlst::{
         c32, c64, rlst_array_from_slice2, rlst_array_from_slice_mut4, MatrixInverse, RawAccess,
         RlstScalar, Shape,
@@ -278,6 +279,36 @@ pub mod ciarlet {
         F64 = 1,
         C32 = 2,
         C64 = 3,
+    }
+
+    struct DTypeFromType<T>(std::marker::PhantomData<T>);
+
+    trait DTypeTrait {
+        fn dtype() -> DType;
+    }
+
+    impl DTypeTrait for DTypeFromType<f32> {
+        fn dtype() -> DType {
+            DType::F32
+        }
+    }
+
+    impl DTypeTrait for DTypeFromType<f64> {
+        fn dtype() -> DType {
+            DType::F64
+        }
+    }
+
+    impl DTypeTrait for DTypeFromType<c32> {
+        fn dtype() -> DType {
+            DType::C32
+        }
+    }
+
+    impl DTypeTrait for DTypeFromType<c64> {
+        fn dtype() -> DType {
+            DType::C64
+        }
     }
 
     #[derive(Debug, PartialEq, Clone, Copy)]
@@ -309,8 +340,33 @@ pub mod ciarlet {
         unsafe { drop(Box::from_raw(f)) }
     }
 
+    #[no_mangle]
+    pub unsafe extern "C" fn lagrange_element_new(
+        cell_type: ReferenceCellType,
+        degree: usize,
+        continuity: Continuity,
+        dtype: DType,
+    ) -> *mut CiarletElementT {
+        fn element_new_impl<T: RlstScalar + MatrixInverse>(
+            cell_type: ReferenceCellType,
+            degree: usize,
+            continuity: Continuity,
+        ) -> *mut CiarletElementT {
+            let element = ciarlet::lagrange::create::<T>(cell_type, degree, continuity);
+            let element: Box<dyn Any> = Box::new(element);
+            Box::into_raw(Box::new(CiarletElementT { element }))
+        }
+
+        match dtype {
+            DType::F32 => element_new_impl::<f32>(cell_type, degree, continuity),
+            DType::F64 => element_new_impl::<f64>(cell_type, degree, continuity),
+            DType::C32 => element_new_impl::<c32>(cell_type, degree, continuity),
+            DType::C64 => element_new_impl::<c64>(cell_type, degree, continuity),
+        }
+    }
+
     unsafe fn ciarlet_element_p_to_any(element: *const CiarletElementT) -> &'static Box<dyn Any> {
-        assert!(element.is_null());
+        assert!(!element.is_null());
         &(*element).element
     }
 
@@ -319,115 +375,31 @@ pub mod ciarlet {
         &(*family).family
     }
 
-    unsafe fn extract_element<T: RlstScalar + MatrixInverse>(
-        element: *const CiarletElementT,
-    ) -> Option<&'static CiarletElement<T>> {
-        ciarlet_element_p_to_any(element).downcast_ref()
-    }
+    #[no_mangle]
+    pub unsafe extern "C" fn ciarlet_value_size(element: *const CiarletElementT) -> usize {
+        let element = ciarlet_element_p_to_any(element); // element_method!(element, element.value_size());
+        eval_with_concrete_types!(
+            element,
+            "return {{inner}}.value_size();",
+            dtype = ["f32", "f64", "c32", "c64"],
+            ciarlet = ["CiarletElement<{{dtype}}>"]
+        );
 
-    unsafe fn extract_family<
-        T: RlstScalar + MatrixInverse,
-        Element: FiniteElement<T = T, CellType = ReferenceCellType>,
-        Family: ElementFamily<T = T, CellType = ReferenceCellType, FiniteElement = Element>,
-    >(
-        family: *const ElementFamilyT,
-    ) -> Option<&'static Family> {
-        family_p_to_any(family).downcast_ref()
+        panic!("Unknown type.");
     }
 
     #[no_mangle]
-    pub unsafe extern "C" fn ciarlet_value_size(element: *const CiarletElementT) -> usize {
-        // element_method!(element, element.value_size());
-        // downcast_with_concrete_types!(
-        //     element,
-        //     "return {{inner}}.value_size()",
-        //     dtype = ["f32", "f64"],
-        //     ciarlet = ["CiarletElement<{{dtype}}>"]
-        // );
-        panic!();
+    pub unsafe extern "C" fn ciarlet_element_dtype(element: *const CiarletElementT) -> DType {
+        let _element = ciarlet_element_p_to_any(element); // element_method!(element, element.value_size());
+        eval_with_concrete_types!(
+            _element,
+            "return DTypeFromType::<{{dtype}}>::dtype();",
+            dtype = ["f32", "f64", "c32", "c64"],
+            ciarlet = ["CiarletElement<{{dtype}}>"]
+        );
+
+        panic!("Unknown type.");
     }
-
-    // impl Drop for CiarletElementWrapper {
-    //     fn drop(&mut self) {
-    //         let Self { element, dtype } = self;
-    //         match dtype {
-    //             DType::F32 => {
-    //                 drop(unsafe { Box::from_raw(*element as *mut ciarlet::CiarletElement<f32>) })
-    //             }
-    //             DType::F64 => {
-    //                 drop(unsafe { Box::from_raw(*element as *mut ciarlet::CiarletElement<f64>) })
-    //             }
-    //             DType::C32 => {
-    //                 drop(unsafe { Box::from_raw(*element as *mut ciarlet::CiarletElement<c32>) })
-    //             }
-    //             DType::C64 => {
-    //                 drop(unsafe { Box::from_raw(*element as *mut ciarlet::CiarletElement<c64>) })
-    //             }
-    //         }
-    //     }
-    // }
-
-    // impl Drop for ElementFamilyWrapper {
-    //     fn drop(&mut self) {
-    //         let Self {
-    //             family,
-    //             etype,
-    //             dtype,
-    //         } = self;
-    //         match etype {
-    //             ElementType::Lagrange => match dtype {
-    //                 DType::F32 => drop(unsafe {
-    //                     Box::from_raw(*family as *mut ciarlet::LagrangeElementFamily<f32>)
-    //                 }),
-    //                 DType::F64 => drop(unsafe {
-    //                     Box::from_raw(*family as *mut ciarlet::LagrangeElementFamily<f64>)
-    //                 }),
-    //                 DType::C32 => drop(unsafe {
-    //                     Box::from_raw(*family as *mut ciarlet::LagrangeElementFamily<c32>)
-    //                 }),
-    //                 DType::C64 => drop(unsafe {
-    //                     Box::from_raw(*family as *mut ciarlet::LagrangeElementFamily<c64>)
-    //                 }),
-    //             },
-    //             ElementType::RaviartThomas => match dtype {
-    //                 DType::F32 => drop(unsafe {
-    //                     Box::from_raw(*family as *mut ciarlet::RaviartThomasElementFamily<f32>)
-    //                 }),
-    //                 DType::F64 => drop(unsafe {
-    //                     Box::from_raw(*family as *mut ciarlet::RaviartThomasElementFamily<f64>)
-    //                 }),
-    //                 DType::C32 => drop(unsafe {
-    //                     Box::from_raw(*family as *mut ciarlet::RaviartThomasElementFamily<c32>)
-    //                 }),
-    //                 DType::C64 => drop(unsafe {
-    //                     Box::from_raw(*family as *mut ciarlet::RaviartThomasElementFamily<c64>)
-    //                 }),
-    //             },
-    //         }
-    //     }
-    // }
-
-    // #[no_mangle]
-    // pub unsafe extern "C" fn ciarlet_free_family(f: *mut ElementFamilyWrapper) {
-    //     assert!(!f.is_null());
-    //     unsafe { drop(Box::from_raw(f)) }
-    // }
-
-    // unsafe fn extract_element<T: RlstScalar + MatrixInverse>(
-    //     element: *const CiarletElementWrapper
-    // ) -> *const CiarletElement<T> {
-    //     (*element).element as *const CiarletElement<T>
-    // }
-
-    // #[no_mangle]
-    // pub unsafe extern "C" fn ciarlet_value_size(element: *const CiarletElementWrapper) -> usize {
-    //     match (*element).dtype {
-    //         DType::F32 => (*extract_element::<f32>(element)).value_size(),
-    //         DType::F64 => (*extract_element::<f64>(element)).value_size(),
-    //         DType::C32 => (*extract_element::<c32>(element)).value_size(),
-    //         DType::C64 => (*extract_element::<c64>(element)).value_size(),
-    //     }
-    // }
 
     // #[no_mangle]
     // pub unsafe extern "C" fn ciarlet_degree(element: *const CiarletElementWrapper) -> usize {
@@ -966,4 +938,41 @@ pub mod ciarlet {
     //         dtype: DType::F64,
     //     }))
     // }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{bindings::ciarlet::ciarlet_element_dtype, types::ReferenceCellType};
+
+    use super::ciarlet::{ciarlet_value_size, lagrange_element_new, DType};
+
+    #[test]
+    pub fn test_value_size() {
+        let element = unsafe {
+            lagrange_element_new(
+                ReferenceCellType::Triangle,
+                1,
+                crate::types::Continuity::Standard,
+                DType::F64,
+            )
+        };
+
+        let value_size = unsafe { ciarlet_value_size(element) };
+        assert_eq!(value_size, 1);
+    }
+
+    #[test]
+    pub fn test_ciarlet_element_dtype() {
+        let element = unsafe {
+            lagrange_element_new(
+                ReferenceCellType::Triangle,
+                1,
+                crate::types::Continuity::Standard,
+                DType::F64,
+            )
+        };
+
+        let dtype = unsafe { ciarlet_element_dtype(element) };
+        assert_eq!(dtype, DType::F64);
+    }
 }
