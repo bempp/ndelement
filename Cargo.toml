@@ -1,3 +1,6 @@
+
+workspace = { members = ["ndelement-macros"] }
+
 [features]
 mpi = ["dep:mpi"]
 serde = ["dep:serde"]
@@ -30,6 +33,7 @@ rlst = { version = "0.2.0", default-features = false }
 serde = { version = "1", features = ["derive"], optional = true }
 strum = "0.26"
 strum_macros = "0.26"
+ndelement-macros = { path = "ndelement-macros" }
 
 [dev-dependencies]
 paste = "1.*"
