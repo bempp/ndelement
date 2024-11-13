@@ -1,7 +1,10 @@
-#[cfg(feature="C")]
-use std::{env, fs, path::{Path, PathBuf}};
+#[cfg(feature = "C")]
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
 
-#[cfg(feature="C")]
+#[cfg(feature = "C")]
 fn main() {
     let crate_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
@@ -32,5 +35,5 @@ fn main() {
     bindings.write_to_file(header_path);
 }
 
-#[cfg(not(feature="C"))]
-fn main(){}
+#[cfg(not(feature = "C"))]
+fn main() {}
