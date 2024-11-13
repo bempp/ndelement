@@ -9,3 +9,4 @@ pub mod quadrature;
 pub mod reference_cell;
 pub mod traits;
 pub mod types;
+pub(crate) mod utils;

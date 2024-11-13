@@ -9,6 +9,7 @@ use rlst::MatrixInverse;
 use rlst::RlstScalar;
 use rlst::{rlst_dynamic_array2, rlst_dynamic_array3, RandomAccessMut};
 use std::marker::PhantomData;
+use bempp_quadrature::simplex_rules::simplex_rule;
 
 /// Create a Raviart-Thomas element
 pub fn create<T: RlstScalar + MatrixInverse>(
@@ -37,7 +38,18 @@ pub fn create<T: RlstScalar + MatrixInverse>(
             *wcoeffs.get_mut([i * subpdim + j, i, j]).unwrap() = T::from(1.0).unwrap();
         }
     }
+
     // (px, py, pz) , where p = scalar polynomial of degree = n-1
+    let (pts, wts) = simplex_rule(cell_type, 2 * match cell_type {
+        ReferenceCellType::Point => 1,
+        ReferenceCellType::Interval => degree + 1,
+        ReferenceCellType::Triangle => (degree + 1) * (degree + 2) / 2,
+        ReferenceCellType::Quadrilateral => (degree + 1).pow(2),
+        ReferenceCellType::Tetrahedron => (degree + 1) * (degree + 2) * (degree + 3) / 6,
+        ReferenceCellType::Hexahedron => (degree + 1).pow(3),
+        ReferenceCellType::Prism => (degree + 1).pow(2) * (degree + 2) / 2,
+        ReferenceCellType::Pyramid => (degree + 1) * (degree + 2) * (2 * degree + 3) / 6,
+    });
 
     *wcoeffs.get_mut([2, 0, 1]).unwrap() = T::from(-0.5).unwrap() / T::sqrt(T::from(2.0).unwrap());
     *wcoeffs.get_mut([2, 0, 2]).unwrap() = T::from(0.5).unwrap() * T::sqrt(T::from(1.5).unwrap());
