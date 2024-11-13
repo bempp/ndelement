@@ -17,29 +17,28 @@ pub fn create<T: RlstScalar + MatrixInverse>(
     continuity: Continuity,
 ) -> CiarletElement<T> {
     if cell_type != ReferenceCellType::Triangle && cell_type != ReferenceCellType::Quadrilateral {
-        panic!("Unsupported cell type");
+        panic!("Raviart-Thomas only implemented for 2D cells");
     }
 
     if cell_type != ReferenceCellType::Triangle {
         panic!("RT elements on quadrilaterals not implemented yet");
     }
-    if degree != 1 {
-        panic!("Degree > 1 RT elements not implemented yet");
-    }
 
+    let subpdim = polynomial_count(cell_type, degree - 1);
     let pdim = polynomial_count(cell_type, degree);
     let tdim = reference_cell::dim(cell_type);
-    let edim = tdim * polynomial_count(cell_type, degree - 1) + degree;
+    let edim = tdim * subpdim + degree;
 
     let mut wcoeffs = rlst_dynamic_array3!(T, [edim, tdim, pdim]);
 
-    // [sqrt(2), 6*y - 2, 4*sqrt(3)*(x + y/2 - 1/2)]
+    // vector polynomials of degree <= n-1
+    for i in 0..tdim {
+        for j in 0..subpdim {
+            *wcoeffs.get_mut([i * subpdim + j, i, j]).unwrap() = T::from(1.0).unwrap();
+        }
+    }
+    // (px, py, pz) , where p = scalar polynomial of degree = n-1
 
-    // norm(x**2 + y**2)
-    // sqrt(70)/30
-
-    *wcoeffs.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
-    *wcoeffs.get_mut([1, 1, 0]).unwrap() = T::from(1.0).unwrap();
     *wcoeffs.get_mut([2, 0, 1]).unwrap() = T::from(-0.5).unwrap() / T::sqrt(T::from(2.0).unwrap());
     *wcoeffs.get_mut([2, 0, 2]).unwrap() = T::from(0.5).unwrap() * T::sqrt(T::from(1.5).unwrap());
     *wcoeffs.get_mut([2, 1, 1]).unwrap() = T::from(1.0).unwrap() / T::sqrt(T::from(2.0).unwrap());
