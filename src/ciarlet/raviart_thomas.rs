@@ -3,13 +3,13 @@
 use super::CiarletElement;
 use crate::polynomials::polynomial_count;
 use crate::reference_cell;
+use crate::quadrature::
 use crate::traits::ElementFamily;
 use crate::types::{Continuity, MapType, ReferenceCellType};
 use rlst::MatrixInverse;
 use rlst::RlstScalar;
 use rlst::{rlst_dynamic_array2, rlst_dynamic_array3, RandomAccessMut};
 use std::marker::PhantomData;
-use bempp_quadrature::simplex_rules::simplex_rule;
 
 /// Create a Raviart-Thomas element
 pub fn create<T: RlstScalar + MatrixInverse>(
