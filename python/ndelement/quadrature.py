@@ -21,3 +21,4 @@ def make_gauss_jacobi_quadrature(
         _ffi.cast("double*", points.ctypes.data),
         _ffi.cast("double*", weights.ctypes.data),
     )
+    return points, weights
