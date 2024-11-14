@@ -33,8 +33,8 @@ pub fn derivative_count(cell_type: ReferenceCellType, derivatives: usize) -> usi
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::quadrature::gauss_jacobi_rule;
     use crate::types::{Array2D, ReferenceCellType};
-    use crate::{quadrature::make_gauss_jacobi_quadrature, traits::QuadratureRule};
     use approx::*;
     use paste::paste;
     use rlst::{
@@ -47,13 +47,13 @@ mod test {
             paste! {
                 #[test]
                 fn [<test_orthogonal_ $cell:lower _ $degree>]() {
-                    let rule = make_gauss_jacobi_quadrature(
+                    let rule = gauss_jacobi_rule(
                         ReferenceCellType::[<$cell>],
                         2 * [<$degree>],
-                    );
+                    ).unwrap();
 
 
-                    let points = rlst_array_from_slice2!(rule.points(), [rule.dim(), rule.npoints()]);
+                    let points = rlst_array_from_slice2!(&rule.points, [rule.dim, rule.npoints]);
 
                     let mut data = rlst_dynamic_array3!(
                         f64,
@@ -64,10 +64,10 @@ mod test {
                     for i in 0..[<$degree>] + 1 {
                         for j in 0..[<$degree>] + 1 {
                             let mut product = 0.0;
-                            for k in 0..rule.npoints() {
+                            for k in 0..rule.npoints {
                                 product += data.get([0, i, k]).unwrap()
                                     * data.get([0, j, k]).unwrap()
-                                    * rule.weights()[k];
+                                    * rule.weights[k];
                             }
                             if i == j {
                                 assert_relative_eq!(product, 1.0, epsilon = 1e-12);
