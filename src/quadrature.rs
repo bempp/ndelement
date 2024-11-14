@@ -1,4 +1,9 @@
 //! Quadrature
+mod simplex_rules;
+pub use simplex_rules::{available_rules, simplex_rule};
+
+// TODO: move gauss jacobi rules to bempp_quadrature
+
 mod gauss_jacobi;
 pub use gauss_jacobi::{
     make_quadrature as make_gauss_jacobi_quadrature, npoints as gauss_jacobi_quadrature_npoints,
