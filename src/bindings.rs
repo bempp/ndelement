@@ -136,53 +136,33 @@ pub mod reference_cell {
 
 pub mod quadrature {
     use crate::quadrature;
-    use crate::traits::QuadratureRule;
     use crate::types::ReferenceCellType;
-    use num::traits::FloatConst;
-    use rlst::RlstScalar;
-    use std::cmp::PartialOrd;
 
     #[no_mangle]
     pub unsafe extern "C" fn gauss_jacobi_quadrature_npoints(cell: u8, m: usize) -> usize {
-        quadrature::gauss_jacobi_quadrature_npoints(
+        quadrature::gauss_jacobi_npoints(
             ReferenceCellType::from(cell).expect("Invalid cell type"),
             m,
         )
     }
-    unsafe fn make_gauss_jacobi_quadrature<T: RlstScalar<Real = T> + FloatConst + PartialOrd>(
-        cell: u8,
-        m: usize,
-        pts: *mut T,
-        wts: *mut T,
-    ) {
-        let rule = quadrature::make_gauss_jacobi_quadrature::<T>(
-            ReferenceCellType::from(cell).expect("Invalid cell type"),
-            m,
-        );
-        for (i, p) in rule.points().iter().enumerate() {
-            *pts.add(i) = *p;
-        }
-        for (i, w) in rule.weights().iter().enumerate() {
-            *wts.add(i) = *w;
-        }
-    }
     #[no_mangle]
-    pub unsafe extern "C" fn make_gauss_jacobi_quadrature_f32(
-        cell: u8,
-        m: usize,
-        pts: *mut f32,
-        wts: *mut f32,
-    ) {
-        make_gauss_jacobi_quadrature(cell, m, pts, wts);
-    }
-    #[no_mangle]
-    pub unsafe extern "C" fn make_gauss_jacobi_quadrature_f64(
+    pub unsafe extern "C" fn make_gauss_jacobi_quadrature(
         cell: u8,
         m: usize,
         pts: *mut f64,
         wts: *mut f64,
     ) {
-        make_gauss_jacobi_quadrature(cell, m, pts, wts);
+        let rule = quadrature::gauss_jacobi_rule(
+            ReferenceCellType::from(cell).expect("Invalid cell type"),
+            m,
+        )
+        .unwrap();
+        for (i, p) in rule.points.iter().enumerate() {
+            *pts.add(i) = *p;
+        }
+        for (i, w) in rule.weights.iter().enumerate() {
+            *wts.add(i) = *w;
+        }
     }
 }
 

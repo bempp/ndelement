@@ -8,27 +8,16 @@ from ndelement.reference_cell import ReferenceCellType, dim
 
 
 def make_gauss_jacobi_quadrature(
-    cell: ReferenceCellType, degree: int, dtype: typing.Type[np.floating] = np.float64
-) -> typing.Tuple[npt.NDArray, npt.NDArray]:
+    cell: ReferenceCellType, degree: int
+) -> typing.Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Get the points and weights of a Gauss-Jacobi quadrature rule."""
     tdim = dim(cell)
     npts = _lib.gauss_jacobi_quadrature_npoints(cell.value, degree)
-    points = np.empty((npts, tdim), dtype=dtype)
-    weights = np.empty(npts, dtype=dtype)
-    if dtype == np.float64:
-        _lib.make_gauss_jacobi_quadrature_f64(
-            cell.value,
-            degree,
-            _ffi.cast("double*", points.ctypes.data),
-            _ffi.cast("double*", weights.ctypes.data),
-        )
-    elif dtype == np.float32:
-        _lib.make_gauss_jacobi_quadrature_f32(
-            cell.value,
-            degree,
-            _ffi.cast("float*", points.ctypes.data),
-            _ffi.cast("float*", weights.ctypes.data),
-        )
-    else:
-        raise TypeError(f"Unsupported dtype: {dtype}")
-    return points, weights
+    points = np.empty((npts, tdim), dtype=np.float64)
+    weights = np.empty(npts, dtype=np.float64)
+    _lib.make_gauss_jacobi_quadrature(
+        cell.value,
+        degree,
+        _ffi.cast("double*", points.ctypes.data),
+        _ffi.cast("double*", weights.ctypes.data),
+    )
