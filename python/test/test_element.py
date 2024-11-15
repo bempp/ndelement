@@ -31,7 +31,7 @@ def test_lagrange_2_triangle_tabulate():
 
     data2 = np.empty(data.shape)
     # Basis functions taken from DefElement
-    # (https://defelement.com/elements/examples/triangle-lagrange-equispaced-2.html)
+    # (https://defelement.org/elements/examples/triangle-lagrange-equispaced-2.html)
     for i, function in enumerate(
         [
             lambda x, y: (x + y - 1) * (2 * x + 2 * y - 1),
