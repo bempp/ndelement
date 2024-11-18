@@ -4,6 +4,7 @@
 
 pub mod bindings;
 pub mod ciarlet;
+pub mod math;
 pub mod polynomials;
 pub mod quadrature;
 pub mod reference_cell;
