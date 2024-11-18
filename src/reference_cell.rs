@@ -235,10 +235,10 @@ pub fn facet_normals<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Ve
 /// The unit normals to the facets of the reference cell
 pub fn facet_unit_normals<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Vec<T>> {
     let mut normals = facet_normals::<T>(cell);
-    for i in 0..normals.len() {
-        let size = normals[i].iter().map(|x| x.powi(2)).sum::<T>().sqrt();
-        for j in 0..normals[i].len() {
-            normals[i][j] /= size;
+    for normal in normals.iter_mut() {
+        let size = normal.iter().map(|x| x.powi(2)).sum::<T>().sqrt();
+        for value in normal.iter_mut() {
+            *value /= size;
         }
     }
     normals
