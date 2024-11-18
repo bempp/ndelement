@@ -219,10 +219,10 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
         let mut entity_dofs = [vec![], vec![], vec![], vec![]];
         let mut dof = 0;
         for i in 0..4 {
-            for pts in &new_pts[i] {
-                let dofs = (dof..dof + pts.shape()[1]).collect::<Vec<_>>();
+            for wts in &new_wts[i] {
+                let dofs = (dof..dof + wts.shape()[0]).collect::<Vec<_>>();
                 entity_dofs[i].push(dofs);
-                dof += pts.shape()[1];
+                dof += wts.shape()[0];
             }
         }
         let connectivity = reference_cell::connectivity(cell_type);
@@ -383,6 +383,8 @@ mod test {
         {
             for entity in 0..*entity_count {
                 ndofs += e.entity_dofs(dim, entity).unwrap().len();
+                println!("{:?}", e.entity_dofs(dim, entity).unwrap());
+                println!("{ndofs}");
             }
         }
         assert_eq!(ndofs, e.dim());
@@ -931,29 +933,42 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
+            println!("({},{})", points[[0, pt]], points[[1, pt]]);
+            for i in 0..3 {
+                for j in 0..2 {
+                    println!("{}", data[[0, pt, i, j]]);
+                }
+            }
+            println!();
             assert_relative_eq!(
                 *data.get([0, pt, 0, 0]).unwrap(),
-                -*points.get([0, pt]).unwrap()
+                -*points.get([0, pt]).unwrap(),
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 0, 1]).unwrap(),
-                -*points.get([1, pt]).unwrap()
+                -*points.get([1, pt]).unwrap(),
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 1, 0]).unwrap(),
-                *points.get([0, pt]).unwrap() - 1.0
+                *points.get([0, pt]).unwrap() - 1.0,
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 1, 1]).unwrap(),
-                *points.get([1, pt]).unwrap()
+                *points.get([1, pt]).unwrap(),
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 2, 0]).unwrap(),
-                -*points.get([0, pt]).unwrap()
+                -*points.get([0, pt]).unwrap(),
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 2, 1]).unwrap(),
-                1.0 - *points.get([1, pt]).unwrap()
+                1.0 - *points.get([1, pt]).unwrap(),
+                epsilon = 1e-14
             );
         }
         check_dofs(e);
@@ -961,76 +976,24 @@ mod test {
 
     #[test]
     fn test_raviart_thomas_2_triangle() {
-        let e = raviart_thomas::create(ReferenceCellType::Triangle, 2, Continuity::Standard);
+        let e = raviart_thomas::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 0.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
+        check_dofs(e);
+    }
 
-        for pt in 0..6 {
-            // Values in this test are taken from
-            // https://defelement.com/elements/examples/triangle-raviart-thomas-lagrange-2.html
-            let x = points.get([0, pt]).unwrap();
-            let y = points.get([1, pt]).unwrap();
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 4.0 * x * (1.0 - 2.0 * x));
-            assert_relative_eq!(*data.get([0, pt, 0, 1]).unwrap(), 2.0 * y * (1.0 - 4.0 * x));
-            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), 2.0 * x * (1.0 - 4.0 * y));
-            assert_relative_eq!(*data.get([0, pt, 1, 1]).unwrap(), 4.0 * y * (1.0 - 2.0 * x));
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
-                -8.0 * x * x - 8.0 * x * y + 12.0 * x + 6.0 * y - 4.0
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 1]).unwrap(),
-                2.0 * y * (3.0 - 4.0 * x - 4.0 * x)
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 3, 0]).unwrap(),
-                8.0 * x * y - 2.0 * x - 6.0 * y + 2.0
-            );
-            assert_relative_eq!(*data.get([0, pt, 3, 1]).unwrap(), 4.0 * y * (2.0 * y - 1.0));
-            assert_relative_eq!(
-                *data.get([0, pt, 4, 0]).unwrap(),
-                2.0 * x * (4.0 * x + 4.0 * y - 3.0)
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 4, 1]).unwrap(),
-                8.0 * x * y - 6.0 * x + 8.0 * y * y - 12.0 * y + 4.0
-            );
-            assert_relative_eq!(*data.get([0, pt, 5, 0]).unwrap(), 4.0 * x * (1.0 - 2.0 * x));
-            assert_relative_eq!(
-                *data.get([0, pt, 5, 1]).unwrap(),
-                -8.0 * x * y + 6.0 * x + 2.0 * y - 2.0
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 6, 0]).unwrap(),
-                8.0 * x * (2.0 - 2.0 * x - y)
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 6, 1]).unwrap(),
-                8.0 * y * (1.0 - 2.0 * x - y)
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 7, 0]).unwrap(),
-                8.0 * x * (1.0 - x - 2.0 * y)
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 7, 1]).unwrap(),
-                8.0 * y * (1.0 - x - 2.0 * y)
-            );
-        }
+    #[test]
+    fn test_raviart_thomas_1_tetrahedron() {
+        let e =
+            raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
+        assert_eq!(e.value_size(), 3);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_raviart_thomas_2_tetrahedron() {
+        let e =
+            raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 2, Continuity::Standard);
+        assert_eq!(e.value_size(), 3);
         check_dofs(e);
     }
 

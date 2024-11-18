@@ -3,7 +3,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn main() {
-/*
     let crate_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
     // Determine the target directory within the workspace root
@@ -31,5 +30,4 @@ fn main() {
 
     // Write the bindings to the header file
     bindings.write_to_file(header_path);
-*/
 }

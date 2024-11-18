@@ -186,6 +186,64 @@ pub fn faces(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     }
 }
 
+/// The normals to the facets of the reference cell. The length of each normal is the volume of the facet
+pub fn facet_normals<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Vec<T>> {
+    let zero = T::from(0.0).unwrap();
+    let one = T::from(1.0).unwrap();
+    match cell {
+        ReferenceCellType::Point => vec![],
+        ReferenceCellType::Interval => vec![vec![one], vec![one]],
+        ReferenceCellType::Triangle => vec![vec![-one, -one], vec![-one, zero], vec![zero, one]],
+        ReferenceCellType::Quadrilateral => vec![
+            vec![zero, one],
+            vec![-one, zero],
+            vec![-one, zero],
+            vec![zero, one],
+        ],
+        // TODO: check signs in all of the following
+        ReferenceCellType::Tetrahedron => vec![
+            vec![one, one, one],
+            vec![one, zero, zero],
+            vec![zero, -one, zero],
+            vec![zero, zero, one],
+        ],
+        ReferenceCellType::Hexahedron => vec![
+            vec![zero, zero, one],
+            vec![zero, -one, zero],
+            vec![one, zero, zero],
+            vec![one, zero, zero],
+            vec![zero, -one, zero],
+            vec![zero, zero, one],
+        ],
+        ReferenceCellType::Prism => vec![
+            vec![zero, zero, one],
+            vec![zero, -one, zero],
+            vec![one, zero, zero],
+            vec![one, one, zero],
+            vec![zero, zero, one],
+        ],
+        ReferenceCellType::Pyramid => vec![
+            vec![zero, zero, one],
+            vec![zero, -one, zero],
+            vec![one, zero, zero],
+            vec![one, zero, one],
+            vec![zero, -one, -one],
+        ],
+    }
+}
+
+/// The unit normals to the facets of the reference cell
+pub fn facet_unit_normals<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Vec<T>> {
+    let mut normals = facet_normals::<T>(cell);
+    for i in 0..normals.len() {
+        let size = normals[i].iter().map(|x| x.powi(2)).sum::<T>().sqrt();
+        for j in 0..normals[i].len() {
+            normals[i][j] /= size;
+        }
+    }
+    normals
+}
+
 /// The faces of the reference cell
 pub fn volumes(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match cell {
