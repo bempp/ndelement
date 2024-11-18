@@ -219,10 +219,10 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
         let mut entity_dofs = [vec![], vec![], vec![], vec![]];
         let mut dof = 0;
         for i in 0..4 {
-            for pts in &new_pts[i] {
-                let dofs = (dof..dof + pts.shape()[1]).collect::<Vec<_>>();
+            for wts in &new_wts[i] {
+                let dofs = (dof..dof + wts.shape()[0]).collect::<Vec<_>>();
                 entity_dofs[i].push(dofs);
-                dof += pts.shape()[1];
+                dof += wts.shape()[0];
             }
         }
         let connectivity = reference_cell::connectivity(cell_type);
@@ -310,7 +310,7 @@ impl<T: RlstScalar + MatrixInverse> FiniteElement for CiarletElement<T> {
     ) {
         let mut table = rlst_dynamic_array3!(
             T,
-            legendre_shape(self.cell_type, points, self.embedded_superdegree, nderivs,)
+            legendre_shape(self.cell_type, points, self.embedded_superdegree, nderivs)
         );
         tabulate_legendre_polynomials(
             self.cell_type,
@@ -933,29 +933,58 @@ mod test {
         for pt in 0..6 {
             assert_relative_eq!(
                 *data.get([0, pt, 0, 0]).unwrap(),
-                -*points.get([0, pt]).unwrap()
+                -*points.get([0, pt]).unwrap(),
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 0, 1]).unwrap(),
-                -*points.get([1, pt]).unwrap()
+                -*points.get([1, pt]).unwrap(),
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 1, 0]).unwrap(),
-                *points.get([0, pt]).unwrap() - 1.0
+                *points.get([0, pt]).unwrap() - 1.0,
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 1, 1]).unwrap(),
-                *points.get([1, pt]).unwrap()
+                *points.get([1, pt]).unwrap(),
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 2, 0]).unwrap(),
-                -*points.get([0, pt]).unwrap()
+                -*points.get([0, pt]).unwrap(),
+                epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 2, 1]).unwrap(),
-                1.0 - *points.get([1, pt]).unwrap()
+                1.0 - *points.get([1, pt]).unwrap(),
+                epsilon = 1e-14
             );
         }
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_raviart_thomas_2_triangle() {
+        let e = raviart_thomas::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
+        assert_eq!(e.value_size(), 2);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_raviart_thomas_1_tetrahedron() {
+        let e =
+            raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
+        assert_eq!(e.value_size(), 3);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_raviart_thomas_2_tetrahedron() {
+        let e =
+            raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 2, Continuity::Standard);
+        assert_eq!(e.value_size(), 3);
         check_dofs(e);
     }
 
