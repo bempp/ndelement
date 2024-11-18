@@ -21,6 +21,7 @@ class Family(Enum):
 
     Lagrange = 0
     RaviartThomas = 1
+    NedelecFirstKind = 2
 
 
 class MapType(Enum):
@@ -220,6 +221,17 @@ def create_family(
         elif dtype == np.float32:
             return ElementFamily(
                 _lib.raviart_thomas_element_family_new_f64(degree, continuity.value)
+            )
+        else:
+            raise TypeError(f"Unsupported dtype: {dtype}")
+    elif family == Family.NedelecFirstKind:
+        if dtype == np.float64:
+            return ElementFamily(
+                _lib.nedelec_element_family_new_f64(degree, continuity.value)
+            )
+        elif dtype == np.float32:
+            return ElementFamily(
+                _lib.nedelec_element_family_new_f64(degree, continuity.value)
             )
         else:
             raise TypeError(f"Unsupported dtype: {dtype}")

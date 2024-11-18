@@ -154,8 +154,8 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         let internal_q = gauss_jacobi_rule(cell_type, 2 * degree - 2).unwrap();
         let mut pts = rlst_dynamic_array2!(T::Real, [tdim, internal_q.npoints]);
         for p in 0..internal_q.npoints {
-            for d in 0..3 {
-                pts[[d, p]] = TReal::from(internal_q.points[3 * p + d]).unwrap()
+            for d in 0..tdim {
+                pts[[d, p]] = TReal::from(internal_q.points[tdim * p + d]).unwrap()
             }
         }
 

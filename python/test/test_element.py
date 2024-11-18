@@ -196,3 +196,49 @@ def test_raviart_thomas_1_triangle(continuity):
             assert element.entity_closure_dofs(1, i) == []
         assert element.entity_dofs(2, 0) == [0, 1, 2]
         assert element.entity_closure_dofs(2, 0) == [0, 1, 2]
+
+
+@pytest.mark.parametrize("continuity", [Continuity.Standard, Continuity.Discontinuous])
+def test_nedelec_1_triangle(continuity):
+    family = create_family(Family.NedelecFirstKind, 1, continuity=continuity)
+    element = family.element(ReferenceCellType.Triangle)
+
+    assert element.value_size == 2
+    assert element.value_shape == (2,)
+    assert element.degree == 1
+    assert element.embedded_superdegree == 1
+    assert element.dim == 3
+    assert element.continuity == continuity
+    assert element.map_type == MapType.CovariantPiola
+    assert element.cell_type == ReferenceCellType.Triangle
+
+    if continuity == Continuity.Standard:
+        assert element.entity_dofs(0, 0) == []
+        assert element.entity_dofs(0, 1) == []
+        assert element.entity_dofs(0, 2) == []
+        assert element.entity_dofs(1, 0) == [0]
+        assert element.entity_dofs(1, 1) == [1]
+        assert element.entity_dofs(1, 2) == [2]
+        assert element.entity_dofs(2, 0) == []
+
+        assert element.entity_closure_dofs(0, 0) == []
+        assert element.entity_closure_dofs(0, 1) == []
+        assert element.entity_closure_dofs(0, 2) == []
+        assert element.entity_closure_dofs(1, 0) == [0]
+        assert element.entity_closure_dofs(1, 1) == [1]
+        assert element.entity_closure_dofs(1, 2) == [2]
+        assert element.entity_closure_dofs(2, 0) == [0, 1, 2]
+
+        ip = element.interpolation_points()
+        assert ip[0][0].shape == (0, 2)
+        assert ip[0][1].shape == (0, 2)
+        assert ip[0][2].shape == (0, 2)
+        assert ip[2][0].shape == (0, 2)
+    else:
+        for i in range(3):
+            assert element.entity_dofs(0, i) == []
+            assert element.entity_dofs(1, i) == []
+            assert element.entity_closure_dofs(0, i) == []
+            assert element.entity_closure_dofs(1, i) == []
+        assert element.entity_dofs(2, 0) == [0, 1, 2]
+        assert element.entity_closure_dofs(2, 0) == [0, 1, 2]

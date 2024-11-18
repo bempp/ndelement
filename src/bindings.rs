@@ -262,6 +262,7 @@ pub mod ciarlet {
     pub enum ElementType {
         Lagrange = 0,
         RaviartThomas = 1,
+        NedelecFirstKind = 2,
     }
 
     #[repr(C)]
@@ -337,6 +338,20 @@ pub mod ciarlet {
                     }),
                     DType::C64 => drop(unsafe {
                         Box::from_raw(*family as *mut ciarlet::RaviartThomasElementFamily<c64>)
+                    }),
+                },
+                ElementType::NedelecFirstKind => match dtype {
+                    DType::F32 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::NedelecFirstKindElementFamily<f32>)
+                    }),
+                    DType::F64 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::NedelecFirstKindElementFamily<f64>)
+                    }),
+                    DType::C32 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::NedelecFirstKindElementFamily<c32>)
+                    }),
+                    DType::C64 => drop(unsafe {
+                        Box::from_raw(*family as *mut ciarlet::NedelecFirstKindElementFamily<c64>)
                     }),
                 },
             }
@@ -832,6 +847,24 @@ pub mod ciarlet {
                     ciarlet::RaviartThomasElementFamily<c64>,
                 >(family, cell),
             },
+            ElementType::NedelecFirstKind => match (*family).dtype {
+                DType::F32 => element_family_element_internal::<
+                    f32,
+                    ciarlet::NedelecFirstKindElementFamily<f32>,
+                >(family, cell),
+                DType::F64 => element_family_element_internal::<
+                    f64,
+                    ciarlet::NedelecFirstKindElementFamily<f64>,
+                >(family, cell),
+                DType::C32 => element_family_element_internal::<
+                    c32,
+                    ciarlet::NedelecFirstKindElementFamily<c32>,
+                >(family, cell),
+                DType::C64 => element_family_element_internal::<
+                    c64,
+                    ciarlet::NedelecFirstKindElementFamily<c64>,
+                >(family, cell),
+            },
         }
     }
 
@@ -899,6 +932,40 @@ pub mod ciarlet {
         Box::into_raw(Box::new(ElementFamilyWrapper {
             family,
             etype: ElementType::RaviartThomas,
+            dtype: DType::F64,
+        }))
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn nedelec_element_family_new_f32(
+        degree: usize,
+        continuity: u8,
+    ) -> *const ElementFamilyWrapper {
+        let family = Box::into_raw(Box::new(ciarlet::NedelecFirstKindElementFamily::<f32>::new(
+            degree,
+            Continuity::from(continuity).expect("Invalid continuity"),
+        ))) as *mut c_void;
+
+        Box::into_raw(Box::new(ElementFamilyWrapper {
+            family,
+            etype: ElementType::NedelecFirstKind,
+            dtype: DType::F32,
+        }))
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn nedelec_element_family_new_f64(
+        degree: usize,
+        continuity: u8,
+    ) -> *const ElementFamilyWrapper {
+        let family = Box::into_raw(Box::new(ciarlet::NedelecFirstKindElementFamily::<f64>::new(
+            degree,
+            Continuity::from(continuity).expect("Invalid continuity"),
+        ))) as *mut c_void;
+
+        Box::into_raw(Box::new(ElementFamilyWrapper {
+            family,
+            etype: ElementType::NedelecFirstKind,
             dtype: DType::F64,
         }))
     }
