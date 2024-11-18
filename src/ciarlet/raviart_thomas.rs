@@ -1,6 +1,7 @@
 //! Raviart-Thomas elements
 
 use super::CiarletElement;
+use crate::math::orthogonalise_3;
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::quadrature::gauss_jacobi_rule;
 use crate::reference_cell;
@@ -81,7 +82,7 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         }
     }
 
-    // TODO: math::orthogonalise<T>(B, pdim_minus1 * tdim);
+    orthogonalise_3(&mut wcoeffs, pdim_minus1 * tdim);
 
     let mut x = [vec![], vec![], vec![], vec![]];
     let mut m = [vec![], vec![], vec![], vec![]];
