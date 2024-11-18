@@ -941,10 +941,12 @@ pub mod ciarlet {
         degree: usize,
         continuity: u8,
     ) -> *const ElementFamilyWrapper {
-        let family = Box::into_raw(Box::new(ciarlet::NedelecFirstKindElementFamily::<f32>::new(
-            degree,
-            Continuity::from(continuity).expect("Invalid continuity"),
-        ))) as *mut c_void;
+        let family = Box::into_raw(Box::new(
+            ciarlet::NedelecFirstKindElementFamily::<f32>::new(
+                degree,
+                Continuity::from(continuity).expect("Invalid continuity"),
+            ),
+        )) as *mut c_void;
 
         Box::into_raw(Box::new(ElementFamilyWrapper {
             family,
@@ -958,10 +960,12 @@ pub mod ciarlet {
         degree: usize,
         continuity: u8,
     ) -> *const ElementFamilyWrapper {
-        let family = Box::into_raw(Box::new(ciarlet::NedelecFirstKindElementFamily::<f64>::new(
-            degree,
-            Continuity::from(continuity).expect("Invalid continuity"),
-        ))) as *mut c_void;
+        let family = Box::into_raw(Box::new(
+            ciarlet::NedelecFirstKindElementFamily::<f64>::new(
+                degree,
+                Continuity::from(continuity).expect("Invalid continuity"),
+            ),
+        )) as *mut c_void;
 
         Box::into_raw(Box::new(ElementFamilyWrapper {
             family,
