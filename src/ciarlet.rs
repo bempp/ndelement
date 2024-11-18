@@ -383,8 +383,6 @@ mod test {
         {
             for entity in 0..*entity_count {
                 ndofs += e.entity_dofs(dim, entity).unwrap().len();
-                println!("{:?}", e.entity_dofs(dim, entity).unwrap());
-                println!("{ndofs}");
             }
         }
         assert_eq!(ndofs, e.dim());
@@ -933,13 +931,6 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
-            println!("({},{})", points[[0, pt]], points[[1, pt]]);
-            for i in 0..3 {
-                for j in 0..2 {
-                    println!("{}", data[[0, pt, i, j]]);
-                }
-            }
-            println!();
             assert_relative_eq!(
                 *data.get([0, pt, 0, 0]).unwrap(),
                 -*points.get([0, pt]).unwrap(),
