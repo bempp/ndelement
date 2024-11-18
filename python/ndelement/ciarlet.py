@@ -226,13 +226,9 @@ def create_family(
             raise TypeError(f"Unsupported dtype: {dtype}")
     elif family == Family.NedelecFirstKind:
         if dtype == np.float64:
-            return ElementFamily(
-                _lib.nedelec_element_family_new_f64(degree, continuity.value)
-            )
+            return ElementFamily(_lib.nedelec_element_family_new_f64(degree, continuity.value))
         elif dtype == np.float32:
-            return ElementFamily(
-                _lib.nedelec_element_family_new_f64(degree, continuity.value)
-            )
+            return ElementFamily(_lib.nedelec_element_family_new_f64(degree, continuity.value))
         else:
             raise TypeError(f"Unsupported dtype: {dtype}")
     else:
