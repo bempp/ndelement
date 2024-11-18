@@ -84,10 +84,6 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     }
 
     if cell_type == ReferenceCellType::Triangle {
-        assert_eq!(pdim_minus1, degree * (degree + 1) / 2);
-        assert_eq!(pdim_minus2, (degree - 1) * degree / 2);
-        assert_eq!(pdim_facet_minus1, degree);
-
         // Additional Nedelec polynomials
         for i in 0..pdim_facet_minus1 {
             for j in pdim_minus1..pdim {
@@ -118,12 +114,6 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
             }
         }
     } else {
-        assert_eq!(pdim_minus1, degree * (degree + 1) * (degree + 2) / 6);
-        assert_eq!(pdim_minus2, (degree - 1) * degree * (degree + 1) / 6);
-        assert_eq!(pdim_facet_minus1, degree * (degree + 1) / 2);
-        assert_eq!(pdim_face_minus2, degree * (degree - 1) / 2);
-        assert_eq!(pdim_edge_minus1, degree);
-
         // Additional Nedelec polynomials
         for i in 0..pdim_facet_minus1 {
             for j in pdim_minus1..pdim {
