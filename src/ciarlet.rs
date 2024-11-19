@@ -78,6 +78,7 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
         continuity: Continuity,
         embedded_superdegree: usize,
     ) -> Self {
+        println!("A");
         let mut dim = 0;
         let mut npts = 0;
 
@@ -101,6 +102,8 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
                 }
             }
         }
+
+        println!("B");
 
         let new_pts = if continuity == Continuity::Discontinuous {
             let mut new_pts: EntityPoints<T::Real> = [vec![], vec![], vec![], vec![]];
@@ -154,9 +157,13 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
             interpolation_weights
         };
 
+        println!("C");
+
         // Compute the dual matrix
         let pdim = polynomial_count(cell_type, embedded_superdegree);
         let mut d_matrix = rlst_dynamic_array3!(T, [value_size, pdim, dim]);
+
+        println!("D");
 
         let mut dof = 0;
         for d in 0..4 {
@@ -190,6 +197,8 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
 
         let mut inverse = rlst::rlst_dynamic_array2!(T, [dim, dim]);
 
+        println!("E");
+
         for i in 0..dim {
             for j in 0..dim {
                 let entry = inverse.get_mut([i, j]).unwrap();
@@ -203,7 +212,13 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
             }
         }
 
+        println!("F");
+
+        println!("{:?}", inverse.shape());
+
         inverse.view_mut().into_inverse_alloc().unwrap();
+
+        println!("G");
 
         let mut coefficients = rlst_dynamic_array3!(T, [dim, value_size, pdim]);
         for i in 0..dim {
@@ -246,6 +261,7 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
                 ecdofs.push(cdofs);
             }
         }
+        println!("Z");
         CiarletElement::<T> {
             family_name,
             cell_type,
@@ -388,12 +404,6 @@ mod test {
             }
         }
         assert_eq!(ndofs, e.dim());
-    }
-
-    #[test]
-    fn test_lagrange_1() {
-        let e = lagrange::create::<f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 1);
     }
 
     #[test]
@@ -968,44 +978,6 @@ mod test {
     }
 
     #[test]
-    fn test_raviart_thomas_2_triangle() {
-        let e = raviart_thomas::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_raviart_thomas_3_triangle() {
-        let e = raviart_thomas::create::<f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_raviart_thomas_1_tetrahedron() {
-        let e =
-            raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_raviart_thomas_2_tetrahedron() {
-        let e =
-            raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 2, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_raviart_thomas_3_tetrahedron() {
-        let e =
-            raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 3, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
     fn test_nedelec_1_triangle() {
         let e = nedelec::create(ReferenceCellType::Triangle, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
@@ -1060,47 +1032,12 @@ mod test {
         check_dofs(e);
     }
 
-    #[test]
-    fn test_nedelec_2_triangle() {
-        let e = nedelec::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_3_triangle() {
-        let e = nedelec::create::<f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_1_tetrahedron() {
-        let e = nedelec::create::<f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_2_tetrahedron() {
-        let e = nedelec::create::<f64>(ReferenceCellType::Tetrahedron, 2, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_3_tetrahedron() {
-        let e = nedelec::create::<f64>(ReferenceCellType::Tetrahedron, 3, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    macro_rules! test_entity_closure_dofs_lagrange {
-        ($cell:ident, $degree:expr) => {
+    macro_rules! test_entity_closure_dofs {
+        ($element:ident, $cell:ident, $degree:expr) => {
             paste! {
                 #[test]
-                fn [<test_entity_closure_dofs_ $cell:lower _ $degree>]() {
-                    let e = lagrange::create::<f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard);
+                fn [<test_entity_closure_dofs_ $element:lower _ $cell:lower _ $degree>]() {
+                    let e = [<$element>]::create::<f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard);
                     let c = reference_cell::connectivity(ReferenceCellType::[<$cell>]);
 
                     for (dim, entities) in c.iter().enumerate() {
@@ -1119,27 +1056,77 @@ mod test {
                             assert_eq!(ecd.len(), len);
                         }
                     }
+                    check_dofs(e);
                 }
             }
         };
     }
 
-    test_entity_closure_dofs_lagrange!(Interval, 2);
-    test_entity_closure_dofs_lagrange!(Interval, 3);
-    test_entity_closure_dofs_lagrange!(Interval, 4);
-    test_entity_closure_dofs_lagrange!(Interval, 5);
-    test_entity_closure_dofs_lagrange!(Triangle, 2);
-    test_entity_closure_dofs_lagrange!(Triangle, 3);
-    test_entity_closure_dofs_lagrange!(Triangle, 4);
-    test_entity_closure_dofs_lagrange!(Triangle, 5);
-    test_entity_closure_dofs_lagrange!(Quadrilateral, 2);
-    test_entity_closure_dofs_lagrange!(Quadrilateral, 3);
-    test_entity_closure_dofs_lagrange!(Quadrilateral, 4);
-    test_entity_closure_dofs_lagrange!(Quadrilateral, 5);
-    test_entity_closure_dofs_lagrange!(Tetrahedron, 2);
-    test_entity_closure_dofs_lagrange!(Tetrahedron, 3);
-    test_entity_closure_dofs_lagrange!(Tetrahedron, 4);
-    test_entity_closure_dofs_lagrange!(Tetrahedron, 5);
-    test_entity_closure_dofs_lagrange!(Hexahedron, 2);
-    test_entity_closure_dofs_lagrange!(Hexahedron, 3);
+    test_entity_closure_dofs!(lagrange, Interval, 1);
+    test_entity_closure_dofs!(lagrange, Interval, 2);
+    test_entity_closure_dofs!(lagrange, Interval, 3);
+    test_entity_closure_dofs!(lagrange, Interval, 4);
+    test_entity_closure_dofs!(lagrange, Interval, 5);
+    test_entity_closure_dofs!(lagrange, Triangle, 1);
+    test_entity_closure_dofs!(lagrange, Triangle, 2);
+    test_entity_closure_dofs!(lagrange, Triangle, 3);
+    test_entity_closure_dofs!(lagrange, Triangle, 4);
+    test_entity_closure_dofs!(lagrange, Triangle, 5);
+    test_entity_closure_dofs!(lagrange, Quadrilateral, 1);
+    test_entity_closure_dofs!(lagrange, Quadrilateral, 2);
+    test_entity_closure_dofs!(lagrange, Quadrilateral, 3);
+    test_entity_closure_dofs!(lagrange, Quadrilateral, 4);
+    test_entity_closure_dofs!(lagrange, Quadrilateral, 5);
+    test_entity_closure_dofs!(lagrange, Tetrahedron, 1);
+    test_entity_closure_dofs!(lagrange, Tetrahedron, 2);
+    test_entity_closure_dofs!(lagrange, Tetrahedron, 3);
+    test_entity_closure_dofs!(lagrange, Tetrahedron, 4);
+    test_entity_closure_dofs!(lagrange, Tetrahedron, 5);
+    test_entity_closure_dofs!(lagrange, Hexahedron, 1);
+    test_entity_closure_dofs!(lagrange, Hexahedron, 2);
+    test_entity_closure_dofs!(lagrange, Hexahedron, 3);
+    test_entity_closure_dofs!(lagrange, Hexahedron, 4);
+    test_entity_closure_dofs!(lagrange, Hexahedron, 5);
+
+    test_entity_closure_dofs!(raviart_thomas, Triangle, 1);
+    test_entity_closure_dofs!(raviart_thomas, Triangle, 2);
+    test_entity_closure_dofs!(raviart_thomas, Triangle, 3);
+    test_entity_closure_dofs!(raviart_thomas, Triangle, 4);
+    test_entity_closure_dofs!(raviart_thomas, Triangle, 5);
+    test_entity_closure_dofs!(raviart_thomas, Quadrilateral, 1);
+    test_entity_closure_dofs!(raviart_thomas, Quadrilateral, 2);
+    test_entity_closure_dofs!(raviart_thomas, Quadrilateral, 3);
+    test_entity_closure_dofs!(raviart_thomas, Quadrilateral, 4);
+    test_entity_closure_dofs!(raviart_thomas, Quadrilateral, 5);
+    test_entity_closure_dofs!(raviart_thomas, Tetrahedron, 1);
+    test_entity_closure_dofs!(raviart_thomas, Tetrahedron, 2);
+    test_entity_closure_dofs!(raviart_thomas, Tetrahedron, 3);
+    test_entity_closure_dofs!(raviart_thomas, Tetrahedron, 4);
+    test_entity_closure_dofs!(raviart_thomas, Tetrahedron, 5);
+    test_entity_closure_dofs!(raviart_thomas, Hexahedron, 1);
+    test_entity_closure_dofs!(raviart_thomas, Hexahedron, 2);
+    test_entity_closure_dofs!(raviart_thomas, Hexahedron, 3);
+    test_entity_closure_dofs!(raviart_thomas, Hexahedron, 4);
+    test_entity_closure_dofs!(raviart_thomas, Hexahedron, 5);
+
+    test_entity_closure_dofs!(nedelec, Triangle, 1);
+    test_entity_closure_dofs!(nedelec, Triangle, 2);
+    test_entity_closure_dofs!(nedelec, Triangle, 3);
+    test_entity_closure_dofs!(nedelec, Triangle, 4);
+    test_entity_closure_dofs!(nedelec, Triangle, 5);
+    test_entity_closure_dofs!(nedelec, Quadrilateral, 1);
+    test_entity_closure_dofs!(nedelec, Quadrilateral, 2);
+    test_entity_closure_dofs!(nedelec, Quadrilateral, 3);
+    test_entity_closure_dofs!(nedelec, Quadrilateral, 4);
+    test_entity_closure_dofs!(nedelec, Quadrilateral, 5);
+    test_entity_closure_dofs!(nedelec, Tetrahedron, 1);
+    test_entity_closure_dofs!(nedelec, Tetrahedron, 2);
+    test_entity_closure_dofs!(nedelec, Tetrahedron, 3);
+    test_entity_closure_dofs!(nedelec, Tetrahedron, 4);
+    test_entity_closure_dofs!(nedelec, Tetrahedron, 5);
+    test_entity_closure_dofs!(nedelec, Hexahedron, 1);
+    test_entity_closure_dofs!(nedelec, Hexahedron, 2);
+    test_entity_closure_dofs!(nedelec, Hexahedron, 3);
+    test_entity_closure_dofs!(nedelec, Hexahedron, 4);
+    test_entity_closure_dofs!(nedelec, Hexahedron, 5);
 }
