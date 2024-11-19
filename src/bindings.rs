@@ -241,7 +241,7 @@ pub mod ciarlet {
         traits::{ElementFamily, FiniteElement},
         types::{Continuity, ReferenceCellType},
     };
-    use c_api_tools::{cfuncs, concretise_types, DType};
+    use c_api_tools::{cfuncs, concretise_types, DType, DTypeIdentifier};
     use rlst::{
         c32, c64, rlst_array_from_slice2, rlst_array_from_slice_mut4, MatrixInverse, RawAccess,
         RlstScalar, Shape,
@@ -295,9 +295,53 @@ pub mod ciarlet {
         family
     }
 
+    #[no_mangle]
+    pub extern "C" fn create_raviart_thomas_family(
+        degree: usize,
+        continuity: Continuity,
+        dtype: DType,
+    ) -> *mut ElementFamilyT {
+        let family = element_family_t_create();
+        let family_inner = unsafe { element_family_t_unwrap(family).unwrap() };
+
+        *family_inner = match dtype {
+            DType::F32 => Box::new(ciarlet::RaviartThomasElementFamily::<f32>::new(
+                degree, continuity,
+            )),
+            DType::F64 => Box::new(ciarlet::RaviartThomasElementFamily::<f64>::new(
+                degree, continuity,
+            )),
+            _ => panic!("Unsupported dtype"),
+        };
+
+        family
+    }
+
+    #[no_mangle]
+    pub extern "C" fn create_nedelec_family(
+        degree: usize,
+        continuity: Continuity,
+        dtype: DType,
+    ) -> *mut ElementFamilyT {
+        let family = element_family_t_create();
+        let family_inner = unsafe { element_family_t_unwrap(family).unwrap() };
+
+        *family_inner = match dtype {
+            DType::F32 => Box::new(ciarlet::NedelecFirstKindElementFamily::<f32>::new(
+                degree, continuity,
+            )),
+            DType::F64 => Box::new(ciarlet::NedelecFirstKindElementFamily::<f64>::new(
+                degree, continuity,
+            )),
+            _ => panic!("Unsupported dtype"),
+        };
+
+        family
+    }
+
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64"]),
-        field(arg = 0, name = "element_family", wrapper = "ElementFamilyT", replace_with = ["crate::ciarlet::lagrange::LagrangeElementFamily<{{dtype}}>"])
+        field(arg = 0, name = "element_family", wrapper = "ElementFamilyT", replace_with = ["crate::ciarlet::LagrangeElementFamily<{{dtype}}>", "ciarlet::RaviartThomasElementFamily<{{dtype}}>", "ciarlet::NedelecFirstKindElementFamily<{{dtype}}>"])
     )]
     pub fn element_family_create_element<
         T: RlstScalar + MatrixInverse,
@@ -314,11 +358,18 @@ pub mod ciarlet {
         ciarlet_element
     }
 
-    // #[no_mangle]
-    // pub unsafe extern "C" fn ciarlet_free_element(e: *mut CiarletElementWrapper) {
-    //     assert!(!e.is_null());
-    //     unsafe { drop(Box::from_raw(e)) }
-    // }
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+    )]
+    pub fn element_dtype<
+        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        F: FiniteElement<T = T>,
+    >(
+        _elem: &F,
+    ) -> DType {
+        <T as DTypeIdentifier>::dtype()
+    }
 
     // #[no_mangle]
     // pub unsafe extern "C" fn ciarlet_value_size(element: *const CiarletElementWrapper) -> usize {

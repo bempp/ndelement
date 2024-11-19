@@ -69,7 +69,7 @@ class CiarletElement(object):
     @property
     def value_size(self) -> int:
         """Value size of the element."""
-        return _lib.ciarlet_value_size(self._rs_element)
+        return _lib.element_value_size(self._rs_element)
 
     @property
     def value_shape(self) -> typing.Tuple[int, ...]:
@@ -218,11 +218,11 @@ def create_family(
     elif family == Family.RaviartThomas:
         if dtype == np.float64:
             return ElementFamily(
-                _lib.raviart_thomas_element_family_new_f64(degree, continuity.value)
+                _lib.raviart_thomas_element_family(degree, continuity.value)
             )
         elif dtype == np.float32:
             return ElementFamily(
-                _lib.raviart_thomas_element_family_new_f64(degree, continuity.value)
+                _lib.raviart_thomas_element_family(degree, continuity.value)
             )
         else:
             raise TypeError(f"Unsupported dtype: {dtype}")
