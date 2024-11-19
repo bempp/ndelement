@@ -55,7 +55,7 @@ pub trait ElementFamily {
     /// Cell type
     type CellType: Debug + PartialEq + Eq + Clone + Copy + Hash;
     /// The finite element type
-    type FiniteElement: FiniteElement<T = Self::T, CellType = Self::CellType>;
+    type FiniteElement: FiniteElement<T = Self::T, CellType = Self::CellType> + 'static;
 
     /// Get an elenent for a cell type
     fn element(&self, cell_type: Self::CellType) -> Self::FiniteElement;

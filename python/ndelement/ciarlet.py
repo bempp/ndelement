@@ -54,7 +54,7 @@ class CiarletElement(object):
     def __del__(self):
         """Delete object."""
         if self._owned:
-            _lib.ciarlet_free_element(self._rs_element)
+            _lib.ciarlet_element_t_free(self._rs_element)
 
     @property
     def dtype(self):
@@ -193,10 +193,10 @@ class ElementFamily(object):
     def __del__(self):
         """Delete object."""
         if self._owned:
-            _lib.ciarlet_free_family(self._rs_family)
+            _lib.element_family_t_free(self._rs_family)
 
     def element(self, cell: ReferenceCellType) -> CiarletElement:
-        return CiarletElement(_lib.element_family_element(self._rs_family, cell.value))
+        return CiarletElement(_lib.element_family_create_element(self._rs_family, cell.value))
 
 
 def create_family(
@@ -208,9 +208,11 @@ def create_family(
     """Create a new element family."""
     if family == Family.Lagrange:
         if dtype == np.float64:
-            return ElementFamily(_lib.lagrange_element_family_new_f64(degree, continuity.value))
+            rust_type = 1
+            return ElementFamily(_lib.create_lagrange_family(degree, continuity.value, rust_type))
         elif dtype == np.float32:
-            return ElementFamily(_lib.lagrange_element_family_new_f64(degree, continuity.value))
+            rust_type = 0
+            return ElementFamily(_lib.create_lagrange_family(degree, continuity.value, rust_type))
         else:
             raise TypeError(f"Unsupported dtype: {dtype}")
     elif family == Family.RaviartThomas:
