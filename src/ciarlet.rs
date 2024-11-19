@@ -12,8 +12,10 @@ use rlst::{
 use std::fmt::{Debug, Formatter};
 
 pub mod lagrange;
+pub mod nedelec;
 pub mod raviart_thomas;
 pub use lagrange::LagrangeElementFamily;
+pub use nedelec::NedelecFirstKindElementFamily;
 pub use raviart_thomas::RaviartThomasElementFamily;
 
 type EntityPoints<T> = [Vec<Array<T, BaseArray<T, VectorContainer<T>, 2>, 2>>; 4];
@@ -973,6 +975,13 @@ mod test {
     }
 
     #[test]
+    fn test_raviart_thomas_3_triangle() {
+        let e = raviart_thomas::create::<f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
+        assert_eq!(e.value_size(), 2);
+        check_dofs(e);
+    }
+
+    #[test]
     fn test_raviart_thomas_1_tetrahedron() {
         let e =
             raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
@@ -984,6 +993,104 @@ mod test {
     fn test_raviart_thomas_2_tetrahedron() {
         let e =
             raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 2, Continuity::Standard);
+        assert_eq!(e.value_size(), 3);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_raviart_thomas_3_tetrahedron() {
+        let e =
+            raviart_thomas::create::<f64>(ReferenceCellType::Tetrahedron, 3, Continuity::Standard);
+        assert_eq!(e.value_size(), 3);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_nedelec_1_triangle() {
+        let e = nedelec::create(ReferenceCellType::Triangle, 1, Continuity::Standard);
+        assert_eq!(e.value_size(), 2);
+        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        *points.get_mut([0, 0]).unwrap() = 0.0;
+        *points.get_mut([1, 0]).unwrap() = 0.0;
+        *points.get_mut([0, 1]).unwrap() = 1.0;
+        *points.get_mut([1, 1]).unwrap() = 0.0;
+        *points.get_mut([0, 2]).unwrap() = 0.0;
+        *points.get_mut([1, 2]).unwrap() = 1.0;
+        *points.get_mut([0, 3]).unwrap() = 0.5;
+        *points.get_mut([1, 3]).unwrap() = 0.0;
+        *points.get_mut([0, 4]).unwrap() = 0.0;
+        *points.get_mut([1, 4]).unwrap() = 0.5;
+        *points.get_mut([0, 5]).unwrap() = 0.5;
+        *points.get_mut([1, 5]).unwrap() = 0.5;
+        e.tabulate(&points, 0, &mut data);
+
+        for pt in 0..6 {
+            assert_relative_eq!(
+                *data.get([0, pt, 0, 0]).unwrap(),
+                -*points.get([1, pt]).unwrap(),
+                epsilon = 1e-14
+            );
+            assert_relative_eq!(
+                *data.get([0, pt, 0, 1]).unwrap(),
+                *points.get([0, pt]).unwrap(),
+                epsilon = 1e-14
+            );
+            assert_relative_eq!(
+                *data.get([0, pt, 1, 0]).unwrap(),
+                *points.get([1, pt]).unwrap(),
+                epsilon = 1e-14
+            );
+            assert_relative_eq!(
+                *data.get([0, pt, 1, 1]).unwrap(),
+                1.0 - *points.get([0, pt]).unwrap(),
+                epsilon = 1e-14
+            );
+            assert_relative_eq!(
+                *data.get([0, pt, 2, 0]).unwrap(),
+                1.0 - *points.get([1, pt]).unwrap(),
+                epsilon = 1e-14
+            );
+            assert_relative_eq!(
+                *data.get([0, pt, 2, 1]).unwrap(),
+                *points.get([0, pt]).unwrap(),
+                epsilon = 1e-14
+            );
+        }
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_nedelec_2_triangle() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
+        assert_eq!(e.value_size(), 2);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_nedelec_3_triangle() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
+        assert_eq!(e.value_size(), 2);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_nedelec_1_tetrahedron() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
+        assert_eq!(e.value_size(), 3);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_nedelec_2_tetrahedron() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Tetrahedron, 2, Continuity::Standard);
+        assert_eq!(e.value_size(), 3);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_nedelec_3_tetrahedron() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Tetrahedron, 3, Continuity::Standard);
         assert_eq!(e.value_size(), 3);
         check_dofs(e);
     }

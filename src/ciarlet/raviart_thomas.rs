@@ -38,7 +38,7 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     let pdim_minus2 = if degree < 2 {
         0
     } else {
-        polynomial_count(facet_type, degree - 2)
+        polynomial_count(cell_type, degree - 2)
     };
 
     let cell_q = gauss_jacobi_rule(cell_type, 2 * degree).unwrap();
@@ -152,30 +152,20 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         }
     } else {
         let internal_q = gauss_jacobi_rule(cell_type, 2 * degree - 2).unwrap();
-        let internal_pts_t = internal_q
-            .points
-            .iter()
-            .map(|i| TReal::from(*i).unwrap())
-            .collect::<Vec<_>>();
-        let internal_pts = rlst_array_from_slice2!(&internal_pts_t, [tdim, internal_q.npoints]);
+        let mut pts = rlst_dynamic_array2!(T::Real, [tdim, internal_q.npoints]);
+        for p in 0..internal_q.npoints {
+            for d in 0..tdim {
+                pts[[d, p]] = TReal::from(internal_q.points[tdim * p + d]).unwrap()
+            }
+        }
 
         let mut internal_phi =
-            rlst_dynamic_array3![T, legendre_shape(cell_type, &internal_pts, degree - 2, 0)];
-        tabulate_legendre_polynomials(cell_type, &internal_pts, degree - 2, 0, &mut internal_phi);
+            rlst_dynamic_array3![T, legendre_shape(cell_type, &pts, degree - 2, 0)];
+        tabulate_legendre_polynomials(cell_type, &pts, degree - 2, 0, &mut internal_phi);
 
-        let mut pts = rlst_dynamic_array2!(T::Real, [tdim, internal_q.npoints]);
         let mut mat = rlst_dynamic_array3!(T, [tdim * pdim_minus2, tdim, internal_q.npoints]);
-
         for (w_i, wt) in internal_q.weights.iter().enumerate() {
             for i in 0..tdim {
-                pts[[i, w_i]] = vertices[0][i]
-                    + izip!(
-                        vertices.iter().skip(1),
-                        &internal_q.points[w_i * tdim..(w_i + 1) * tdim]
-                    )
-                    .map(|(v, pt)| (v[i] - vertices[0][i]) * TReal::from(*pt).unwrap())
-                    .sum::<TReal>();
-
                 for j in 0..pdim_minus2 {
                     mat[[j + pdim_minus2 * i, i, w_i]] =
                         T::from(*wt).unwrap() * internal_phi[[0, j, w_i]];
