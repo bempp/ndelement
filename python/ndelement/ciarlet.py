@@ -12,8 +12,8 @@ from _cffi_backend import _CDataBase
 class Continuity(Enum):
     """Continuity."""
 
-    Standard = 0
-    Discontinuous = 1
+    Standard = _lib.Continuity_Standard
+    Discontinuous = _lib.Continuity_Discontinuous
 
 
 class Family(Enum):
@@ -27,20 +27,20 @@ class Family(Enum):
 class MapType(Enum):
     """Map type."""
 
-    Identity = 0
-    CovariantPiola = 1
-    ContravariantPiola = 2
-    L2Piola = 3
+    Identity = _lib.MapType_Identity
+    CovariantPiola = _lib.MapType_CovariantPiola
+    ContravariantPiola = _lib.MapType_ContravariantPiola
+    L2Piola = _lib.MapType_L2Piola
 
 
-_dtypes = {
-    0: np.float32,
-    1: np.float64,
+_rtypes = {
+    np.float32: _lib.DType_F32,
+    np.float64: _lib.DType_F64,
+    np.complex64: _lib.DType_C32,
+    np.complex128: _lib.DType_C64,
 }
-_ctypes = {
-    np.float32: "float",
-    np.float64: "double",
-}
+
+_dtypes = {j: i for i, j in _rtypes.items()}
 
 
 class CiarletElement(object):
@@ -62,11 +62,6 @@ class CiarletElement(object):
         return _dtypes[_lib.ciarlet_element_dtype(self._rs_element)]
 
     @property
-    def _ctype(self):
-        """C data type."""
-        return _ctypes[self.dtype]
-
-    @property
     def value_size(self) -> int:
         """Value size of the element."""
         return _lib.element_value_size(self._rs_element)
@@ -74,47 +69,49 @@ class CiarletElement(object):
     @property
     def value_shape(self) -> typing.Tuple[int, ...]:
         """Value size of the element."""
-        shape = np.empty(_lib.ciarlet_value_rank(self._rs_element), dtype=np.uintp)
-        _lib.ciarlet_value_shape(self._rs_element, _ffi.cast("uintptr_t*", shape.ctypes.data))
+        shape = np.empty(_lib.ciarlet_element_value_rank(self._rs_element), dtype=np.uintp)
+        _lib.ciarlet_element_value_shape(
+            self._rs_element, _ffi.cast("uintptr_t*", shape.ctypes.data)
+        )
         return tuple(int(i) for i in shape)
 
     @property
     def degree(self) -> int:
         """Degree of the element."""
-        return _lib.ciarlet_degree(self._rs_element)
+        return _lib.ciarlet_element_degree(self._rs_element)
 
     @property
     def embedded_superdegree(self) -> int:
         """Embedded superdegree of the element."""
-        return _lib.ciarlet_embedded_superdegree(self._rs_element)
+        return _lib.ciarlet_element_embedded_superdegree(self._rs_element)
 
     @property
     def dim(self) -> int:
         """Dimension (number of basis functions) of the element."""
-        return _lib.ciarlet_dim(self._rs_element)
+        return _lib.ciarlet_element_dim(self._rs_element)
 
     @property
     def continuity(self) -> Continuity:
         """Continuity of the element."""
-        return Continuity(_lib.ciarlet_continuity(self._rs_element))
+        return Continuity(_lib.ciarlet_element_continuity(self._rs_element))
 
     @property
     def map_type(self) -> MapType:
         """Pullback map type of the element."""
-        return MapType(_lib.ciarlet_map_type(self._rs_element))
+        return MapType(_lib.ciarlet_element_map_type(self._rs_element))
 
     @property
     def cell_type(self) -> ReferenceCellType:
         """Cell type of the element."""
-        return ReferenceCellType(_lib.ciarlet_cell_type(self._rs_element))
+        return ReferenceCellType(_lib.ciarlet_element_cell_type(self._rs_element))
 
     def entity_dofs(self, entity_dim: int, entity_index: int) -> typing.List[int]:
         """Get the DOFs associated with an entity."""
         dofs = np.empty(
-            _lib.ciarlet_entity_dofs_size(self._rs_element, entity_dim, entity_index),
+            _lib.ciarlet_element_entity_dofs_size(self._rs_element, entity_dim, entity_index),
             dtype=np.uintp,
         )
-        _lib.ciarlet_entity_dofs(
+        _lib.ciarlet_element_entity_dofs(
             self._rs_element, entity_dim, entity_index, _ffi.cast("uintptr_t*", dofs.ctypes.data)
         )
         return [int(i) for i in dofs]
@@ -122,10 +119,12 @@ class CiarletElement(object):
     def entity_closure_dofs(self, entity_dim: int, entity_index: int) -> typing.List[int]:
         """Get the DOFs associated with the closure of an entity."""
         dofs = np.empty(
-            _lib.ciarlet_entity_closure_dofs_size(self._rs_element, entity_dim, entity_index),
+            _lib.ciarlet_element_entity_closure_dofs_size(
+                self._rs_element, entity_dim, entity_index
+            ),
             dtype=np.uintp,
         )
-        _lib.ciarlet_entity_closure_dofs(
+        _lib.ciarlet_element_entity_closure_dofs(
             self._rs_element, entity_dim, entity_index, _ffi.cast("uintptr_t*", dofs.ctypes.data)
         )
         return [int(i) for i in dofs]
@@ -137,9 +136,9 @@ class CiarletElement(object):
         for d, n in enumerate(entity_counts(self.cell_type)):
             points_d = []
             for i in range(n):
-                shape = (_lib.ciarlet_interpolation_npoints(self._rs_element, d, i), tdim)
-                points_di = np.empty(shape, dtype=self.dtype)
-                _lib.ciarlet_interpolation_points(
+                shape = (_lib.ciarlet_element_interpolation_npoints(self._rs_element, d, i), tdim)
+                points_di = np.empty(shape, dtype=self.dtype(0).real.dtype)
+                _lib.ciarlet_element_interpolation_points(
                     self._rs_element, d, i, _ffi.cast("void*", points_di.ctypes.data)
                 )
                 points_d.append(points_di)
@@ -153,12 +152,12 @@ class CiarletElement(object):
             weights_d = []
             for i in range(n):
                 shape = (
-                    _lib.ciarlet_interpolation_ndofs(self._rs_element, d, i),
+                    _lib.ciarlet_element_interpolation_ndofs(self._rs_element, d, i),
                     self.value_size,
-                    _lib.ciarlet_interpolation_npoints(self._rs_element, d, i),
+                    _lib.ciarlet_element_interpolation_npoints(self._rs_element, d, i),
                 )
                 weights_di = np.empty(shape, dtype=self.dtype)
-                _lib.ciarlet_interpolation_weights(
+                _lib.ciarlet_element_interpolation_weights(
                     self._rs_element, d, i, _ffi.cast("void*", weights_di.ctypes.data)
                 )
                 weights_d.append(weights_di)
@@ -167,12 +166,14 @@ class CiarletElement(object):
 
     def tabulate(self, points: npt.NDArray[np.floating], nderivs: int) -> npt.NDArray:
         """Tabulate the basis functions at a set of points."""
+        if points.dtype != self.dtype(0).real.dtype:
+            raise TypeError("points has incorrect type")
         shape = np.empty(4, dtype=np.uintp)
-        _lib.ciarlet_tabulate_array_shape(
+        _lib.ciarlet_element_tabulate_array_shape(
             self._rs_element, nderivs, points.shape[0], _ffi.cast("uintptr_t*", shape.ctypes.data)
         )
         data = np.empty(shape[::-1], dtype=self.dtype)
-        _lib.ciarlet_tabulate(
+        _lib.ciarlet_element_tabulate(
             self._rs_element,
             _ffi.cast("void*", points.ctypes.data),
             points.shape[0],
@@ -206,32 +207,12 @@ def create_family(
     dtype: typing.Type[np.floating] = np.float64,
 ) -> ElementFamily:
     """Create a new element family."""
+    rust_type = _rtypes[dtype]
     if family == Family.Lagrange:
-        if dtype == np.float64:
-            rust_type = 1
-            return ElementFamily(_lib.create_lagrange_family(degree, continuity.value, rust_type))
-        elif dtype == np.float32:
-            rust_type = 0
-            return ElementFamily(_lib.create_lagrange_family(degree, continuity.value, rust_type))
-        else:
-            raise TypeError(f"Unsupported dtype: {dtype}")
+        return ElementFamily(_lib.create_lagrange_family(degree, continuity.value, rust_type))
     elif family == Family.RaviartThomas:
-        if dtype == np.float64:
-            return ElementFamily(
-                _lib.raviart_thomas_element_family(degree, continuity.value)
-            )
-        elif dtype == np.float32:
-            return ElementFamily(
-                _lib.raviart_thomas_element_family(degree, continuity.value)
-            )
-        else:
-            raise TypeError(f"Unsupported dtype: {dtype}")
+        return ElementFamily(_lib.create_raviart_thomas_family(degree, continuity.value, rust_type))
     elif family == Family.NedelecFirstKind:
-        if dtype == np.float64:
-            return ElementFamily(_lib.nedelec_element_family_new_f64(degree, continuity.value))
-        elif dtype == np.float32:
-            return ElementFamily(_lib.nedelec_element_family_new_f64(degree, continuity.value))
-        else:
-            raise TypeError(f"Unsupported dtype: {dtype}")
+        return ElementFamily(_lib.create_nedelec_family(degree, continuity.value, rust_type))
     else:
         raise ValueError(f"Unsupported family: {family}")

@@ -19,9 +19,9 @@ pub enum Continuity {
     /// For some element, this option does not indicate that the values are fully continuous.
     /// For example, for Raviart-Thomas elements it only indicates that the normal components
     /// are continuous across edges
-    Standard = 0,
+    Standard,
     /// The element is discontinuous betweeen cells
-    Discontinuous = 1,
+    Discontinuous,
 }
 
 /// The map type used by an element
@@ -30,17 +30,17 @@ pub enum Continuity {
 #[repr(u8)]
 pub enum MapType {
     /// Identity map
-    Identity = 0,
+    Identity,
     /// Covariant Piola map
     ///
     /// This map is used by H(curl) elements
-    CovariantPiola = 1,
+    CovariantPiola,
     /// Contravariant Piola map
     ///
     /// This map is used by H(div) elements
-    ContravariantPiola = 2,
+    ContravariantPiola,
     /// L2 Piola map
-    L2Piola = 3,
+    L2Piola,
 }
 
 /// The type of a reference cell
@@ -49,84 +49,21 @@ pub enum MapType {
 #[repr(u8)]
 pub enum ReferenceCellType {
     /// A point
-    Point = 0,
+    Point,
     /// A line interval
-    Interval = 1,
+    Interval,
     /// A triangle
-    Triangle = 2,
+    Triangle,
     /// A quadrilateral
-    Quadrilateral = 3,
+    Quadrilateral,
     /// A tetrahedron (whose faces are all triangles)
-    Tetrahedron = 4,
+    Tetrahedron,
     /// A hexahedron (whose faces are all quadrilaterals)
-    Hexahedron = 5,
+    Hexahedron,
     /// A triangular prism
-    Prism = 6,
+    Prism,
     /// A square-based pyramid
-    Pyramid = 7,
-}
-
-#[cfg(feature = "mpi")]
-unsafe impl Equivalence for Continuity {
-    type Out = <u8 as Equivalence>::Out;
-    fn equivalent_datatype() -> <u8 as Equivalence>::Out {
-        <u8 as Equivalence>::equivalent_datatype()
-    }
-}
-#[cfg(feature = "mpi")]
-unsafe impl Equivalence for MapType {
-    type Out = <u8 as Equivalence>::Out;
-    fn equivalent_datatype() -> <u8 as Equivalence>::Out {
-        <u8 as Equivalence>::equivalent_datatype()
-    }
-}
-#[cfg(feature = "mpi")]
-unsafe impl Equivalence for ReferenceCellType {
-    type Out = <u8 as Equivalence>::Out;
-    fn equivalent_datatype() -> <u8 as Equivalence>::Out {
-        <u8 as Equivalence>::equivalent_datatype()
-    }
-}
-
-impl ReferenceCellType {
-    /// Create a reference cell type from a u8
-    pub fn from(i: u8) -> Option<ReferenceCellType> {
-        match i {
-            0 => Some(ReferenceCellType::Point),
-            1 => Some(ReferenceCellType::Interval),
-            2 => Some(ReferenceCellType::Triangle),
-            3 => Some(ReferenceCellType::Quadrilateral),
-            4 => Some(ReferenceCellType::Tetrahedron),
-            5 => Some(ReferenceCellType::Hexahedron),
-            6 => Some(ReferenceCellType::Prism),
-            7 => Some(ReferenceCellType::Pyramid),
-            _ => None,
-        }
-    }
-}
-
-impl Continuity {
-    /// Create continuity type from a u8
-    pub fn from(i: u8) -> Option<Continuity> {
-        match i {
-            0 => Some(Continuity::Standard),
-            1 => Some(Continuity::Discontinuous),
-            _ => None,
-        }
-    }
-}
-
-impl MapType {
-    /// Create map type from a u8
-    pub fn from(i: u8) -> Option<MapType> {
-        match i {
-            0 => Some(MapType::Identity),
-            1 => Some(MapType::CovariantPiola),
-            2 => Some(MapType::ContravariantPiola),
-            3 => Some(MapType::L2Piola),
-            _ => None,
-        }
-    }
+    Pyramid,
 }
 
 #[cfg(test)]

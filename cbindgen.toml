@@ -8,7 +8,7 @@ prefix_with_name = true
 
 [parse]
 parse_deps = true
-include = ["c-api-tools"]
+include = ["c-api-tools", "ndelement"]
 
 [parse.expand]
 crates = ["ndelement"]

@@ -10,6 +10,12 @@ cells = [
     ReferenceCellType.Tetrahedron,
     ReferenceCellType.Hexahedron,
 ]
+dtypes = [
+    np.float32,
+    np.float64,
+    np.complex64,
+    np.complex128,
+]
 
 
 @pytest.mark.parametrize("cell", cells)
@@ -21,11 +27,31 @@ def test_value_size(cell, degree):
     assert element.value_size == 1
 
 
-def test_lagrange_2_triangle_tabulate():
-    family = create_family(Family.Lagrange, 2)
+@pytest.mark.parametrize(
+    "dt0,dt1",
+    [
+        (np.float32, np.float64),
+        (np.float64, np.float32),
+        (np.complex64, np.float64),
+        (np.complex128, np.float32),
+    ]
+    + [(dt0, dt1) for dt0 in dtypes for dt1 in [np.complex64, np.complex128]],
+)
+def test_incompatible_types(dt0, dt1):
+    family = create_family(Family.Lagrange, 2, dtype=dt0)
+    element = family.element(ReferenceCellType.Triangle)
+    points = np.array([[0.0, 0.0], [0.2, 0.1], [0.8, 0.05]], dtype=dt1)
+
+    with pytest.raises(TypeError):
+        element.tabulate(points, 1)
+
+
+@pytest.mark.parametrize("dtype", dtypes)
+def test_lagrange_2_triangle_tabulate(dtype):
+    family = create_family(Family.Lagrange, 2, dtype=dtype)
     element = family.element(ReferenceCellType.Triangle)
 
-    points = np.array([[0.0, 0.0], [0.2, 0.1], [0.8, 0.05]])
+    points = np.array([[0.0, 0.0], [0.2, 0.1], [0.8, 0.05]], dtype=dtype(0).real.dtype)
 
     data = element.tabulate(points, 1)
 
@@ -71,7 +97,14 @@ def test_lagrange_2_triangle_tabulate():
         for j, p in enumerate(points):
             data2[0, i, j, 2] = function(*p)
 
-    assert np.allclose(data, data2)
+    print(np.finfo(dtype).eps * 100)
+    print(data.shape)
+    print(data2.shape)
+    for i, j in zip(data, data2):
+        print(i)
+        print(j)
+        print(i - j)
+    assert np.allclose(data, data2, atol=np.finfo(dtype).eps * 10)
 
 
 @pytest.mark.parametrize("continuity", [Continuity.Standard, Continuity.Discontinuous])

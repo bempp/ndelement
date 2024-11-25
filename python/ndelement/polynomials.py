@@ -12,9 +12,14 @@ def tabulate_legendre_polynomials(
     points: npt.NDArray[np.floating],
     degree: int,
     derivatives: int,
-    dtype: typing.Type[np.floating] = np.float64,
+    dtype: typing.Optional[typing.Type[np.floating]] = None,
 ) -> npt.NDArray:
     """Tabulate Legendre orthonormal polynomials."""
+    if dtype is None:
+        dtype = points.dtype.type
+    if points.dtype != dtype(0).real.dtype:
+        raise TypeError("points has invalid dtype")
+
     shape = np.empty(3, np.uintp)
     _lib.legendre_polynomials_shape(
         cell.value, points.shape[0], degree, derivatives, _ffi.cast("uintptr_t*", shape.ctypes.data)
