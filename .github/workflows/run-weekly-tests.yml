@@ -79,7 +79,7 @@ jobs:
       - name: Install python package
         run: |
           source .venv/bin/activate
-          maturin develop --release
+          rustup run nightly maturin develop --release
       - name: Run Python tests
         run: |
           source .venv/bin/activate
