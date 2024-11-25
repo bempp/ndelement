@@ -2,11 +2,9 @@ name: ✨
 
 on:
   push:
-    branches:
-      - "**"
+    branches: ["**"]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   merge_group:
 
 jobs:
