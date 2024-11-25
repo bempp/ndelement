@@ -12,6 +12,9 @@ jobs:
       matrix:
         rust-version: ["stable", "beta", "nightly"]
         mpi: [ 'mpich', 'openmpi']
+        f_mpi: ["", "mpi,"]
+        f_strict: ["", "strict,"]
+        f_serde: ["", "serde,"]
     steps:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -29,25 +32,18 @@ jobs:
           sudo apt-get install -y libopenblas-dev liblapack-dev
 
       - name: Build rust library
-        run: cargo build --features "strict"
+        run: cargo build --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       - name: Build rust library in release mode
-        run: cargo build --release --features "strict"
-      - name: Build rust library in release mode with mpi
-        run: cargo build --release --features "strict,mpi"
-
+        run: cargo build --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
 
       - name: Run unit tests
-        run: cargo test --features "strict"
+        run: cargo test --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       - name: Run unit tests in release mode
-        run: cargo test --release --features "strict"
-      - name: Run unit tests with mpi enabled
-        run: cargo test --features "mpi,strict"
-      - name: Run unit tests in release mode with mpi enabled
-        run: cargo test --release --features "mpi,strict"
+        run: cargo test --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       - name: Run tests
-        run: cargo test --examples --release --features "mpi,strict"
+        run: cargo test --examples --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       # - name: Test benchmarks build
-      #   run: cargo bench --no-run --features "mpi,strict"
+      #   run: cargo bench --no-run --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       - name: Run examples
         run: |
           python3 find_examples.py
@@ -55,7 +51,7 @@ jobs:
           ./examples.sh
 
       - name: Build docs
-        run: cargo doc --features "mpi,strict" --no-deps
+        run: cargo doc --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}" --no-deps
 
   run-tests-python:
     name: Run Python tests
@@ -74,7 +70,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: actions/checkout@v4
       - name: Install uv
-        run: pip install uv "maturin>=1.7"
+        run: pip install uv "maturin>=1.7.2"
       - name: Make virtual environment
         run: |
           uv venv .venv
@@ -87,4 +83,3 @@ jobs:
         run: |
           source .venv/bin/activate
           python -m pytest python/test
-
