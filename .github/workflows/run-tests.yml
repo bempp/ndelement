@@ -1,4 +1,4 @@
-name: 🧪
+ename: 🧪
 
 on:
   push:
@@ -23,7 +23,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ matrix.rust-version }}
-          components: rustfmt
       - name: Set up MPI
         uses: mpi4py/setup-mpi@v1
         with:
@@ -60,7 +59,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: nightly
-          components: rustfmt
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -92,7 +90,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ matrix.rust-version }}
-          components: rustfmt
       - name: Install cargo-upgrades
         run: cargo install cargo-upgrades
       - uses: actions/checkout@v4
