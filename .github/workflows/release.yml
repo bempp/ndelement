@@ -28,9 +28,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: ${{ matrix.rust-version }}
-          components: rustfmt
-
+          toolchain: nightly
       - name: Install OpenBLAS, LAPACK, OpenSSL (yum)
         run: yum -y install openblas-devel lapack-devel openssl-devel
         if: matrix.platform.package-manager == 'yum'
@@ -42,7 +40,7 @@ jobs:
 
       - name: Install maturin, CFFI
         run: |
-          ${{ matrix.platform.python }} -m pip install maturin>=1.7.2
+          ${{ matrix.platform.python }} -m pip install "maturin>=1.7"
           ${{ matrix.platform.python }} -m pip install cffi
 
       - name: Build wheel
@@ -70,6 +68,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          rust-toolchain: nightly
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -87,6 +86,7 @@ jobs:
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
+          rust-toolchain: nightly
           command: sdist
           args: --out dist
       - name: Upload sdist
