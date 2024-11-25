@@ -65,3 +65,25 @@ pub enum ReferenceCellType {
     /// A square-based pyramid
     Pyramid,
 }
+
+#[cfg(feature = "mpi")]
+unsafe impl Equivalence for Continuity {
+    type Out = <u8 as Equivalence>::Out;
+    fn equivalent_datatype() -> <u8 as Equivalence>::Out {
+        <u8 as Equivalence>::equivalent_datatype()
+    }
+}
+#[cfg(feature = "mpi")]
+unsafe impl Equivalence for MapType {
+    type Out = <u8 as Equivalence>::Out;
+    fn equivalent_datatype() -> <u8 as Equivalence>::Out {
+        <u8 as Equivalence>::equivalent_datatype()
+    }
+}
+#[cfg(feature = "mpi")]
+unsafe impl Equivalence for ReferenceCellType {
+    type Out = <u8 as Equivalence>::Out;
+    fn equivalent_datatype() -> <u8 as Equivalence>::Out {
+        <u8 as Equivalence>::equivalent_datatype()
+    }
+}
