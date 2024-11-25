@@ -44,7 +44,7 @@ jobs:
           ${{ matrix.platform.python }} -m pip install cffi
 
       - name: Build wheel
-        run: rustup run nightly maturin build --release --out dist -i ${{ matrix.platform.python }} --target ${{ matrix.platform.target }}
+        run: ${{ matrix.platform.python }} -m maturin build --release --out dist -i ${{ matrix.platform.python }} --target ${{ matrix.platform.target }}
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
