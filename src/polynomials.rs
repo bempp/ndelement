@@ -341,7 +341,7 @@ mod test {
 
         let mut data = rlst_dynamic_array3!(
             f64,
-            legendre_shape(ReferenceCellType::Quadrilateral, &points, degree, 1,)
+            legendre_shape(ReferenceCellType::Quadrilateral, &points, degree, 1)
         );
         tabulate_legendre_polynomials(
             ReferenceCellType::Quadrilateral,
@@ -360,42 +360,42 @@ mod test {
             assert_relative_eq!(*data.get([1, 0, k]).unwrap(), 0.0, epsilon = 1e-12);
             assert_relative_eq!(*data.get([2, 0, k]).unwrap(), 0.0, epsilon = 1e-12);
 
-            // 1 => sqrt(3)*(2x - 1)
+            // 3 => sqrt(3)*(2x - 1)
             assert_relative_eq!(
-                *data.get([0, 1, k]).unwrap(),
+                *data.get([0, 3, k]).unwrap(),
                 f64::sqrt(3.0) * (2.0 * x - 1.0),
                 epsilon = 1e-12
             );
             assert_relative_eq!(
-                *data.get([1, 1, k]).unwrap(),
+                *data.get([1, 3, k]).unwrap(),
                 2.0 * f64::sqrt(3.0),
                 epsilon = 1e-12
             );
-            assert_relative_eq!(*data.get([2, 1, k]).unwrap(), 0.0, epsilon = 1e-12);
+            assert_relative_eq!(*data.get([2, 3, k]).unwrap(), 0.0, epsilon = 1e-12);
 
-            // 2 => sqrt(5)*(6x^2 - 6x + 1)
+            // 6 => sqrt(5)*(6x^2 - 6x + 1)
             assert_relative_eq!(
-                *data.get([0, 2, k]).unwrap(),
+                *data.get([0, 6, k]).unwrap(),
                 f64::sqrt(5.0) * (6.0 * x * x - 6.0 * x + 1.0),
                 epsilon = 1e-12
             );
             assert_relative_eq!(
-                *data.get([1, 2, k]).unwrap(),
+                *data.get([1, 6, k]).unwrap(),
                 f64::sqrt(5.0) * (12.0 * x - 6.0),
                 epsilon = 1e-12
             );
-            assert_relative_eq!(*data.get([2, 2, k]).unwrap(), 0.0, epsilon = 1e-12);
+            assert_relative_eq!(*data.get([2, 6, k]).unwrap(), 0.0, epsilon = 1e-12);
 
-            // 3 => sqrt(3)*(2y - 1)
+            // 1 => sqrt(3)*(2y - 1)
             assert_relative_eq!(
-                *data.get([0, 3, k]).unwrap(),
+                *data.get([0, 1, k]).unwrap(),
                 f64::sqrt(3.0) * (2.0 * y - 1.0),
                 epsilon = 1e-12
             );
 
-            assert_relative_eq!(*data.get([1, 3, k]).unwrap(), 0.0, epsilon = 1e-12);
+            assert_relative_eq!(*data.get([1, 1, k]).unwrap(), 0.0, epsilon = 1e-12);
             assert_relative_eq!(
-                *data.get([2, 3, k]).unwrap(),
+                *data.get([2, 1, k]).unwrap(),
                 2.0 * f64::sqrt(3.0),
                 epsilon = 1e-12
             );
@@ -417,49 +417,49 @@ mod test {
                 epsilon = 1e-12
             );
 
-            // 5 => sqrt(15)*(6x^2 - 6x + 1)*(2y - 1)
+            // 7 => sqrt(15)*(6x^2 - 6x + 1)*(2y - 1)
             assert_relative_eq!(
-                *data.get([0, 5, k]).unwrap(),
+                *data.get([0, 7, k]).unwrap(),
                 f64::sqrt(15.0) * (6.0 * x * x - 6.0 * x + 1.0) * (2.0 * y - 1.0),
                 epsilon = 1e-12
             );
             assert_relative_eq!(
-                *data.get([1, 5, k]).unwrap(),
+                *data.get([1, 7, k]).unwrap(),
                 f64::sqrt(15.0) * (12.0 * x - 6.0) * (2.0 * y - 1.0),
                 epsilon = 1e-12
             );
             assert_relative_eq!(
-                *data.get([2, 5, k]).unwrap(),
+                *data.get([2, 7, k]).unwrap(),
                 2.0 * f64::sqrt(15.0) * (6.0 * x * x - 6.0 * x + 1.0),
                 epsilon = 1e-12
             );
 
-            // 6 => sqrt(5)*(6y^2 - 6y + 1)
+            // 2 => sqrt(5)*(6y^2 - 6y + 1)
             assert_relative_eq!(
-                *data.get([0, 6, k]).unwrap(),
+                *data.get([0, 2, k]).unwrap(),
                 f64::sqrt(5.0) * (6.0 * y * y - 6.0 * y + 1.0),
                 epsilon = 1e-12
             );
-            assert_relative_eq!(*data.get([1, 6, k]).unwrap(), 0.0, epsilon = 1e-12);
+            assert_relative_eq!(*data.get([1, 2, k]).unwrap(), 0.0, epsilon = 1e-12);
             assert_relative_eq!(
-                *data.get([2, 6, k]).unwrap(),
+                *data.get([2, 2, k]).unwrap(),
                 f64::sqrt(5.0) * (12.0 * y - 6.0),
                 epsilon = 1e-12
             );
 
-            // 7 => sqrt(15)*(2x - 1)*(6y^2 - 6y + 1)
+            // 5 => sqrt(15)*(2x - 1)*(6y^2 - 6y + 1)
             assert_relative_eq!(
-                *data.get([0, 7, k]).unwrap(),
+                *data.get([0, 5, k]).unwrap(),
                 f64::sqrt(15.0) * (2.0 * x - 1.0) * (6.0 * y * y - 6.0 * y + 1.0),
                 epsilon = 1e-12
             );
             assert_relative_eq!(
-                *data.get([1, 7, k]).unwrap(),
+                *data.get([1, 5, k]).unwrap(),
                 2.0 * f64::sqrt(15.0) * (6.0 * y * y - 6.0 * y + 1.0),
                 epsilon = 1e-12
             );
             assert_relative_eq!(
-                *data.get([2, 7, k]).unwrap(),
+                *data.get([2, 5, k]).unwrap(),
                 f64::sqrt(15.0) * (2.0 * x - 1.0) * (12.0 * y - 6.0),
                 epsilon = 1e-12
             );

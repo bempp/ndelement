@@ -265,13 +265,13 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
             let mut pts = rlst_dynamic_array2!(T::Real, [tdim, face_q.npoints]);
             let mut mat = rlst_dynamic_array3!(T, [2 * pdim_face_minus2, tdim, face_q.npoints]);
 
-            for tangent in 0..2 {
-                for (w_i, wt) in face_q.weights.iter().enumerate() {
-                    for i in 0..tdim {
-                        pts[[i, w_i]] = vertices[face[0]][i]
-                            + (vertices[face[1]][i] - vertices[face[0]][i]) * face_pts[[0, w_i]]
-                            + (vertices[face[2]][i] - vertices[face[0]][i]) * face_pts[[1, w_i]];
+            for (w_i, wt) in face_q.weights.iter().enumerate() {
+                for i in 0..tdim {
+                    pts[[i, w_i]] = vertices[face[0]][i]
+                        + (vertices[face[1]][i] - vertices[face[0]][i]) * face_pts[[0, w_i]]
+                        + (vertices[face[2]][i] - vertices[face[0]][i]) * face_pts[[1, w_i]];
 
+                    for tangent in 0..2 {
                         for j in 0..pdim_face_minus2 {
                             mat[[tangent * pdim_face_minus2 + j, i, w_i]] = T::from(*wt).unwrap()
                                 * face_phi[[0, j, w_i]]
@@ -331,6 +331,309 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     )
 }
 
+fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + MatrixInverse>(
+    cell_type: ReferenceCellType,
+    degree: usize,
+    continuity: Continuity,
+) -> CiarletElement<T> {
+    if cell_type != ReferenceCellType::Quadrilateral && cell_type != ReferenceCellType::Hexahedron {
+        panic!("Invalid cell: {cell_type:?}");
+    }
+
+    if degree < 1 {
+        panic!("Degree must be at least 1");
+    }
+
+    let tdim = reference_cell::dim(cell_type);
+    let cell_q = gauss_jacobi_rule(cell_type, 2 * degree).unwrap();
+    let pts_t = cell_q
+        .points
+        .iter()
+        .map(|i| TReal::from(*i).unwrap())
+        .collect::<Vec<_>>();
+    let pts = rlst_array_from_slice2!(&pts_t, [tdim, cell_q.npoints]);
+
+    let mut phi = rlst_dynamic_array3![T, legendre_shape(cell_type, &pts, degree, 0)];
+    tabulate_legendre_polynomials(cell_type, &pts, degree, 0, &mut phi);
+
+    let pdim = phi.shape()[1];
+
+    let pdim_edge = polynomial_count(ReferenceCellType::Interval, degree);
+    let pdim_edge_minus1 = polynomial_count(ReferenceCellType::Interval, degree - 1);
+    let pdim_edge_minus2 = if degree < 2 {
+        0
+    } else {
+        polynomial_count(ReferenceCellType::Interval, degree - 2)
+    };
+
+    let entity_counts = reference_cell::entity_counts(cell_type);
+
+    let mut wcoeffs = rlst_dynamic_array3!(
+        T,
+        [
+            entity_counts[1] * pdim_edge_minus1
+                + entity_counts[2] * 2 * pdim_edge_minus1 * pdim_edge_minus2
+                + entity_counts[3] * 3 * pdim_edge_minus1 * pdim_edge_minus2 * pdim_edge_minus2,
+            tdim,
+            pdim
+        ]
+    );
+
+    // vector polynomials of degree <= n-1
+    if tdim == 2 {
+        for i in 0..pdim_edge_minus1 {
+            for j in 0..pdim_edge {
+                *wcoeffs
+                    .get_mut([i * pdim_edge + j, 0, i * pdim_edge + j])
+                    .unwrap() = T::from(1.0).unwrap();
+                *wcoeffs
+                    .get_mut([
+                        pdim_edge_minus1 * pdim_edge + j * pdim_edge_minus1 + i,
+                        1,
+                        j * pdim_edge + i,
+                    ])
+                    .unwrap() = T::from(1.0).unwrap();
+            }
+        }
+    } else {
+        for i in 0..pdim_edge_minus1 {
+            for j in 0..pdim_edge {
+                for k in 0..pdim_edge {
+                    *wcoeffs
+                        .get_mut([
+                            3 * (i * pdim_edge.pow(2) + j * pdim_edge + k),
+                            0,
+                            i * pdim_edge.pow(2) + j * pdim_edge + k,
+                        ])
+                        .unwrap() = T::from(1.0).unwrap();
+                    *wcoeffs
+                        .get_mut([
+                            3 * (i * pdim_edge.pow(2) + j * pdim_edge + k) + 1,
+                            1,
+                            k * pdim_edge.pow(2) + i * pdim_edge + j,
+                        ])
+                        .unwrap() = T::from(1.0).unwrap();
+                    *wcoeffs
+                        .get_mut([
+                            3 * (i * pdim_edge.pow(2) + j * pdim_edge + k) + 2,
+                            2,
+                            j * pdim_edge.pow(2) + k * pdim_edge + i,
+                        ])
+                        .unwrap() = T::from(1.0).unwrap();
+                }
+            }
+        }
+    }
+
+    let mut x = [vec![], vec![], vec![], vec![]];
+    let mut m = [vec![], vec![], vec![], vec![]];
+
+    let vertices = reference_cell::vertices::<T::Real>(cell_type);
+
+    for _ in 0..entity_counts[0] {
+        x[0].push(rlst_dynamic_array2!(T::Real, [tdim, 0]));
+        m[0].push(rlst_dynamic_array3!(T, [0, tdim, 0]));
+    }
+
+    // DOFs on edges
+    let edge_q = gauss_jacobi_rule(ReferenceCellType::Interval, 2 * degree - 1).unwrap();
+    let edge_pts_t = edge_q
+        .points
+        .iter()
+        .map(|i| TReal::from(*i).unwrap())
+        .collect::<Vec<_>>();
+    let edge_pts = rlst_array_from_slice2!(&edge_pts_t, [1, edge_q.npoints]);
+
+    let mut edge_phi = rlst_dynamic_array3![
+        T,
+        legendre_shape(ReferenceCellType::Interval, &edge_pts, degree - 1, 0)
+    ];
+    tabulate_legendre_polynomials(
+        ReferenceCellType::Interval,
+        &edge_pts,
+        degree - 1,
+        0,
+        &mut edge_phi,
+    );
+
+    for edge in reference_cell::edges(cell_type) {
+        let mut pts = rlst_dynamic_array2!(T::Real, [tdim, edge_q.npoints]);
+        let mut mat = rlst_dynamic_array3!(T, [pdim_edge_minus1, tdim, edge_q.npoints]);
+
+        for (w_i, (pt, wt)) in izip!(&edge_pts_t, &edge_q.weights).enumerate() {
+            for i in 0..tdim {
+                pts[[i, w_i]] =
+                    vertices[edge[0]][i] + (vertices[edge[1]][i] - vertices[edge[0]][i]) * *pt;
+
+                for j in 0..pdim_edge_minus1 {
+                    mat[[j, i, w_i]] = T::from(*wt).unwrap()
+                        * edge_phi[[0, j, w_i]]
+                        * T::from(vertices[edge[1]][i] - vertices[edge[0]][i]).unwrap();
+                }
+            }
+        }
+
+        x[1].push(pts);
+        m[1].push(mat);
+    }
+
+    // DOFs on faces
+    if degree == 1 {
+        for _ in 0..entity_counts[2] {
+            x[2].push(rlst_dynamic_array2!(T::Real, [tdim, 0]));
+            m[2].push(rlst_dynamic_array3!(T, [0, tdim, 0]))
+        }
+    } else {
+        let face_q = gauss_jacobi_rule(ReferenceCellType::Quadrilateral, 2 * degree - 1).unwrap();
+        let face_pts_t = face_q
+            .points
+            .iter()
+            .map(|i| TReal::from(*i).unwrap())
+            .collect::<Vec<_>>();
+        let face_pts = rlst_array_from_slice2!(&face_pts_t, [2, face_q.npoints]);
+
+        let mut face_phi = rlst_dynamic_array3![
+            T,
+            legendre_shape(ReferenceCellType::Quadrilateral, &face_pts, degree - 1, 0)
+        ];
+        tabulate_legendre_polynomials(
+            ReferenceCellType::Quadrilateral,
+            &face_pts,
+            degree - 1,
+            0,
+            &mut face_phi,
+        );
+
+        for face in reference_cell::faces(cell_type) {
+            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, face_q.npoints]);
+            let mut mat = rlst_dynamic_array3!(
+                T,
+                [
+                    2 * pdim_edge_minus2 * pdim_edge_minus1,
+                    tdim,
+                    face_q.npoints
+                ]
+            );
+
+            for (w_i, wt) in face_q.weights.iter().enumerate() {
+                for i in 0..tdim {
+                    pts[[i, w_i]] = vertices[face[0]][i]
+                        + (vertices[face[1]][i] - vertices[face[0]][i]) * face_pts[[0, w_i]]
+                        + (vertices[face[2]][i] - vertices[face[0]][i]) * face_pts[[1, w_i]];
+                }
+                for i in 0..pdim_edge_minus2 {
+                    for j in 0..pdim_edge_minus1 {
+                        let index = 2 * (i * pdim_edge_minus1 + j);
+                        mat[[index, 0, w_i]] =
+                            T::from(*wt).unwrap() * face_phi[[0, j * pdim_edge_minus1 + i, w_i]];
+                        mat[[index + 1, 1, w_i]] =
+                            T::from(*wt).unwrap() * face_phi[[0, i * pdim_edge_minus1 + j, w_i]];
+                    }
+                }
+            }
+            x[2].push(pts);
+            m[2].push(mat);
+        }
+    }
+    // DOFs on volume
+    if tdim == 3 {
+        if degree == 1 {
+            x[3].push(rlst_dynamic_array2!(T::Real, [tdim, 0]));
+            m[3].push(rlst_dynamic_array3!(T, [0, tdim, 0]))
+        } else {
+            let interior_q =
+                gauss_jacobi_rule(ReferenceCellType::Quadrilateral, 2 * degree - 1).unwrap();
+            let interior_pts_t = interior_q
+                .points
+                .iter()
+                .map(|i| TReal::from(*i).unwrap())
+                .collect::<Vec<_>>();
+            let interior_pts = rlst_array_from_slice2!(&interior_pts_t, [2, interior_q.npoints]);
+
+            let mut interior_phi = rlst_dynamic_array3![
+                T,
+                legendre_shape(
+                    ReferenceCellType::Quadrilateral,
+                    &interior_pts,
+                    degree - 1,
+                    0
+                )
+            ];
+            tabulate_legendre_polynomials(
+                ReferenceCellType::Quadrilateral,
+                &interior_pts,
+                degree - 1,
+                0,
+                &mut interior_phi,
+            );
+
+            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, interior_q.npoints]);
+            let mut mat = rlst_dynamic_array3!(
+                T,
+                [
+                    3 * pdim_edge_minus2.pow(2) * pdim_edge_minus1,
+                    tdim,
+                    interior_q.npoints
+                ]
+            );
+
+            for (w_i, wt) in interior_q.weights.iter().enumerate() {
+                for i in 0..tdim {
+                    pts[[i, w_i]] = interior_pts[[i, w_i]];
+                }
+                for i in 0..pdim_edge_minus2 {
+                    for j in 0..pdim_edge_minus2 {
+                        for k in 0..pdim_edge_minus1 {
+                            let index = 3 * (i * pdim_edge_minus1 * pdim_edge_minus2)
+                                + j * pdim_edge_minus1
+                                + k;
+                            mat[[index, 0, w_i]] = T::from(*wt).unwrap()
+                                * interior_phi[[
+                                    0,
+                                    k * pdim_edge_minus1 * pdim_edge_minus1
+                                        + j * pdim_edge_minus1
+                                        + i,
+                                    w_i,
+                                ]];
+                            mat[[index + 1, 1, w_i]] = T::from(*wt).unwrap()
+                                * interior_phi[[
+                                    0,
+                                    i * pdim_edge_minus1 * pdim_edge_minus1
+                                        + k * pdim_edge_minus1
+                                        + j,
+                                    w_i,
+                                ]];
+                            mat[[index + 2, 2, w_i]] = T::from(*wt).unwrap()
+                                * interior_phi[[
+                                    0,
+                                    j * pdim_edge_minus1 * pdim_edge_minus1
+                                        + i * pdim_edge_minus1
+                                        + k,
+                                    w_i,
+                                ]];
+                        }
+                    }
+                }
+            }
+            x[3].push(pts);
+            m[3].push(mat);
+        }
+    }
+
+    CiarletElement::create(
+        "Nedelec (first kind)".to_string(),
+        cell_type,
+        degree,
+        vec![tdim],
+        wcoeffs,
+        x,
+        m,
+        MapType::CovariantPiola,
+        continuity,
+        degree,
+    )
+}
+
 /// Create a Nedelec (first kind) element
 pub fn create<T: RlstScalar + MatrixInverse>(
     cell_type: ReferenceCellType,
@@ -339,6 +642,10 @@ pub fn create<T: RlstScalar + MatrixInverse>(
 ) -> CiarletElement<T> {
     if cell_type == ReferenceCellType::Triangle || cell_type == ReferenceCellType::Tetrahedron {
         create_simplex(cell_type, degree, continuity)
+    } else if cell_type == ReferenceCellType::Quadrilateral
+        || cell_type == ReferenceCellType::Hexahedron
+    {
+        create_tp(cell_type, degree, continuity)
     } else {
         panic!("Invalid cell: {cell_type:?}");
     }

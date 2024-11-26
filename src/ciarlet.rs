@@ -427,14 +427,9 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..4 {
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
-                1.0 - *points.get([0, pt]).unwrap()
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
-                *points.get([0, pt]).unwrap()
-            );
+            let x = *points.get([0, pt]).unwrap();
+            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0 - x);
+            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x);
         }
         check_dofs(e);
     }
@@ -488,18 +483,11 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
-                1.0 - *points.get([0, pt]).unwrap() - *points.get([1, pt]).unwrap()
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
-                *points.get([0, pt]).unwrap()
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
-                *points.get([1, pt]).unwrap()
-            );
+            let x = *points.get([0, pt]).unwrap();
+            let y = *points.get([1, pt]).unwrap();
+            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0 - x - y);
+            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x);
+            assert_relative_eq!(*data.get([0, pt, 2, 0]).unwrap(), y);
         }
         check_dofs(e);
     }
@@ -556,22 +544,12 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
-                (1.0 - *points.get([0, pt]).unwrap()) * (1.0 - *points.get([1, pt]).unwrap())
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
-                *points.get([0, pt]).unwrap() * (1.0 - *points.get([1, pt]).unwrap())
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
-                (1.0 - *points.get([0, pt]).unwrap()) * *points.get([1, pt]).unwrap()
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 3, 0]).unwrap(),
-                *points.get([0, pt]).unwrap() * *points.get([1, pt]).unwrap()
-            );
+            let x = *points.get([0, pt]).unwrap();
+            let y = *points.get([1, pt]).unwrap();
+            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), (1.0 - x) * (1.0 - y));
+            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x * (1.0 - y));
+            assert_relative_eq!(*data.get([0, pt, 2, 0]).unwrap(), (1.0 - x) * y);
+            assert_relative_eq!(*data.get([0, pt, 3, 0]).unwrap(), x * y);
         }
         check_dofs(e);
     }
@@ -710,28 +688,17 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
+            let x = *points.get([0, pt]).unwrap();
+            let y = *points.get([1, pt]).unwrap();
+            let z = *points.get([2, pt]).unwrap();
             assert_relative_eq!(
                 *data.get([0, pt, 0, 0]).unwrap(),
-                1.0 - *points.get([0, pt]).unwrap()
-                    - *points.get([1, pt]).unwrap()
-                    - *points.get([2, pt]).unwrap(),
+                1.0 - x - y - z,
                 epsilon = 1e-14
             );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
-                *points.get([0, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
-                *points.get([1, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 3, 0]).unwrap(),
-                *points.get([2, pt]).unwrap(),
-                epsilon = 1e-14
-            );
+            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x, epsilon = 1e-14);
+            assert_relative_eq!(*data.get([0, pt, 2, 0]).unwrap(), y, epsilon = 1e-14);
+            assert_relative_eq!(*data.get([0, pt, 3, 0]).unwrap(), z, epsilon = 1e-14);
         }
         check_dofs(e);
     }
@@ -797,60 +764,47 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
+            let x = *points.get([0, pt]).unwrap();
+            let y = *points.get([1, pt]).unwrap();
+            let z = *points.get([2, pt]).unwrap();
             assert_relative_eq!(
                 *data.get([0, pt, 0, 0]).unwrap(),
-                (1.0 - *points.get([0, pt]).unwrap())
-                    * (1.0 - *points.get([1, pt]).unwrap())
-                    * (1.0 - *points.get([2, pt]).unwrap()),
+                (1.0 - x) * (1.0 - y) * (1.0 - z),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 1, 0]).unwrap(),
-                *points.get([0, pt]).unwrap()
-                    * (1.0 - *points.get([1, pt]).unwrap())
-                    * (1.0 - *points.get([2, pt]).unwrap()),
+                x * (1.0 - y) * (1.0 - z),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 2, 0]).unwrap(),
-                (1.0 - *points.get([0, pt]).unwrap())
-                    * *points.get([1, pt]).unwrap()
-                    * (1.0 - *points.get([2, pt]).unwrap()),
+                (1.0 - x) * y * (1.0 - z),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 3, 0]).unwrap(),
-                *points.get([0, pt]).unwrap()
-                    * *points.get([1, pt]).unwrap()
-                    * (1.0 - *points.get([2, pt]).unwrap()),
+                x * y * (1.0 - z),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 4, 0]).unwrap(),
-                (1.0 - *points.get([0, pt]).unwrap())
-                    * (1.0 - *points.get([1, pt]).unwrap())
-                    * *points.get([2, pt]).unwrap(),
+                (1.0 - x) * (1.0 - y) * z,
                 epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 5, 0]).unwrap(),
-                *points.get([0, pt]).unwrap()
-                    * (1.0 - *points.get([1, pt]).unwrap())
-                    * *points.get([2, pt]).unwrap(),
+                x * (1.0 - y) * z,
                 epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 6, 0]).unwrap(),
-                (1.0 - *points.get([0, pt]).unwrap())
-                    * *points.get([1, pt]).unwrap()
-                    * *points.get([2, pt]).unwrap(),
+                (1.0 - x) * y * z,
                 epsilon = 1e-14
             );
             assert_relative_eq!(
                 *data.get([0, pt, 7, 0]).unwrap(),
-                *points.get([0, pt]).unwrap()
-                    * *points.get([1, pt]).unwrap()
-                    * *points.get([2, pt]).unwrap(),
+                x * y * z,
                 epsilon = 1e-14
             );
         }
@@ -933,36 +887,13 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
-                -*points.get([0, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 1]).unwrap(),
-                -*points.get([1, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
-                *points.get([0, pt]).unwrap() - 1.0,
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 1]).unwrap(),
-                *points.get([1, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
-                -*points.get([0, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 1]).unwrap(),
-                1.0 - *points.get([1, pt]).unwrap(),
-                epsilon = 1e-14
-            );
+            let x = *points.get([0, pt]).unwrap();
+            let y = *points.get([1, pt]).unwrap();
+            for (i, basis_f) in [[-x, -y], [x - 1.0, y], [-x, 1.0 - y]].iter().enumerate() {
+                for (d, value) in basis_f.iter().enumerate() {
+                    assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
+                }
+            }
         }
         check_dofs(e);
     }
@@ -1026,36 +957,48 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
-                -*points.get([1, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 1]).unwrap(),
-                *points.get([0, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
-                *points.get([1, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 1]).unwrap(),
-                1.0 - *points.get([0, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
-                1.0 - *points.get([1, pt]).unwrap(),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 1]).unwrap(),
-                *points.get([0, pt]).unwrap(),
-                epsilon = 1e-14
-            );
+            let x = *points.get([0, pt]).unwrap();
+            let y = *points.get([1, pt]).unwrap();
+            for (i, basis_f) in [[-y, x], [y, 1.0 - x], [1.0 - y, x]].iter().enumerate() {
+                for (d, value) in basis_f.iter().enumerate() {
+                    assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
+                }
+            }
+        }
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_nedelec_1_quadrilateral() {
+        let e = nedelec::create(ReferenceCellType::Quadrilateral, 1, Continuity::Standard);
+        assert_eq!(e.value_size(), 2);
+        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        *points.get_mut([0, 0]).unwrap() = 0.0;
+        *points.get_mut([1, 0]).unwrap() = 0.0;
+        *points.get_mut([0, 1]).unwrap() = 1.0;
+        *points.get_mut([1, 1]).unwrap() = 0.0;
+        *points.get_mut([0, 2]).unwrap() = 0.0;
+        *points.get_mut([1, 2]).unwrap() = 1.0;
+        *points.get_mut([0, 3]).unwrap() = 0.5;
+        *points.get_mut([1, 3]).unwrap() = 0.0;
+        *points.get_mut([0, 4]).unwrap() = 1.0;
+        *points.get_mut([1, 4]).unwrap() = 0.5;
+        *points.get_mut([0, 5]).unwrap() = 0.5;
+        *points.get_mut([1, 5]).unwrap() = 0.5;
+        e.tabulate(&points, 0, &mut data);
+
+        for pt in 0..6 {
+            let x = *points.get([0, pt]).unwrap();
+            let y = *points.get([1, pt]).unwrap();
+            for (i, basis_f) in [[1.0 - y, 0.0], [0.0, 1.0 - x], [0.0, x], [y, 0.0]]
+                .iter()
+                .enumerate()
+            {
+                for (d, value) in basis_f.iter().enumerate() {
+                    assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
+                }
+            }
         }
         check_dofs(e);
     }
@@ -1070,6 +1013,20 @@ mod test {
     #[test]
     fn test_nedelec_3_triangle() {
         let e = nedelec::create::<f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
+        assert_eq!(e.value_size(), 2);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_nedelec_2_quadrilateral() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Quadrilateral, 2, Continuity::Standard);
+        assert_eq!(e.value_size(), 2);
+        check_dofs(e);
+    }
+
+    #[test]
+    fn test_nedelec_3_quadrilateral() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Quadrilateral, 3, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
         check_dofs(e);
     }

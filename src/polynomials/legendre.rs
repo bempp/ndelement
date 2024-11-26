@@ -12,7 +12,7 @@ fn tri_index(i: usize, j: usize) -> usize {
 }
 
 fn quad_index(i: usize, j: usize, n: usize) -> usize {
-    j * (n + 1) + i
+    i * (n + 1) + j
 }
 
 fn tet_index(i: usize, j: usize, k: usize) -> usize {
@@ -20,7 +20,7 @@ fn tet_index(i: usize, j: usize, k: usize) -> usize {
 }
 
 fn hex_index(i: usize, j: usize, k: usize, n: usize) -> usize {
-    k * (n + 1) * (n + 1) + j * (n + 1) + i
+    i * (n + 1) * (n + 1) + j * (n + 1) + k
 }
 
 /// The coefficients in the Jacobi Polynomial recurrence relation
