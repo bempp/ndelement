@@ -401,21 +401,21 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
                 for k in 0..pdim_edge {
                     *wcoeffs
                         .get_mut([
-                            3 * (i * pdim_edge.pow(2) + j * pdim_edge + k),
+                            i * pdim_edge.pow(2) + j * pdim_edge + k,
                             0,
                             i * pdim_edge.pow(2) + j * pdim_edge + k,
                         ])
                         .unwrap() = T::from(1.0).unwrap();
                     *wcoeffs
                         .get_mut([
-                            3 * (i * pdim_edge.pow(2) + j * pdim_edge + k) + 1,
+                            pdim_edge.pow(2) * pdim_edge_minus1 + k * pdim_edge * pdim_edge_minus1 + i * pdim_edge + j,
                             1,
                             k * pdim_edge.pow(2) + i * pdim_edge + j,
                         ])
                         .unwrap() = T::from(1.0).unwrap();
                     *wcoeffs
                         .get_mut([
-                            3 * (i * pdim_edge.pow(2) + j * pdim_edge + k) + 2,
+                            pdim_edge.pow(2) * pdim_edge_minus1 * 2 + j * pdim_edge * pdim_edge_minus1 + k * pdim_edge_minus1 + i,
                             2,
                             j * pdim_edge.pow(2) + k * pdim_edge + i,
                         ])
@@ -542,25 +542,25 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
             m[3].push(rlst_dynamic_array3!(T, [0, tdim, 0]))
         } else {
             let interior_q =
-                gauss_jacobi_rule(ReferenceCellType::Quadrilateral, 2 * degree - 1).unwrap();
+                gauss_jacobi_rule(ReferenceCellType::Hexahedron, 2 * degree - 1).unwrap();
             let interior_pts_t = interior_q
                 .points
                 .iter()
                 .map(|i| TReal::from(*i).unwrap())
                 .collect::<Vec<_>>();
-            let interior_pts = rlst_array_from_slice2!(&interior_pts_t, [2, interior_q.npoints]);
+            let interior_pts = rlst_array_from_slice2!(&interior_pts_t, [3, interior_q.npoints]);
 
             let mut interior_phi = rlst_dynamic_array3![
                 T,
                 legendre_shape(
-                    ReferenceCellType::Quadrilateral,
+                    ReferenceCellType::Hexahedron,
                     &interior_pts,
                     degree - 1,
                     0
                 )
             ];
             tabulate_legendre_polynomials(
-                ReferenceCellType::Quadrilateral,
+                ReferenceCellType::Hexahedron,
                 &interior_pts,
                 degree - 1,
                 0,
@@ -590,7 +590,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
                             mat[[index, 0, w_i]] = T::from(*wt).unwrap()
                                 * interior_phi[[
                                     0,
-                                    k * pdim_edge_minus1 * pdim_edge_minus1
+                                    k * pdim_edge_minus1.pow(2)
                                         + j * pdim_edge_minus1
                                         + i,
                                     w_i,
@@ -598,7 +598,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
                             mat[[index + 1, 1, w_i]] = T::from(*wt).unwrap()
                                 * interior_phi[[
                                     0,
-                                    i * pdim_edge_minus1 * pdim_edge_minus1
+                                    i * pdim_edge_minus1.pow(2)
                                         + k * pdim_edge_minus1
                                         + j,
                                     w_i,
@@ -606,7 +606,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
                             mat[[index + 2, 2, w_i]] = T::from(*wt).unwrap()
                                 * interior_phi[[
                                     0,
-                                    j * pdim_edge_minus1 * pdim_edge_minus1
+                                    j * pdim_edge_minus1.pow(2)
                                         + i * pdim_edge_minus1
                                         + k,
                                     w_i,
@@ -619,6 +619,21 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
             m[3].push(mat);
         }
     }
+
+    use rlst::RawAccess;
+
+    for i in 0..12 {
+        println!("{:?}", x[1][i].data());
+        println!("{:?}", m[1][i].data());
+    }
+    println!();
+    for i in 0..6 {
+        println!("{:?}", x[2][i].data());
+        println!("{:?}", m[2][i].data());
+    }
+    println!();
+    println!("{:?}", x[3][0].data());
+    println!("{:?}", m[3][0].data());
 
     CiarletElement::create(
         "Nedelec (first kind)".to_string(),
