@@ -21,20 +21,18 @@ To make a new release of ndelement, follow the following steps:
 
 3) Update the version number in the "Using ndelement" section of README.md.
 
-4) Commit your changes and push to GitHub, open a pull request to merge changes back into main, and merge the
+4) Run `cargo publish --dry-run` and fix any errors.
+
+5) Commit your changes and push to GitHub, open a pull request to merge changes back into main, and merge the
    pull request.
 
-5) [Create a release on GitHub](https://github.com/bempp/ndelement/releases/new) from the `main` branch.
+6) [Create a release on GitHub](https://github.com/bempp/ndelement/releases/new) from the `main` branch.
    The release tag and title should be `v[x].[y].[z]` (where `[x]`, `[y]` and `[z]` are as in step 2).
    In the "Describe this release" box, you should bullet point the main changes since the last
    release.
 
-6) Run `cargo publish --dry-run`, then run `cargo package --list` and
-   check that no unwanted extras have been included in the release.
-
-7) If everything is working as expected, run `cargo publish`. This will push the new version to
-   crates.io. Note: this cannot be undone, but you can use `cargo yank` to mark a version as
-   unsuitable for use.
+7) Run `cargo publish`. This will push the new version to crates.io.
+   Note: this cannot be undone, but you can use `cargo yank` to mark a version as unsuitable for use.
 
 8) Open a pull request to `main` to update the version numbers in `Cargo.toml` and `pyproject.toml`
    to `[x].[y].[z]-dev`
