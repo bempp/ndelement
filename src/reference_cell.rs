@@ -98,7 +98,7 @@ pub fn midpoint<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<T> {
     }
 }
 
-/// The edges of the reference cell
+/// The edges (dimension 1 entities) of the reference cell
 pub fn edges(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match cell {
         ReferenceCellType::Point => vec![],
@@ -151,7 +151,7 @@ pub fn edges(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     }
 }
 
-/// The faces of the reference cell
+/// The faces (dimension 2 entities) of the reference cell
 pub fn faces(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match cell {
         ReferenceCellType::Point => vec![],
@@ -183,6 +183,68 @@ pub fn faces(cell: ReferenceCellType) -> Vec<Vec<usize>> {
             vec![1, 3, 4],
             vec![2, 3, 4],
         ],
+    }
+}
+
+/// The volumes (dimension 3 entities) of the reference cell
+pub fn volumes(cell: ReferenceCellType) -> Vec<Vec<usize>> {
+    match cell {
+        ReferenceCellType::Point => vec![],
+        ReferenceCellType::Interval => vec![],
+        ReferenceCellType::Triangle => vec![],
+        ReferenceCellType::Quadrilateral => vec![],
+        ReferenceCellType::Tetrahedron => vec![vec![0, 1, 2, 3]],
+        ReferenceCellType::Hexahedron => vec![vec![0, 1, 2, 3, 4, 5, 6, 7]],
+        ReferenceCellType::Prism => vec![vec![0, 1, 2, 3, 4, 5]],
+        ReferenceCellType::Pyramid => vec![vec![0, 1, 2, 3, 4]],
+    }
+}
+
+/// The facets (dimension dim-1 entities) of the reference cell
+pub fn facets(cell: ReferenceCellType) -> Vec<Vec<usize>> {
+    match dim(cell) {
+        0 => vec![],
+        1 => volumes(cell)[0]
+            .iter()
+            .map(|x| vec![*x])
+            .collect::<Vec<_>>(),
+        2 => edges(cell),
+        3 => faces(cell),
+        _ => {
+            panic!("Invalid dimension");
+        }
+    }
+}
+
+/// The ridges (dimension dim-2 entities) of the reference cell
+pub fn ridges(cell: ReferenceCellType) -> Vec<Vec<usize>> {
+    match dim(cell) {
+        0 => vec![],
+        1 => vec![],
+        2 => volumes(cell)[0]
+            .iter()
+            .map(|x| vec![*x])
+            .collect::<Vec<_>>(),
+        3 => edges(cell),
+        _ => {
+            panic!("Invalid dimension");
+        }
+    }
+}
+
+/// The peaks (dimension dim-3 entities) of the reference cell
+pub fn peaks(cell: ReferenceCellType) -> Vec<Vec<usize>> {
+    match dim(cell) {
+        0 => vec![],
+        1 => vec![],
+        2 => vec![],
+        3 => volumes(cell)[0]
+            .iter()
+            .map(|x| vec![*x])
+            .collect::<Vec<_>>(),
+        _ => {
+            panic!("Invalid dimension");
+        }
     }
 }
 
@@ -242,20 +304,6 @@ pub fn facet_unit_normals<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> V
         }
     }
     normals
-}
-
-/// The faces of the reference cell
-pub fn volumes(cell: ReferenceCellType) -> Vec<Vec<usize>> {
-    match cell {
-        ReferenceCellType::Point => vec![],
-        ReferenceCellType::Interval => vec![],
-        ReferenceCellType::Triangle => vec![],
-        ReferenceCellType::Quadrilateral => vec![],
-        ReferenceCellType::Tetrahedron => vec![vec![0, 1, 2, 3]],
-        ReferenceCellType::Hexahedron => vec![vec![0, 1, 2, 3, 4, 5, 6, 7]],
-        ReferenceCellType::Prism => vec![vec![0, 1, 2, 3, 4, 5]],
-        ReferenceCellType::Pyramid => vec![vec![0, 1, 2, 3, 4]],
-    }
 }
 
 /// The types of the subentities of the reference cell
