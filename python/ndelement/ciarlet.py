@@ -186,17 +186,62 @@ class CiarletElement(object):
 class ElementFamily(object):
     """Ciarlet element."""
 
-    def __init__(self, rs_family: _CDataBase, owned: bool = True):
+    def __init__(self, family: Family, degree: int, rs_family: _CDataBase, owned: bool = True):
         """Initialise."""
         self._rs_family = rs_family
         self._owned = owned
+        self._family = family
+        self._degree = degree
 
     def __del__(self):
         """Delete object."""
         if self._owned:
             _lib.element_family_t_free(self._rs_family)
 
+    @property
+    def family(self) -> Family:
+        """The family."""
+        return self._family
+
+    @property
+    def degree(self) -> int:
+        """The degree."""
+        return self._degree
+
     def element(self, cell: ReferenceCellType) -> CiarletElement:
+        """Create an element."""
+        # TODO: remove these error once https://github.com/linalg-rs/rlst/issues/98 is fixed
+        msg = "Cannot create element due to bug in RLST"
+        if self.family == Family.Lagrange:
+            if cell == ReferenceCellType.Interval and self.degree >= 99:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Triangle and self.degree >= 13:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Quadrilateral and self.degree >= 10:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Tetrahedron and self.degree >= 7:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Hexahedron and self.degree >= 5:
+                raise RuntimeError(msg)
+        if self.family == Family.RaviartThomas:
+            if cell == ReferenceCellType.Triangle and self.degree >= 10:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Quadrilateral and self.degree >= 7:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Tetrahedron and self.degree >= 5:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Hexahedron and self.degree >= 3:
+                raise RuntimeError(msg)
+        if self.family == Family.NedelecFirstKind:
+            if cell == ReferenceCellType.Triangle and self.degree >= 10:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Quadrilateral and self.degree >= 7:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Tetrahedron and self.degree >= 5:
+                raise RuntimeError(msg)
+            if cell == ReferenceCellType.Hexahedron and self.degree >= 3:
+                raise RuntimeError(msg)
+
         return CiarletElement(_lib.element_family_create_element(self._rs_family, cell.value))
 
 
@@ -209,10 +254,16 @@ def create_family(
     """Create a new element family."""
     rust_type = _rtypes[dtype]
     if family == Family.Lagrange:
-        return ElementFamily(_lib.create_lagrange_family(degree, continuity.value, rust_type))
+        return ElementFamily(
+            family, degree, _lib.create_lagrange_family(degree, continuity.value, rust_type)
+        )
     elif family == Family.RaviartThomas:
-        return ElementFamily(_lib.create_raviart_thomas_family(degree, continuity.value, rust_type))
+        return ElementFamily(
+            family, degree, _lib.create_raviart_thomas_family(degree, continuity.value, rust_type)
+        )
     elif family == Family.NedelecFirstKind:
-        return ElementFamily(_lib.create_nedelec_family(degree, continuity.value, rust_type))
+        return ElementFamily(
+            family, degree, _lib.create_nedelec_family(degree, continuity.value, rust_type)
+        )
     else:
         raise ValueError(f"Unsupported family: {family}")
