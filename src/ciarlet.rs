@@ -1095,10 +1095,11 @@ mod test {
                 [0.0, (1.0 - x) * z, 0.0],
                 [0.0, x * z, 0.0],
                 [y * z, 0.0, 0.0],
-            ].iter().enumerate()
+            ]
+            .iter()
+            .enumerate()
             {
                 for (d, value) in basis_f.iter().enumerate() {
-                    println!("[{i},{d}] {} =?= {}", *data.get([0, pt, i, d]).unwrap(), value);
                     assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
                 }
             }

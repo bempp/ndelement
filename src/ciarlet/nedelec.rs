@@ -408,14 +408,20 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
                         .unwrap() = T::from(1.0).unwrap();
                     *wcoeffs
                         .get_mut([
-                            pdim_edge.pow(2) * pdim_edge_minus1 + k * pdim_edge * pdim_edge_minus1 + i * pdim_edge + j,
+                            pdim_edge.pow(2) * pdim_edge_minus1
+                                + k * pdim_edge * pdim_edge_minus1
+                                + i * pdim_edge
+                                + j,
                             1,
                             k * pdim_edge.pow(2) + i * pdim_edge + j,
                         ])
                         .unwrap() = T::from(1.0).unwrap();
                     *wcoeffs
                         .get_mut([
-                            pdim_edge.pow(2) * pdim_edge_minus1 * 2 + j * pdim_edge * pdim_edge_minus1 + k * pdim_edge_minus1 + i,
+                            pdim_edge.pow(2) * pdim_edge_minus1 * 2
+                                + j * pdim_edge * pdim_edge_minus1
+                                + k * pdim_edge_minus1
+                                + i,
                             2,
                             j * pdim_edge.pow(2) + k * pdim_edge + i,
                         ])
@@ -524,10 +530,16 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
                 for i in 0..pdim_edge_minus2 {
                     for j in 0..pdim_edge_minus1 {
                         let index = 2 * (i * pdim_edge_minus1 + j);
-                        mat[[index, 0, w_i]] =
+                        let entry0 =
                             T::from(*wt).unwrap() * face_phi[[0, j * pdim_edge_minus1 + i, w_i]];
-                        mat[[index + 1, 1, w_i]] =
+                        let entry1 =
                             T::from(*wt).unwrap() * face_phi[[0, i * pdim_edge_minus1 + j, w_i]];
+                        for d in 0..tdim {
+                            mat[[index, d, w_i]] = entry0
+                                * T::from(vertices[face[1]][d] - vertices[face[0]][d]).unwrap();
+                            mat[[index + 1, d, w_i]] = entry1
+                                * T::from(vertices[face[2]][d] - vertices[face[0]][d]).unwrap();
+                        }
                     }
                 }
             }
@@ -552,12 +564,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
 
             let mut interior_phi = rlst_dynamic_array3![
                 T,
-                legendre_shape(
-                    ReferenceCellType::Hexahedron,
-                    &interior_pts,
-                    degree - 1,
-                    0
-                )
+                legendre_shape(ReferenceCellType::Hexahedron, &interior_pts, degree - 1, 0)
             ];
             tabulate_legendre_polynomials(
                 ReferenceCellType::Hexahedron,
@@ -584,31 +591,26 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
                 for i in 0..pdim_edge_minus2 {
                     for j in 0..pdim_edge_minus2 {
                         for k in 0..pdim_edge_minus1 {
-                            let index = 3 * (i * pdim_edge_minus1 * pdim_edge_minus2)
-                                + j * pdim_edge_minus1
-                                + k;
+                            let index = 3
+                                * (i * pdim_edge_minus1 * pdim_edge_minus2
+                                    + j * pdim_edge_minus1
+                                    + k);
                             mat[[index, 0, w_i]] = T::from(*wt).unwrap()
                                 * interior_phi[[
                                     0,
-                                    k * pdim_edge_minus1.pow(2)
-                                        + j * pdim_edge_minus1
-                                        + i,
+                                    k * pdim_edge_minus1.pow(2) + j * pdim_edge_minus1 + i,
                                     w_i,
                                 ]];
                             mat[[index + 1, 1, w_i]] = T::from(*wt).unwrap()
                                 * interior_phi[[
                                     0,
-                                    i * pdim_edge_minus1.pow(2)
-                                        + k * pdim_edge_minus1
-                                        + j,
+                                    i * pdim_edge_minus1.pow(2) + k * pdim_edge_minus1 + j,
                                     w_i,
                                 ]];
                             mat[[index + 2, 2, w_i]] = T::from(*wt).unwrap()
                                 * interior_phi[[
                                     0,
-                                    j * pdim_edge_minus1.pow(2)
-                                        + i * pdim_edge_minus1
-                                        + k,
+                                    j * pdim_edge_minus1.pow(2) + i * pdim_edge_minus1 + k,
                                     w_i,
                                 ]];
                         }
@@ -619,21 +621,6 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
             m[3].push(mat);
         }
     }
-
-    use rlst::RawAccess;
-
-    for i in 0..12 {
-        println!("{:?}", x[1][i].data());
-        println!("{:?}", m[1][i].data());
-    }
-    println!();
-    for i in 0..6 {
-        println!("{:?}", x[2][i].data());
-        println!("{:?}", m[2][i].data());
-    }
-    println!();
-    println!("{:?}", x[3][0].data());
-    println!("{:?}", m[3][0].data());
 
     CiarletElement::create(
         "Nedelec (first kind)".to_string(),
