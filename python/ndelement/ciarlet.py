@@ -254,10 +254,16 @@ def create_family(
     """Create a new element family."""
     rust_type = _rtypes[dtype]
     if family == Family.Lagrange:
-        return ElementFamily(family, degree, _lib.create_lagrange_family(degree, continuity.value, rust_type))
+        return ElementFamily(
+            family, degree, _lib.create_lagrange_family(degree, continuity.value, rust_type)
+        )
     elif family == Family.RaviartThomas:
-        return ElementFamily(family, degree, _lib.create_raviart_thomas_family(degree, continuity.value, rust_type))
+        return ElementFamily(
+            family, degree, _lib.create_raviart_thomas_family(degree, continuity.value, rust_type)
+        )
     elif family == Family.NedelecFirstKind:
-        return ElementFamily(family, degree, _lib.create_nedelec_family(degree, continuity.value, rust_type))
+        return ElementFamily(
+            family, degree, _lib.create_nedelec_family(degree, continuity.value, rust_type)
+        )
     else:
         raise ValueError(f"Unsupported family: {family}")
