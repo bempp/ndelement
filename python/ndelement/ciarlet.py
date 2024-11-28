@@ -222,7 +222,7 @@ class ElementFamily(object):
         return self._degree
 
     @property
-    def continuity(self) -> int:
+    def continuity(self) -> Continuity:
         """Continuity."""
         return self._continuity
 
