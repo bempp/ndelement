@@ -287,6 +287,12 @@ pub mod ciarlet {
             DType::F64 => Box::new(ciarlet::RaviartThomasElementFamily::<f64>::new(
                 degree, continuity,
             )),
+            DType::C32 => Box::new(ciarlet::RaviartThomasElementFamily::<c32>::new(
+                degree, continuity,
+            )),
+            DType::C64 => Box::new(ciarlet::RaviartThomasElementFamily::<c64>::new(
+                degree, continuity,
+            )),
             _ => panic!("Unsupported dtype"),
         };
 
@@ -309,6 +315,12 @@ pub mod ciarlet {
             DType::F64 => Box::new(ciarlet::NedelecFirstKindElementFamily::<f64>::new(
                 degree, continuity,
             )),
+            DType::C32 => Box::new(ciarlet::NedelecFirstKindElementFamily::<c32>::new(
+                degree, continuity,
+            )),
+            DType::C64 => Box::new(ciarlet::NedelecFirstKindElementFamily::<c64>::new(
+                degree, continuity,
+            )),
             _ => panic!("Unsupported dtype"),
         };
 
@@ -329,6 +341,19 @@ pub mod ciarlet {
         *inner = Box::new(family.element(cell));
 
         ciarlet_element
+    }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        field(arg = 0, name = "element_family", wrapper = "ElementFamilyT", replace_with = ["crate::ciarlet::LagrangeElementFamily<{{dtype}}>", "ciarlet::RaviartThomasElementFamily<{{dtype}}>", "ciarlet::NedelecFirstKindElementFamily<{{dtype}}>"])
+    )]
+    pub fn element_family_dtype<
+        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        F: ElementFamily<CellType = ReferenceCellType, T = T>,
+    >(
+        _elem: &F,
+    ) -> DType {
+        <T as DTypeIdentifier>::dtype()
     }
 
     #[concretise_types(
