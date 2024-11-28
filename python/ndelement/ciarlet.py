@@ -57,7 +57,7 @@ class CiarletElement(object):
             _lib.ciarlet_element_t_free(self._rs_element)
 
     @property
-    def dtype(self):
+    def dtype(self) -> typing.Type[np.floating]:
         """Data type."""
         return _dtypes[_lib.ciarlet_element_dtype(self._rs_element)]
 
@@ -186,17 +186,30 @@ class CiarletElement(object):
 class ElementFamily(object):
     """Ciarlet element."""
 
-    def __init__(self, family: Family, degree: int, rs_family: _CDataBase, owned: bool = True):
+    def __init__(
+        self,
+        family: Family,
+        degree: int,
+        continuity: Continuity,
+        rs_family: _CDataBase,
+        owned: bool = True,
+    ):
         """Initialise."""
         self._rs_family = rs_family
         self._owned = owned
         self._family = family
         self._degree = degree
+        self._continuity = continuity
 
     def __del__(self):
         """Delete object."""
         if self._owned:
             _lib.element_family_t_free(self._rs_family)
+
+    @property
+    def dtype(self) -> typing.Type[np.floating]:
+        """Data type."""
+        return _dtypes[_lib.element_family_dtype(self._rs_family)]
 
     @property
     def family(self) -> Family:
@@ -207,6 +220,11 @@ class ElementFamily(object):
     def degree(self) -> int:
         """The degree."""
         return self._degree
+
+    @property
+    def continuity(self) -> Continuity:
+        """Continuity."""
+        return self._continuity
 
     def element(self, cell: ReferenceCellType) -> CiarletElement:
         """Create an element."""
@@ -255,15 +273,24 @@ def create_family(
     rust_type = _rtypes[dtype]
     if family == Family.Lagrange:
         return ElementFamily(
-            family, degree, _lib.create_lagrange_family(degree, continuity.value, rust_type)
+            family,
+            degree,
+            continuity,
+            _lib.create_lagrange_family(degree, continuity.value, rust_type),
         )
     elif family == Family.RaviartThomas:
         return ElementFamily(
-            family, degree, _lib.create_raviart_thomas_family(degree, continuity.value, rust_type)
+            family,
+            degree,
+            continuity,
+            _lib.create_raviart_thomas_family(degree, continuity.value, rust_type),
         )
     elif family == Family.NedelecFirstKind:
         return ElementFamily(
-            family, degree, _lib.create_nedelec_family(degree, continuity.value, rust_type)
+            family,
+            degree,
+            continuity,
+            _lib.create_nedelec_family(degree, continuity.value, rust_type),
         )
     else:
         raise ValueError(f"Unsupported family: {family}")
