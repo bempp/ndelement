@@ -402,7 +402,9 @@ pub mod ciarlet {
         data: *mut c_void,
     ) {
         let tdim = reference_cell::dim(element.cell_type());
-        let points = points as *mut <E::T as RlstScalar>::Real;
+        // The following transmute is only necessary because Rust-Analyzer bugs out
+        // for the statement `let points = points as *mut <E::T as RlstScalar>::Real;`
+        let points: *mut <E::T as RlstScalar>::Real = unsafe { std::mem::transmute(points) };
         let data = data as *mut E::T;
         let points = rlst_array_from_slice2!(
             unsafe { from_raw_parts(points, npoints * tdim) },
