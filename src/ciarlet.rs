@@ -1275,4 +1275,5 @@ mod test {
     test_entity_closure_dofs_lagrange!(Tetrahedron, 5);
     test_entity_closure_dofs_lagrange!(Hexahedron, 2);
     test_entity_closure_dofs_lagrange!(Hexahedron, 3);
+    test_entity_closure_dofs_lagrange!(Hexahedron, 4);
 }
