@@ -228,38 +228,6 @@ class ElementFamily(object):
 
     def element(self, cell: ReferenceCellType) -> CiarletElement:
         """Create an element."""
-        # TODO: remove these error once https://github.com/linalg-rs/rlst/issues/98 is fixed
-        msg = "Cannot create element due to bug in RLST"
-        if self.family == Family.Lagrange:
-            if cell == ReferenceCellType.Interval and self.degree >= 99:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Triangle and self.degree >= 13:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Quadrilateral and self.degree >= 10:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Tetrahedron and self.degree >= 7:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Hexahedron and self.degree >= 5:
-                raise RuntimeError(msg)
-        if self.family == Family.RaviartThomas:
-            if cell == ReferenceCellType.Triangle and self.degree >= 10:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Quadrilateral and self.degree >= 7:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Tetrahedron and self.degree >= 5:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Hexahedron and self.degree >= 3:
-                raise RuntimeError(msg)
-        if self.family == Family.NedelecFirstKind:
-            if cell == ReferenceCellType.Triangle and self.degree >= 10:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Quadrilateral and self.degree >= 7:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Tetrahedron and self.degree >= 5:
-                raise RuntimeError(msg)
-            if cell == ReferenceCellType.Hexahedron and self.degree >= 3:
-                raise RuntimeError(msg)
-
         return CiarletElement(_lib.element_family_create_element(self._rs_family, cell.value))
 
 
