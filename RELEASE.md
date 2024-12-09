@@ -19,22 +19,20 @@ To make a new release of ndelement, follow the following steps:
    If you are releasing a minor version, you should increment `[y]` and set `[z]`
    to zero. If you are releasing a bugfix, you should increment `[z]`.
 
-3) Update the version number in the "Using ndelement" section of README.md.
+3) Run `cargo publish --dry-run` and fix any errors.
 
-4) Run `cargo publish --dry-run` and fix any errors.
-
-5) Commit your changes and push to GitHub, open a pull request to merge changes back into main, and merge the
+4) Commit your changes and push to GitHub, open a pull request to merge changes back into main, and merge the
    pull request.
 
-6) [Create a release on GitHub](https://github.com/bempp/ndelement/releases/new) from the `main` branch.
+5) [Create a release on GitHub](https://github.com/bempp/ndelement/releases/new) from the `main` branch.
    The release tag and title should be `v[x].[y].[z]` (where `[x]`, `[y]` and `[z]` are as in step 2).
    In the "Describe this release" box, you should bullet point the main changes since the last
    release.
 
-7) Run `cargo publish`. This will push the new version to crates.io.
+6) Run `cargo publish`. This will push the new version to crates.io.
    Note: this cannot be undone, but you can use `cargo yank` to mark a version as unsuitable for use.
 
-8) Open a pull request to `main` to update the version numbers in `Cargo.toml` and `pyproject.toml`
+7) Open a pull request to `main` to update the version numbers in `Cargo.toml` and `pyproject.toml`
    to `[x].[y].[z]-dev`
 
-9) Add the release to the next issue of [Scientific Computing in Rust Monthly](https://github.com/rust-scicomp/scientific-computing-in-rust-monthly)
+8) Add the release to the next issue of [Scientific Computing in Rust Monthly](https://github.com/rust-scicomp/scientific-computing-in-rust-monthly)
