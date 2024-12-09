@@ -37,11 +37,11 @@ jobs:
         run: cargo build --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
 
       - name: Run unit tests
-        run: cargo test --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+        run: RUST_MIN_STACK=8388608 cargo test --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       - name: Run unit tests in release mode
-        run: cargo test --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+        run: RUST_MIN_STACK=8388608 cargo test --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       - name: Run tests
-        run: cargo test --examples --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+        run: RUST_MIN_STACK=8388608 cargo test --examples --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       # - name: Test benchmarks build
       #   run: cargo bench --no-run --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       - name: Run examples
