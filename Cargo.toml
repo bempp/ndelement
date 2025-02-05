@@ -2,8 +2,7 @@
 mpi = ["dep:mpi"]
 serde = ["dep:serde"]
 strict = []
-sleef = ["rlst/sleef"]
-default = ["sleef"]
+default = []
 
 [package]
 name = "ndelement"
