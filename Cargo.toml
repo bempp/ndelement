@@ -2,8 +2,7 @@
 mpi = ["dep:mpi"]
 serde = ["dep:serde"]
 strict = []
-sleef = ["rlst/sleef"]
-default = ["sleef"]
+default = []
 
 [package]
 name = "ndelement"
@@ -24,7 +23,7 @@ crate-type = ["lib", "cdylib"]
 
 [dependencies]
 bempp-quadrature = { version = "0.1.0" }
-itertools = "0.13.*"
+itertools = "0.14.*"
 mpi = { version = "0.8.*", optional = true }
 num = "0.4"
 rlst = { git = "https://github.com/linalg-rs/rlst.git", default-features = false }
@@ -38,7 +37,7 @@ paste = "1.*"
 approx = "0.5"
 
 [build-dependencies]
-cbindgen = "0.27.0"
+cbindgen = "0.28.*"
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
