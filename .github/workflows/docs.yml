@@ -42,6 +42,7 @@ jobs:
   deploy-docs:
     name: Deploy docs to GitHub pages
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
