@@ -2,8 +2,8 @@
 
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::reference_cell;
-use crate::traits::FiniteElement;
-use crate::types::{Continuity, MapType, ReferenceCellType};
+use crate::traits::{FiniteElement, Map};
+use crate::types::{Continuity, ReferenceCellType};
 use itertools::izip;
 use rlst::{
     rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray, MatrixInverse, RandomAccessByRef,
@@ -36,12 +36,11 @@ fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usi
 }
 
 /// A Ciarlet element
-pub struct CiarletElement<T: RlstScalar + MatrixInverse> {
+pub struct CiarletElement<T: RlstScalar + MatrixInverse, M: Map> {
     family_name: String,
     cell_type: ReferenceCellType,
     degree: usize,
     embedded_superdegree: usize,
-    map_type: MapType,
     value_shape: Vec<usize>,
     value_size: usize,
     continuity: Continuity,
@@ -51,9 +50,10 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse> {
     entity_closure_dofs: [Vec<Vec<usize>>; 4],
     interpolation_points: EntityPoints<T::Real>,
     interpolation_weights: EntityWeights<T>,
+    map: M,
 }
 
-impl<T: RlstScalar + MatrixInverse> Debug for CiarletElement<T> {
+impl<T: RlstScalar + MatrixInverse, M: Map> Debug for CiarletElement<T, M> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_tuple("CiarletElement")
             .field(&self.family_name)
@@ -63,7 +63,7 @@ impl<T: RlstScalar + MatrixInverse> Debug for CiarletElement<T> {
     }
 }
 
-impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
+impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
     /// Create a Ciarlet element
     #[allow(clippy::too_many_arguments)]
     pub fn create(
@@ -74,9 +74,9 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
         polynomial_coeffs: Array<T, BaseArray<T, VectorContainer<T>, 3>, 3>,
         interpolation_points: EntityPoints<T::Real>,
         interpolation_weights: EntityWeights<T>,
-        map_type: MapType,
         continuity: Continuity,
         embedded_superdegree: usize,
+        map: M,
     ) -> Self {
         let mut dim = 0;
         let mut npts = 0;
@@ -246,12 +246,11 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
                 ecdofs.push(cdofs);
             }
         }
-        CiarletElement::<T> {
+        CiarletElement::<T, M> {
             family_name,
             cell_type,
             degree,
             embedded_superdegree,
-            map_type,
             value_shape,
             value_size,
             continuity,
@@ -261,6 +260,7 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
             entity_closure_dofs,
             interpolation_points: new_pts,
             interpolation_weights: new_wts,
+            map,
         }
     }
 
@@ -281,18 +281,14 @@ impl<T: RlstScalar + MatrixInverse> CiarletElement<T> {
         &self.interpolation_weights
     }
 }
-impl<T: RlstScalar + MatrixInverse> FiniteElement for CiarletElement<T> {
+impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, M> {
     type CellType = ReferenceCellType;
-    type MapType = MapType;
     type T = T;
     fn value_shape(&self) -> &[usize] {
         &self.value_shape
     }
     fn value_size(&self) -> usize {
         self.value_size
-    }
-    fn map_type(&self) -> MapType {
-        self.map_type
     }
 
     fn cell_type(&self) -> ReferenceCellType {
@@ -358,6 +354,52 @@ impl<T: RlstScalar + MatrixInverse> FiniteElement for CiarletElement<T> {
         let basis_count = self.dim();
         let value_size = self.value_size();
         [deriv_count, point_count, basis_count, value_size]
+    }
+    fn push_forward<
+        Array2: RandomAccessByRef<2, Item = <Self::T as RlstScalar>::Real> + Shape<2>,
+        Array3: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: RandomAccessByRef<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
+        Array4Mut: RandomAccessMut<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
+    >(
+        &self,
+        reference_values: &Array4,
+        nderivs: usize,
+        jacobians: &Array3,
+        jacobian_determinants: &Array2,
+        inverse_jacobians: &Array3,
+        physical_values: &mut Array4Mut,
+    ) {
+        self.map.push_forward(
+            reference_values,
+            nderivs,
+            jacobians,
+            jacobian_determinants,
+            inverse_jacobians,
+            physical_values,
+        )
+    }
+    fn pull_back<
+        Array2: RandomAccessByRef<2, Item = <Self::T as RlstScalar>::Real> + Shape<2>,
+        Array3: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: RandomAccessByRef<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
+        Array4Mut: RandomAccessMut<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
+    >(
+        &self,
+        physical_values: &Array4,
+        nderivs: usize,
+        jacobians: &Array3,
+        jacobian_determinants: &Array2,
+        inverse_jacobians: &Array3,
+        reference_values: &mut Array4Mut,
+    ) {
+        self.map.pull_back(
+            physical_values,
+            nderivs,
+            jacobians,
+            jacobian_determinants,
+            inverse_jacobians,
+            reference_values,
+        )
     }
 }
 

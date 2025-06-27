@@ -209,9 +209,10 @@ pub mod ciarlet {
     use crate::{
         ciarlet,
         ciarlet::CiarletElement,
+        map::{ContravariantPiolaMap, CovariantPiolaMap, IdentityMap},
         reference_cell,
-        traits::{ElementFamily, FiniteElement},
-        types::{Continuity, MapType, ReferenceCellType},
+        traits::{ElementFamily, FiniteElement, Map},
+        types::{Continuity, ReferenceCellType},
     };
     use c_api_tools::{cfuncs, concretise_types, DType, DTypeIdentifier};
     use rlst::{
@@ -237,7 +238,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn element_value_size<E: FiniteElement>(element: &E) -> usize {
         element.value_size()
@@ -358,7 +360,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_dtype<
         T: RlstScalar + MatrixInverse + DTypeIdentifier,
@@ -371,7 +374,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_tabulate_array_shape<E: FiniteElement>(
         element: &E,
@@ -392,7 +396,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_tabulate<E: FiniteElement<CellType = ReferenceCellType>>(
         element: &E,
@@ -420,7 +425,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_value_size<E: FiniteElement>(element: &E) -> usize {
         element.value_size()
@@ -428,7 +434,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_value_rank<E: FiniteElement>(element: &E) -> usize {
         element.value_shape().len()
@@ -436,7 +443,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_value_shape<E: FiniteElement>(element: &E, shape: *mut usize) {
         for (i, j) in element.value_shape().iter().enumerate() {
@@ -448,17 +456,19 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_degree<T: RlstScalar + MatrixInverse + DTypeIdentifier>(
-        element: &CiarletElement<T>,
+    pub fn ciarlet_element_degree<T: RlstScalar + MatrixInverse + DTypeIdentifier, M: Map>(
+        element: &CiarletElement<T, M>,
     ) -> usize {
         element.degree()
     }
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_embedded_superdegree<E: FiniteElement>(element: &E) -> usize {
         element.embedded_superdegree()
@@ -466,7 +476,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_dim<E: FiniteElement>(element: &E) -> usize {
         element.dim()
@@ -474,25 +485,19 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_continuity<T: RlstScalar + MatrixInverse + DTypeIdentifier>(
-        element: &CiarletElement<T>,
+    pub fn ciarlet_element_continuity<T: RlstScalar + MatrixInverse + DTypeIdentifier, M: Map>(
+        element: &CiarletElement<T, M>,
     ) -> Continuity {
         element.continuity()
     }
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
-    )]
-    pub fn ciarlet_element_map_type<E: FiniteElement<MapType = MapType>>(element: &E) -> MapType {
-        element.map_type()
-    }
-
-    #[concretise_types(
-        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_cell_type<E: FiniteElement<CellType = ReferenceCellType>>(
         element: &E,
@@ -502,7 +507,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_entity_dofs_size<E: FiniteElement>(
         element: &E,
@@ -514,7 +520,8 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_entity_dofs<E: FiniteElement>(
         element: &E,
@@ -536,12 +543,14 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_entity_closure_dofs_size<
         T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
     >(
-        element: &CiarletElement<T>,
+        element: &CiarletElement<T, M>,
         entity_dim: usize,
         entity_index: usize,
     ) -> usize {
@@ -553,10 +562,14 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_entity_closure_dofs<T: RlstScalar + MatrixInverse + DTypeIdentifier>(
-        element: &CiarletElement<T>,
+    pub fn ciarlet_element_entity_closure_dofs<
+        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
+    >(
+        element: &CiarletElement<T, M>,
         entity_dim: usize,
         entity_index: usize,
         entity_closure_dofs: *mut usize,
@@ -575,12 +588,14 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_interpolation_npoints<
         T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
     >(
-        element: &CiarletElement<T>,
+        element: &CiarletElement<T, M>,
         entity_dim: usize,
         entity_index: usize,
     ) -> usize {
@@ -589,10 +604,14 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_interpolation_ndofs<T: RlstScalar + MatrixInverse + DTypeIdentifier>(
-        element: &CiarletElement<T>,
+    pub fn ciarlet_element_interpolation_ndofs<
+        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
+    >(
+        element: &CiarletElement<T, M>,
         entity_dim: usize,
         entity_index: usize,
     ) -> usize {
@@ -601,10 +620,14 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_interpolation_points<T: RlstScalar + MatrixInverse + DTypeIdentifier>(
-        element: &CiarletElement<T>,
+    pub fn ciarlet_element_interpolation_points<
+        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
+    >(
+        element: &CiarletElement<T, M>,
         entity_dim: usize,
         entity_index: usize,
         points: *mut c_void,
@@ -623,12 +646,14 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}>"])
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_interpolation_weights<
         T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
     >(
-        element: &CiarletElement<T>,
+        element: &CiarletElement<T, M>,
         entity_dim: usize,
         entity_index: usize,
         weights: *mut c_void,
