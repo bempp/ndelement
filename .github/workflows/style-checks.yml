@@ -9,7 +9,7 @@ on:
 
 jobs:
   style-checks:
-    name: Rust style checks
+    name: Style checks
     runs-on: ubuntu-latest
     strategy:
       matrix:
