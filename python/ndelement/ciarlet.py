@@ -24,15 +24,6 @@ class Family(Enum):
     NedelecFirstKind = 2
 
 
-class MapType(Enum):
-    """Map type."""
-
-    Identity = _lib.MapType_Identity
-    CovariantPiola = _lib.MapType_CovariantPiola
-    ContravariantPiola = _lib.MapType_ContravariantPiola
-    L2Piola = _lib.MapType_L2Piola
-
-
 _rtypes = {
     np.float32: _lib.DType_F32,
     np.float64: _lib.DType_F64,
@@ -94,11 +85,6 @@ class CiarletElement(object):
     def continuity(self) -> Continuity:
         """Continuity of the element."""
         return Continuity(_lib.ciarlet_element_continuity(self._rs_element))
-
-    @property
-    def map_type(self) -> MapType:
-        """Pullback map type of the element."""
-        return MapType(_lib.ciarlet_element_map_type(self._rs_element))
 
     @property
     def cell_type(self) -> ReferenceCellType:
