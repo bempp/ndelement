@@ -216,8 +216,8 @@ pub mod ciarlet {
     };
     use c_api_tools::{cfuncs, concretise_types, DType, DTypeIdentifier};
     use rlst::{
-        c32, c64, rlst_array_from_slice2, rlst_array_from_slice_mut4, MatrixInverse, RawAccess,
-        RlstScalar, Shape,
+        c32, c64, rlst_array_from_slice2, rlst_array_from_slice3, rlst_array_from_slice4,
+        rlst_array_from_slice_mut4, MatrixInverse, RawAccess, RlstScalar, Shape,
     };
     use std::ffi::c_void;
     use std::slice::{from_raw_parts, from_raw_parts_mut};
@@ -407,9 +407,7 @@ pub mod ciarlet {
         data: *mut c_void,
     ) {
         let tdim = reference_cell::dim(element.cell_type());
-        // The following transmute is only necessary because Rust-Analyzer bugs out
-        // for the statement `let points = points as *mut <E::T as RlstScalar>::Real;`
-        let points: *mut <E::T as RlstScalar>::Real = unsafe { std::mem::transmute(points) };
+        let points = points as *mut <E::T as RlstScalar>::Real;
         let data = data as *mut E::T;
         let points = rlst_array_from_slice2!(
             unsafe { from_raw_parts(points, npoints * tdim) },
@@ -452,6 +450,178 @@ pub mod ciarlet {
                 *shape.add(i) = *j;
             }
         }
+    }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub fn ciarlet_element_physical_value_size<E: FiniteElement>(
+        element: &E,
+        gdim: usize,
+    ) -> usize {
+        element.physical_value_size(gdim)
+    }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub fn ciarlet_element_physical_value_rank<E: FiniteElement>(
+        element: &E,
+        gdim: usize,
+    ) -> usize {
+        element.physical_value_shape(gdim).len()
+    }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub fn ciarlet_element_physical_value_shape<E: FiniteElement>(
+        element: &E,
+        gdim: usize,
+        shape: *mut usize,
+    ) {
+        for (i, j) in element.physical_value_shape(gdim).iter().enumerate() {
+            unsafe {
+                *shape.add(i) = *j;
+            }
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub fn ciarlet_element_push_forward<E: FiniteElement<CellType = ReferenceCellType>>(
+        element: &E,
+        npoints: usize,
+        gdim: usize,
+        reference_values: *const c_void,
+        nderivs: usize,
+        j: *const c_void,
+        jdet: *const c_void,
+        jinv: *const c_void,
+        physical_values: *mut c_void,
+    ) {
+        let tdim = reference_cell::dim(element.cell_type());
+        let tas = element.tabulate_array_shape(nderivs, npoints);
+        let pvs = element.physical_value_size(gdim);
+        let reference_values = rlst_array_from_slice4!(
+            unsafe {
+                from_raw_parts(
+                    reference_values as *const E::T,
+                    tas[0] * tas[1] * tas[2] * tas[3],
+                )
+            },
+            tas
+        );
+        let j = rlst_array_from_slice3!(
+            unsafe {
+                from_raw_parts(
+                    j as *const <E::T as RlstScalar>::Real,
+                    npoints * tdim * gdim,
+                )
+            },
+            [npoints, tdim, gdim] // TODO: are these the right way round?
+        );
+        let jdet = unsafe { from_raw_parts(jdet as *const <E::T as RlstScalar>::Real, npoints) };
+        let jinv = rlst_array_from_slice3!(
+            unsafe {
+                from_raw_parts(
+                    jinv as *const <E::T as RlstScalar>::Real,
+                    npoints * tdim * gdim,
+                )
+            },
+            [npoints, gdim, tdim]
+        );
+        let mut physical_values = rlst_array_from_slice_mut4!(
+            unsafe {
+                from_raw_parts_mut(physical_values as *mut E::T, tas[0] * tas[1] * tas[2] * pvs)
+            },
+            [tas[0], tas[1], tas[2], pvs]
+        );
+        element.push_forward(
+            &reference_values,
+            nderivs,
+            &j,
+            jdet,
+            &jinv,
+            &mut physical_values,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub fn ciarlet_element_pull_back<E: FiniteElement<CellType = ReferenceCellType>>(
+        element: &E,
+        npoints: usize,
+        gdim: usize,
+        physical_values: *const c_void,
+        nderivs: usize,
+        j: *const c_void,
+        jdet: *const c_void,
+        jinv: *const c_void,
+        reference_values: *mut c_void,
+    ) {
+        let tdim = reference_cell::dim(element.cell_type());
+        let tas = element.tabulate_array_shape(nderivs, npoints);
+        let pvs = element.physical_value_size(gdim);
+        let physical_values = rlst_array_from_slice4!(
+            unsafe {
+                from_raw_parts(
+                    physical_values as *const E::T,
+                    tas[0] * tas[1] * tas[2] * pvs,
+                )
+            },
+            [tas[0], tas[1], tas[2], pvs]
+        );
+        let j = rlst_array_from_slice3!(
+            unsafe {
+                from_raw_parts(
+                    j as *const <E::T as RlstScalar>::Real,
+                    npoints * tdim * gdim,
+                )
+            },
+            [npoints, tdim, gdim] // TODO: are these the right way round?
+        );
+        let jdet = unsafe { from_raw_parts(jdet as *const <E::T as RlstScalar>::Real, npoints) };
+        let jinv = rlst_array_from_slice3!(
+            unsafe {
+                from_raw_parts(
+                    jinv as *const <E::T as RlstScalar>::Real,
+                    npoints * tdim * gdim,
+                )
+            },
+            [npoints, gdim, tdim]
+        );
+        let mut reference_values = rlst_array_from_slice_mut4!(
+            unsafe {
+                from_raw_parts_mut(
+                    reference_values as *mut E::T,
+                    tas[0] * tas[1] * tas[2] * tas[3],
+                )
+            },
+            tas
+        );
+        element.pull_back(
+            &physical_values,
+            nderivs,
+            &j,
+            jdet,
+            &jinv,
+            &mut reference_values,
+        );
     }
 
     #[concretise_types(

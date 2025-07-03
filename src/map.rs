@@ -7,18 +7,17 @@ pub struct IdentityMap {}
 
 impl Map for IdentityMap {
     fn push_forward<
-        T: RlstScalar<Real = T>,
-        Array2: RandomAccessByRef<2, Item = T> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = T> + Shape<3>,
+        T: RlstScalar,
+        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
         Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
         reference_values: &Array4,
         nderivs: usize,
-        _jacobians: &Array3,
-        _jacobian_determinants: &Array2,
-        _inverse_jacobians: &Array3,
+        _jacobians: &Array3Real,
+        _jacobian_determinants: &[T::Real],
+        _inverse_jacobians: &Array3Real,
         physical_values: &mut Array4Mut,
     ) {
         assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
@@ -40,18 +39,17 @@ impl Map for IdentityMap {
         }
     }
     fn pull_back<
-        T: RlstScalar<Real = T>,
-        Array2: RandomAccessByRef<2, Item = T> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = T> + Shape<3>,
+        T: RlstScalar,
+        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
         Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
         physical_values: &Array4,
         nderivs: usize,
-        _jacobians: &Array3,
-        _jacobian_determinants: &Array2,
-        _inverse_jacobians: &Array3,
+        _jacobians: &Array3Real,
+        _jacobian_determinants: &[T::Real],
+        _inverse_jacobians: &Array3Real,
         reference_values: &mut Array4Mut,
     ) {
         assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
@@ -73,6 +71,9 @@ impl Map for IdentityMap {
         }
         unimplemented!();
     }
+    fn physical_value_shape(&self, _gdim: usize) -> Vec<usize> {
+        vec![1]
+    }
 }
 
 /// CovariantPiola map
@@ -80,38 +81,39 @@ pub struct CovariantPiolaMap {}
 
 impl Map for CovariantPiolaMap {
     fn push_forward<
-        T: RlstScalar<Real = T>,
-        Array2: RandomAccessByRef<2, Item = T> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = T> + Shape<3>,
+        T: RlstScalar,
+        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
         Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
         _reference_values: &Array4,
         _nderivs: usize,
-        _jacobians: &Array3,
-        _jacobian_determinants: &Array2,
-        _inverse_jacobians: &Array3,
+        _jacobians: &Array3Real,
+        _jacobian_determinants: &[T::Real],
+        _inverse_jacobians: &Array3Real,
         _physical_values: &mut Array4Mut,
     ) {
         unimplemented!();
     }
     fn pull_back<
-        T: RlstScalar<Real = T>,
-        Array2: RandomAccessByRef<2, Item = T> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = T> + Shape<3>,
+        T: RlstScalar,
+        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
         Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
         _physical_values: &Array4,
         _nderivs: usize,
-        _jacobians: &Array3,
-        _jacobian_determinants: &Array2,
-        _inverse_jacobians: &Array3,
+        _jacobians: &Array3Real,
+        _jacobian_determinants: &[T::Real],
+        _inverse_jacobians: &Array3Real,
         _reference_values: &mut Array4Mut,
     ) {
         unimplemented!();
+    }
+    fn physical_value_shape(&self, gdim: usize) -> Vec<usize> {
+        vec![gdim]
     }
 }
 
@@ -120,37 +122,38 @@ pub struct ContravariantPiolaMap {}
 
 impl Map for ContravariantPiolaMap {
     fn push_forward<
-        T: RlstScalar<Real = T>,
-        Array2: RandomAccessByRef<2, Item = T> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = T> + Shape<3>,
+        T: RlstScalar,
+        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
         Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
         _reference_values: &Array4,
         _nderivs: usize,
-        _jacobians: &Array3,
-        _jacobian_determinants: &Array2,
-        _inverse_jacobians: &Array3,
+        _jacobians: &Array3Real,
+        _jacobian_determinants: &[T::Real],
+        _inverse_jacobians: &Array3Real,
         _physical_values: &mut Array4Mut,
     ) {
         unimplemented!();
     }
     fn pull_back<
-        T: RlstScalar<Real = T>,
-        Array2: RandomAccessByRef<2, Item = T> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = T> + Shape<3>,
+        T: RlstScalar,
+        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
         Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
         _physical_values: &Array4,
         _nderivs: usize,
-        _jacobians: &Array3,
-        _jacobian_determinants: &Array2,
-        _inverse_jacobians: &Array3,
+        _jacobians: &Array3Real,
+        _jacobian_determinants: &[T::Real],
+        _inverse_jacobians: &Array3Real,
         _reference_values: &mut Array4Mut,
     ) {
         unimplemented!();
+    }
+    fn physical_value_shape(&self, gdim: usize) -> Vec<usize> {
+        vec![gdim]
     }
 }

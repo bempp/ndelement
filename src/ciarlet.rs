@@ -356,17 +356,16 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
         [deriv_count, point_count, basis_count, value_size]
     }
     fn push_forward<
-        Array2: RandomAccessByRef<2, Item = <Self::T as RlstScalar>::Real> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
+        Array3Real: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: RandomAccessByRef<4, Item = Self::T> + Shape<4>,
+        Array4Mut: RandomAccessMut<4, Item = Self::T> + Shape<4>,
     >(
         &self,
         reference_values: &Array4,
         nderivs: usize,
-        jacobians: &Array3,
-        jacobian_determinants: &Array2,
-        inverse_jacobians: &Array3,
+        jacobians: &Array3Real,
+        jacobian_determinants: &[<Self::T as RlstScalar>::Real],
+        inverse_jacobians: &Array3Real,
         physical_values: &mut Array4Mut,
     ) {
         self.map.push_forward(
@@ -379,17 +378,16 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
         )
     }
     fn pull_back<
-        Array2: RandomAccessByRef<2, Item = <Self::T as RlstScalar>::Real> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
+        Array3Real: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: RandomAccessByRef<4, Item = Self::T> + Shape<4>,
+        Array4Mut: RandomAccessMut<4, Item = Self::T> + Shape<4>,
     >(
         &self,
         physical_values: &Array4,
         nderivs: usize,
-        jacobians: &Array3,
-        jacobian_determinants: &Array2,
-        inverse_jacobians: &Array3,
+        jacobians: &Array3Real,
+        jacobian_determinants: &[<Self::T as RlstScalar>::Real],
+        inverse_jacobians: &Array3Real,
         reference_values: &mut Array4Mut,
     ) {
         self.map.pull_back(
@@ -400,6 +398,9 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
             inverse_jacobians,
             reference_values,
         )
+    }
+    fn physical_value_shape(&self, gdim: usize) -> Vec<usize> {
+        self.map.physical_value_shape(gdim)
     }
 }
 

@@ -44,35 +44,45 @@ pub trait FiniteElement {
 
     /// Push function values forward to a physical cell
     fn push_forward<
-        Array2: RandomAccessByRef<2, Item = <Self::T as RlstScalar>::Real> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
+        Array3Real: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: RandomAccessByRef<4, Item = Self::T> + Shape<4>,
+        Array4Mut: RandomAccessMut<4, Item = Self::T> + Shape<4>,
     >(
         &self,
         reference_values: &Array4,
         nderivs: usize,
-        jacobians: &Array3,
-        jacobian_determinants: &Array2,
-        inverse_jacobians: &Array3,
+        jacobians: &Array3Real,
+        jacobian_determinants: &[<Self::T as RlstScalar>::Real],
+        inverse_jacobians: &Array3Real,
         physical_values: &mut Array4Mut,
     );
 
     /// Pull function values back to the reference cell
     fn pull_back<
-        Array2: RandomAccessByRef<2, Item = <Self::T as RlstScalar>::Real> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = <Self::T as RlstScalar>::Real> + Shape<4>,
+        Array3Real: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: RandomAccessByRef<4, Item = Self::T> + Shape<4>,
+        Array4Mut: RandomAccessMut<4, Item = Self::T> + Shape<4>,
     >(
         &self,
         physical_values: &Array4,
         nderivs: usize,
-        jacobians: &Array3,
-        jacobian_determinants: &Array2,
-        inverse_jacobians: &Array3,
+        jacobians: &Array3Real,
+        jacobian_determinants: &[<Self::T as RlstScalar>::Real],
+        inverse_jacobians: &Array3Real,
         reference_values: &mut Array4Mut,
     );
+
+    /// The value shape on a physical cell
+    fn physical_value_shape(&self, gdim: usize) -> Vec<usize>;
+
+    /// The value size on a physical cell
+    fn physical_value_size(&self, gdim: usize) -> usize {
+        let mut vs = 1;
+        for i in self.physical_value_shape(gdim) {
+            vs *= i;
+        }
+        vs
+    }
 }
 
 pub trait ElementFamily {
@@ -107,35 +117,36 @@ pub trait Map {
 
     /// Push function values forward to a physical cell
     fn push_forward<
-        T: RlstScalar<Real = T>,
-        Array2: RandomAccessByRef<2, Item = T> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = T> + Shape<3>,
+        T: RlstScalar,
+        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
         Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
         reference_values: &Array4,
         nderivs: usize,
-        jacobians: &Array3,
-        jacobian_determinants: &Array2,
-        inverse_jacobians: &Array3,
+        jacobians: &Array3Real,
+        jacobian_determinants: &[T::Real],
+        inverse_jacobians: &Array3Real,
         physical_values: &mut Array4Mut,
     );
 
     /// Pull function values back to the reference cell
     fn pull_back<
-        T: RlstScalar<Real = T>,
-        Array2: RandomAccessByRef<2, Item = T> + Shape<2>,
-        Array3: RandomAccessByRef<3, Item = T> + Shape<3>,
+        T: RlstScalar,
+        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
         Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
         physical_values: &Array4,
         nderivs: usize,
-        jacobians: &Array3,
-        jacobian_determinants: &Array2,
-        inverse_jacobians: &Array3,
+        jacobians: &Array3Real,
+        jacobian_determinants: &[T::Real],
+        inverse_jacobians: &Array3Real,
         reference_values: &mut Array4Mut,
     );
+
+    /// The value shape on a physical cell
+    fn physical_value_shape(&self, gdim: usize) -> Vec<usize>;
 }

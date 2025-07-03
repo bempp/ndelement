@@ -168,6 +168,35 @@ class CiarletElement(object):
         )
         return data
 
+    def push_forward(
+        self,
+        reference_values: npt.NDArray[np.floating],
+        nderivs: int,
+        jacobians: npt.NDArray[np.floating],
+        jacobian_determinants: npt.NDArray[np.floating],
+        inverse_jacobians: npt.NDArray[np.floating],
+    ) -> npt.NDArray[np.floating]:
+        """Push values forward to a physical cell."""
+        if reference_values.dtype != self.dtype(0):
+            raise TypeError("reference_values has incorrect type")
+        if jacobians.dtype != self.dtype(0).real.dtype:
+            raise TypeError("jacobians has incorrect type")
+        if jacobian_determinants.dtype != self.dtype(0).real.dtype:
+            raise TypeError("jacobian_determinants has incorrect type")
+        if inverse_jacobians.dtype != self.dtype(0).real.dtype:
+            raise TypeError("inverse_jacobians has incorrect type")
+
+        shape = []
+        data = np.empty(shape[::-1], dtype=self.dtype)
+        _lib.ciarlet_element_tabulate(
+            self._rs_element,
+            _ffi.cast("void*", points.ctypes.data),
+            points.shape[0],
+            nderivs,
+            _ffi.cast("void*", data.ctypes.data),
+        )
+        return data
+
 
 class ElementFamily(object):
     """Ciarlet element."""
