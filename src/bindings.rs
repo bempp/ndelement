@@ -526,10 +526,10 @@ pub mod ciarlet {
             unsafe {
                 from_raw_parts(
                     j as *const <E::T as RlstScalar>::Real,
-                    npoints * tdim * gdim,
+                    npoints * gdim * tdim,
                 )
             },
-            [npoints, tdim, gdim] // TODO: are these the right way round?
+            [npoints, gdim, tdim]
         );
         let jdet = unsafe { from_raw_parts(jdet as *const <E::T as RlstScalar>::Real, npoints) };
         let jinv = rlst_array_from_slice3!(
@@ -539,7 +539,7 @@ pub mod ciarlet {
                     npoints * tdim * gdim,
                 )
             },
-            [npoints, gdim, tdim]
+            [npoints, tdim, gdim]
         );
         let mut physical_values = rlst_array_from_slice_mut4!(
             unsafe {
@@ -590,10 +590,10 @@ pub mod ciarlet {
             unsafe {
                 from_raw_parts(
                     j as *const <E::T as RlstScalar>::Real,
-                    npoints * tdim * gdim,
+                    npoints * gdim * tdim,
                 )
             },
-            [npoints, tdim, gdim] // TODO: are these the right way round?
+            [npoints, gdim, tdim]
         );
         let jdet = unsafe { from_raw_parts(jdet as *const <E::T as RlstScalar>::Real, npoints) };
         let jinv = rlst_array_from_slice3!(
@@ -603,7 +603,7 @@ pub mod ciarlet {
                     npoints * tdim * gdim,
                 )
             },
-            [npoints, gdim, tdim]
+            [npoints, tdim, gdim]
         );
         let mut reference_values = rlst_array_from_slice_mut4!(
             unsafe {

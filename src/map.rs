@@ -86,14 +86,37 @@ impl Map for CovariantPiolaMap {
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        _reference_values: &Array4,
-        _nderivs: usize,
+        reference_values: &Array4,
+        nderivs: usize,
         _jacobians: &Array3Real,
         _jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array3Real,
-        _physical_values: &mut Array4Mut,
+        inverse_jacobians: &Array3Real,
+        physical_values: &mut Array4Mut,
     ) {
-        unimplemented!();
+        let tdim = inverse_jacobians.shape()[1];
+        let gdim = inverse_jacobians.shape()[2];
+        assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
+        assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
+        assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
+        assert_eq!(reference_values.shape()[3], tdim);
+        assert_eq!(physical_values.shape()[3], gdim);
+        if nderivs > 0 {
+            unimplemented!();
+        }
+        for p in 0..reference_values.shape()[1] {
+            for b in 0..reference_values.shape()[2] {
+                for gd in 0..gdim {
+                    unsafe {
+                        *physical_values.get_unchecked_mut([0, p, b, gd]) = (0..tdim)
+                            .map(|td| {
+                                T::from(*inverse_jacobians.get_unchecked([p, td, gd])).unwrap()
+                                    * *reference_values.get_unchecked([0, p, b, td])
+                            })
+                            .sum::<T>();
+                    }
+                }
+            }
+        }
     }
     fn pull_back<
         T: RlstScalar,
@@ -102,14 +125,37 @@ impl Map for CovariantPiolaMap {
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        _physical_values: &Array4,
-        _nderivs: usize,
-        _jacobians: &Array3Real,
+        physical_values: &Array4,
+        nderivs: usize,
+        jacobians: &Array3Real,
         _jacobian_determinants: &[T::Real],
         _inverse_jacobians: &Array3Real,
-        _reference_values: &mut Array4Mut,
+        reference_values: &mut Array4Mut,
     ) {
-        unimplemented!();
+        let gdim = jacobians.shape()[1];
+        let tdim = jacobians.shape()[2];
+        assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
+        assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
+        assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
+        assert_eq!(reference_values.shape()[3], tdim);
+        assert_eq!(physical_values.shape()[3], gdim);
+        if nderivs > 0 {
+            unimplemented!();
+        }
+        for p in 0..physical_values.shape()[1] {
+            for b in 0..physical_values.shape()[2] {
+                for td in 0..tdim {
+                    unsafe {
+                        *reference_values.get_unchecked_mut([0, p, b, td]) = (0..gdim)
+                            .map(|gd| {
+                                T::from(*jacobians.get_unchecked([p, gd, td])).unwrap()
+                                    * *physical_values.get_unchecked([0, p, b, gd])
+                            })
+                            .sum::<T>();
+                    }
+                }
+            }
+        }
     }
     fn physical_value_shape(&self, gdim: usize) -> Vec<usize> {
         vec![gdim]
@@ -127,14 +173,38 @@ impl Map for ContravariantPiolaMap {
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        _reference_values: &Array4,
-        _nderivs: usize,
-        _jacobians: &Array3Real,
-        _jacobian_determinants: &[T::Real],
+        reference_values: &Array4,
+        nderivs: usize,
+        jacobians: &Array3Real,
+        jacobian_determinants: &[T::Real],
         _inverse_jacobians: &Array3Real,
-        _physical_values: &mut Array4Mut,
+        physical_values: &mut Array4Mut,
     ) {
-        unimplemented!();
+        let gdim = jacobians.shape()[1];
+        let tdim = jacobians.shape()[2];
+        assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
+        assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
+        assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
+        assert_eq!(reference_values.shape()[3], tdim);
+        assert_eq!(physical_values.shape()[3], gdim);
+        if nderivs > 0 {
+            unimplemented!();
+        }
+        for p in 0..physical_values.shape()[1] {
+            for b in 0..physical_values.shape()[2] {
+                for gd in 0..gdim {
+                    unsafe {
+                        *physical_values.get_unchecked_mut([0, p, b, gd]) = (0..tdim)
+                            .map(|td| {
+                                T::from(*jacobians.get_unchecked([p, gd, td])).unwrap()
+                                    * *reference_values.get_unchecked([0, p, b, td])
+                            })
+                            .sum::<T>()
+                            / T::from(*jacobian_determinants.get_unchecked(p)).unwrap();
+                    }
+                }
+            }
+        }
     }
     fn pull_back<
         T: RlstScalar,
@@ -143,14 +213,38 @@ impl Map for ContravariantPiolaMap {
         Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        _physical_values: &Array4,
-        _nderivs: usize,
+        physical_values: &Array4,
+        nderivs: usize,
         _jacobians: &Array3Real,
-        _jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array3Real,
-        _reference_values: &mut Array4Mut,
+        jacobian_determinants: &[T::Real],
+        inverse_jacobians: &Array3Real,
+        reference_values: &mut Array4Mut,
     ) {
-        unimplemented!();
+        let tdim = inverse_jacobians.shape()[1];
+        let gdim = inverse_jacobians.shape()[2];
+        assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
+        assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
+        assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
+        assert_eq!(reference_values.shape()[3], tdim);
+        assert_eq!(physical_values.shape()[3], gdim);
+        if nderivs > 0 {
+            unimplemented!();
+        }
+        for p in 0..physical_values.shape()[1] {
+            for b in 0..physical_values.shape()[2] {
+                for td in 0..tdim {
+                    unsafe {
+                        *reference_values.get_unchecked_mut([0, p, b, td]) = (0..gdim)
+                            .map(|gd| {
+                                T::from(*inverse_jacobians.get_unchecked([p, td, gd])).unwrap()
+                                    * *physical_values.get_unchecked([0, p, b, gd])
+                            })
+                            .sum::<T>()
+                            * T::from(*jacobian_determinants.get_unchecked(p)).unwrap();
+                    }
+                }
+            }
+        }
     }
     fn physical_value_shape(&self, gdim: usize) -> Vec<usize> {
         vec![gdim]
@@ -185,20 +279,20 @@ mod test {
         *j.get_mut([0, 0, 1]).unwrap() = T::from(1.0).unwrap();
         *j.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
         *j.get_mut([0, 1, 1]).unwrap() = T::from(1.0).unwrap();
-        *j.get_mut([0, 0, 0]).unwrap() = T::from(2.0).unwrap();
-        *j.get_mut([0, 0, 1]).unwrap() = T::from(0.0).unwrap();
-        *j.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
-        *j.get_mut([0, 1, 1]).unwrap() = T::from(3.0).unwrap();
+        *j.get_mut([1, 0, 0]).unwrap() = T::from(2.0).unwrap();
+        *j.get_mut([1, 0, 1]).unwrap() = T::from(0.0).unwrap();
+        *j.get_mut([1, 1, 0]).unwrap() = T::from(0.0).unwrap();
+        *j.get_mut([1, 1, 1]).unwrap() = T::from(3.0).unwrap();
         jdet[0] = T::from(1.0).unwrap();
         jdet[1] = T::from(6.0).unwrap();
         *jinv.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
         *jinv.get_mut([0, 0, 1]).unwrap() = T::from(-1.0).unwrap();
         *jinv.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
         *jinv.get_mut([0, 1, 1]).unwrap() = T::from(1.0).unwrap();
-        *jinv.get_mut([0, 0, 0]).unwrap() = T::from(0.5).unwrap();
-        *jinv.get_mut([0, 0, 1]).unwrap() = T::from(0.0).unwrap();
-        *jinv.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
-        *jinv.get_mut([0, 1, 1]).unwrap() = T::from(1.0 / 3.0).unwrap();
+        *jinv.get_mut([1, 0, 0]).unwrap() = T::from(0.5).unwrap();
+        *jinv.get_mut([1, 0, 1]).unwrap() = T::from(0.0).unwrap();
+        *jinv.get_mut([1, 1, 0]).unwrap() = T::from(0.0).unwrap();
+        *jinv.get_mut([1, 1, 1]).unwrap() = T::from(1.0 / 3.0).unwrap();
     }
 
     #[test]
@@ -267,7 +361,7 @@ mod test {
         let mut jinv = rlst_dynamic_array3!(f64, [2, 2, 2]);
         fill_jacobians(&mut j, &mut jdet, &mut jinv);
 
-        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 1]);
+        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 2]);
 
         map.push_forward(&values, 0, &j, &jdet, &jinv, &mut physical_values);
 
@@ -343,7 +437,7 @@ mod test {
         let mut jinv = rlst_dynamic_array3!(f64, [2, 2, 2]);
         fill_jacobians(&mut j, &mut jdet, &mut jinv);
 
-        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 1]);
+        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 2]);
 
         map.push_forward(&values, 0, &j, &jdet, &jinv, &mut physical_values);
 
