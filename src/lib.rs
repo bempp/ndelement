@@ -4,6 +4,7 @@
 
 pub mod bindings;
 pub mod ciarlet;
+pub mod map;
 pub mod math;
 pub mod polynomials;
 pub mod quadrature;

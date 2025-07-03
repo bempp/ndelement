@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from ndelement.reference_cell import ReferenceCellType
-from ndelement.ciarlet import Continuity, Family, create_family, MapType
+from ndelement.ciarlet import Continuity, Family, create_family
 
 cells = [
     ReferenceCellType.Interval,
@@ -97,13 +97,6 @@ def test_lagrange_2_triangle_tabulate(dtype):
         for j, p in enumerate(points):
             data2[0, i, j, 2] = function(*p)
 
-    print(np.finfo(dtype).eps * 100)
-    print(data.shape)
-    print(data2.shape)
-    for i, j in zip(data, data2):
-        print(i)
-        print(j)
-        print(i - j)
     assert np.allclose(data, data2, atol=np.finfo(dtype).eps * 10)
 
 
@@ -118,7 +111,6 @@ def test_lagrange_1_triangle(continuity):
     assert element.embedded_superdegree == 1
     assert element.dim == 3
     assert element.continuity == continuity
-    assert element.map_type == MapType.Identity
     assert element.cell_type == ReferenceCellType.Triangle
 
     if continuity == Continuity.Standard:
@@ -196,7 +188,6 @@ def test_raviart_thomas_1_triangle(continuity):
     assert element.embedded_superdegree == 1
     assert element.dim == 3
     assert element.continuity == continuity
-    assert element.map_type == MapType.ContravariantPiola
     assert element.cell_type == ReferenceCellType.Triangle
 
     if continuity == Continuity.Standard:
@@ -242,7 +233,6 @@ def test_nedelec_1_triangle(continuity):
     assert element.embedded_superdegree == 1
     assert element.dim == 3
     assert element.continuity == continuity
-    assert element.map_type == MapType.CovariantPiola
     assert element.cell_type == ReferenceCellType.Triangle
 
     if continuity == Continuity.Standard:
@@ -275,3 +265,47 @@ def test_nedelec_1_triangle(continuity):
             assert element.entity_closure_dofs(1, i) == []
         assert element.entity_dofs(2, 0) == [0, 1, 2]
         assert element.entity_closure_dofs(2, 0) == [0, 1, 2]
+
+
+@pytest.mark.parametrize(
+    ("ftype", "reference_values", "physical_values"),
+    [
+        (
+            Family.Lagrange,
+            np.array([[[[1.0], [0.5]], [[0.0], [2.0]]]]),
+            np.array([[[[1.0], [0.5]], [[0.0], [2.0]]]]),
+        ),
+        (
+            Family.NedelecFirstKind,
+            np.array([[[[1.0], [0.0]], [[0.5], [2.0]]], [[[0.0], [1.0]], [[1.5], [2.0]]]]),
+            np.array(
+                [[[[1.0], [0.0]], [[0.5], [1.0]]], [[[-1.0], [1.0 / 3.0]], [[1.0], [2.0 / 3.0]]]]
+            ),
+        ),
+        (
+            Family.RaviartThomas,
+            np.array([[[[1.0], [0.0]], [[0.5], [2.0]]], [[[0.0], [1.0]], [[1.5], [2.0]]]]),
+            np.array([[[[1.0], [0.0]], [[2.0], [2.0 / 3.0]]], [[[0.0], [0.5]], [[1.5], [1.0]]]]),
+        ),
+    ],
+)
+def test_push_forward_pull_back(ftype, reference_values, physical_values):
+    family = create_family(ftype, 1, continuity=Continuity.Standard)
+    element = family.element(ReferenceCellType.Triangle)
+    j = np.array([[[1.0, 2.0], [0.0, 0.0]], [[1.0, 0.0], [1.0, 3.0]]])
+    jdet = np.array([1.0, 6.0])
+    jinv = np.array(
+        [
+            [
+                [1.0, 0.5],
+                [0.0, 0.0],
+            ],
+            [
+                [-1.0, 0.0],
+                [1.0, 1.0 / 3.0],
+            ],
+        ]
+    )
+
+    assert np.allclose(physical_values, element.push_forward(reference_values, 0, j, jdet, jinv))
+    assert np.allclose(reference_values, element.pull_back(physical_values, 0, j, jdet, jinv))

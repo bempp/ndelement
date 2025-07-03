@@ -1,10 +1,11 @@
 //! Lagrange elements
 
 use super::CiarletElement;
+use crate::map::IdentityMap;
 use crate::polynomials::polynomial_count;
 use crate::reference_cell;
 use crate::traits::ElementFamily;
-use crate::types::{Continuity, MapType, ReferenceCellType};
+use crate::types::{Continuity, ReferenceCellType};
 use rlst::{rlst_dynamic_array2, rlst_dynamic_array3, MatrixInverse, RandomAccessMut, RlstScalar};
 use std::marker::PhantomData;
 
@@ -13,7 +14,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T> {
+) -> CiarletElement<T, IdentityMap> {
     let dim = polynomial_count(cell_type, degree);
     let tdim = reference_cell::dim(cell_type);
     let mut wcoeffs = rlst_dynamic_array3!(T, [dim, 1, dim]);
@@ -253,7 +254,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
             m[3].push(ident);
         }
     }
-    CiarletElement::<T>::create(
+    CiarletElement::<T, IdentityMap>::create(
         "Lagrange".to_string(),
         cell_type,
         degree,
@@ -261,9 +262,9 @@ pub fn create<T: RlstScalar + MatrixInverse>(
         wcoeffs,
         x,
         m,
-        MapType::Identity,
         continuity,
         degree,
+        IdentityMap {},
     )
 }
 
@@ -287,9 +288,9 @@ impl<T: RlstScalar + MatrixInverse> LagrangeElementFamily<T> {
 
 impl<T: RlstScalar + MatrixInverse> ElementFamily for LagrangeElementFamily<T> {
     type T = T;
-    type FiniteElement = CiarletElement<T>;
+    type FiniteElement = CiarletElement<T, IdentityMap>;
     type CellType = ReferenceCellType;
-    fn element(&self, cell_type: ReferenceCellType) -> CiarletElement<T> {
+    fn element(&self, cell_type: ReferenceCellType) -> CiarletElement<T, IdentityMap> {
         create::<T>(cell_type, self.degree, self.continuity)
     }
 }

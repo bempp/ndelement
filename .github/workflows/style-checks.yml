@@ -9,7 +9,7 @@ on:
 
 jobs:
   style-checks:
-    name: Rust style checks
+    name: Style checks
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -39,7 +39,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - run: |
           python3 -m pip install ruff
           python3 -m ruff check python

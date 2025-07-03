@@ -1,12 +1,13 @@
 //! Raviart-Thomas elements
 
 use super::CiarletElement;
+use crate::map::ContravariantPiolaMap;
 use crate::math::orthogonalise_3;
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::quadrature::gauss_jacobi_rule;
 use crate::reference_cell;
 use crate::traits::ElementFamily;
-use crate::types::{Continuity, MapType, ReferenceCellType};
+use crate::types::{Continuity, ReferenceCellType};
 use itertools::izip;
 use rlst::{
     rlst_array_from_slice2, rlst_dynamic_array2, rlst_dynamic_array3, MatrixInverse,
@@ -18,7 +19,7 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T> {
+) -> CiarletElement<T, ContravariantPiolaMap> {
     if cell_type != ReferenceCellType::Triangle && cell_type != ReferenceCellType::Tetrahedron {
         panic!("Invalid cell: {cell_type:?}");
     }
@@ -185,9 +186,9 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         wcoeffs,
         x,
         m,
-        MapType::ContravariantPiola,
         continuity,
         degree,
+        ContravariantPiolaMap {}, // TODO
     )
 }
 
@@ -195,7 +196,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T> {
+) -> CiarletElement<T, ContravariantPiolaMap> {
     if cell_type != ReferenceCellType::Quadrilateral && cell_type != ReferenceCellType::Hexahedron {
         panic!("Invalid cell: {cell_type:?}");
     }
@@ -473,9 +474,9 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
         wcoeffs,
         x,
         m,
-        MapType::ContravariantPiola,
         continuity,
         degree,
+        ContravariantPiolaMap {}, // TODO
     )
 }
 
@@ -484,7 +485,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T> {
+) -> CiarletElement<T, ContravariantPiolaMap> {
     if cell_type == ReferenceCellType::Triangle || cell_type == ReferenceCellType::Tetrahedron {
         create_simplex(cell_type, degree, continuity)
     } else if cell_type == ReferenceCellType::Quadrilateral
@@ -517,8 +518,8 @@ impl<T: RlstScalar + MatrixInverse> RaviartThomasElementFamily<T> {
 impl<T: RlstScalar + MatrixInverse> ElementFamily for RaviartThomasElementFamily<T> {
     type T = T;
     type CellType = ReferenceCellType;
-    type FiniteElement = CiarletElement<T>;
-    fn element(&self, cell_type: ReferenceCellType) -> CiarletElement<T> {
+    type FiniteElement = CiarletElement<T, ContravariantPiolaMap>;
+    fn element(&self, cell_type: ReferenceCellType) -> CiarletElement<T, ContravariantPiolaMap> {
         create::<T>(cell_type, self.degree, self.continuity)
     }
 }
