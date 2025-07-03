@@ -69,7 +69,6 @@ impl Map for IdentityMap {
                 }
             }
         }
-        unimplemented!();
     }
     fn physical_value_shape(&self, _gdim: usize) -> Vec<usize> {
         vec![1]
