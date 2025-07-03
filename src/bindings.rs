@@ -502,6 +502,7 @@ pub mod ciarlet {
     pub fn ciarlet_element_push_forward<E: FiniteElement<CellType = ReferenceCellType>>(
         element: &E,
         npoints: usize,
+        nfunctions: usize,
         gdim: usize,
         reference_values: *const c_void,
         nderivs: usize,
@@ -511,16 +512,17 @@ pub mod ciarlet {
         physical_values: *mut c_void,
     ) {
         let tdim = reference_cell::dim(element.cell_type());
-        let tas = element.tabulate_array_shape(nderivs, npoints);
+        let deriv_size = element.tabulate_array_shape(nderivs, npoints)[0];
         let pvs = element.physical_value_size(gdim);
+        let vs = element.value_size();
         let reference_values = rlst_array_from_slice4!(
             unsafe {
                 from_raw_parts(
                     reference_values as *const E::T,
-                    tas[0] * tas[1] * tas[2] * tas[3],
+                    deriv_size * npoints * nfunctions * vs,
                 )
             },
-            tas
+            [deriv_size, npoints, nfunctions, vs]
         );
         let j = rlst_array_from_slice3!(
             unsafe {
@@ -543,9 +545,9 @@ pub mod ciarlet {
         );
         let mut physical_values = rlst_array_from_slice_mut4!(
             unsafe {
-                from_raw_parts_mut(physical_values as *mut E::T, tas[0] * tas[1] * tas[2] * pvs)
+                from_raw_parts_mut(physical_values as *mut E::T, deriv_size * npoints * nfunctions * pvs)
             },
-            [tas[0], tas[1], tas[2], pvs]
+            [deriv_size, npoints, nfunctions, pvs]
         );
         element.push_forward(
             &reference_values,
@@ -566,6 +568,7 @@ pub mod ciarlet {
     pub fn ciarlet_element_pull_back<E: FiniteElement<CellType = ReferenceCellType>>(
         element: &E,
         npoints: usize,
+        nfunctions: usize,
         gdim: usize,
         physical_values: *const c_void,
         nderivs: usize,
@@ -575,16 +578,17 @@ pub mod ciarlet {
         reference_values: *mut c_void,
     ) {
         let tdim = reference_cell::dim(element.cell_type());
-        let tas = element.tabulate_array_shape(nderivs, npoints);
+        let deriv_size = element.tabulate_array_shape(nderivs, npoints)[0];
         let pvs = element.physical_value_size(gdim);
+        let vs = element.value_size();
         let physical_values = rlst_array_from_slice4!(
             unsafe {
                 from_raw_parts(
                     physical_values as *const E::T,
-                    tas[0] * tas[1] * tas[2] * pvs,
+                    deriv_size * npoints * nfunctions * pvs,
                 )
             },
-            [tas[0], tas[1], tas[2], pvs]
+            [deriv_size, npoints, nfunctions, pvs]
         );
         let j = rlst_array_from_slice3!(
             unsafe {
@@ -609,10 +613,10 @@ pub mod ciarlet {
             unsafe {
                 from_raw_parts_mut(
                     reference_values as *mut E::T,
-                    tas[0] * tas[1] * tas[2] * tas[3],
+                    deriv_size * npoints * nfunctions * vs,
                 )
             },
-            tas
+            [deriv_size, npoints, nfunctions, vs]
         );
         element.pull_back(
             &physical_values,

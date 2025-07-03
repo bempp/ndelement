@@ -168,6 +168,18 @@ class CiarletElement(object):
         )
         return data
 
+    def physical_value_size(self, gdim: int) -> int:
+        """The physical value size of the element on a cell."""
+        return _lib.ciarlet_element_physical_value_size(self._rs_element, gdim)
+
+    def physical_value_shape(self, gdim: int) -> tuple[int]:
+        """The physical value shape of the element on a cell."""
+        shape = np.empty(_lib.ciarlet_element_physical_value_rank(self._rs_element), dtype=np.uintp)
+        _lib.ciarlet_element_physical_value_shape(
+            self._rs_element, _ffi.cast("uintptr_t*", shape.ctypes.data)
+        )
+        return tuple(int(i) for i in shape)
+
     def push_forward(
         self,
         reference_values: npt.NDArray[np.floating],
@@ -186,13 +198,62 @@ class CiarletElement(object):
         if inverse_jacobians.dtype != self.dtype(0).real.dtype:
             raise TypeError("inverse_jacobians has incorrect type")
 
-        shape = []
-        data = np.empty(shape[::-1], dtype=self.dtype)
-        _lib.ciarlet_element_tabulate(
+        gdim = jacobians.shape[1]
+        npts = reference_values.shape[-2]
+        nfuncs = reference_values.shape[-3]
+        pvs = self.physical_value_size(gdim)
+
+        shape = (pvs,) + reference_values.shape[1:]
+        data = np.empty(shape, dtype=self.dtype)
+        _lib.ciarlet_element_push_forward(
             self._rs_element,
-            _ffi.cast("void*", points.ctypes.data),
-            points.shape[0],
+            npts,
+            nfuncs,
+            gdim,
+            _ffi.cast("void*", reference_values.ctypes.data),
             nderivs,
+            _ffi.cast("void*", jacobians.ctypes.data),
+            _ffi.cast("void*", jacobian_determinants.ctypes.data),
+            _ffi.cast("void*", inverse_jacobians.ctypes.data),
+            _ffi.cast("void*", data.ctypes.data),
+        )
+        return data
+
+    def pull_back(
+        self,
+        physical_values: npt.NDArray[np.floating],
+        nderivs: int,
+        jacobians: npt.NDArray[np.floating],
+        jacobian_determinants: npt.NDArray[np.floating],
+        inverse_jacobians: npt.NDArray[np.floating],
+    ) -> npt.NDArray[np.floating]:
+        """Push values back from a physical cell."""
+        if physical_values.dtype != self.dtype(0):
+            raise TypeError("physical_values has incorrect type")
+        if jacobians.dtype != self.dtype(0).real.dtype:
+            raise TypeError("jacobians has incorrect type")
+        if jacobian_determinants.dtype != self.dtype(0).real.dtype:
+            raise TypeError("jacobian_determinants has incorrect type")
+        if inverse_jacobians.dtype != self.dtype(0).real.dtype:
+            raise TypeError("inverse_jacobians has incorrect type")
+
+        gdim = jacobians.shape[1]
+        npts = physical_values.shape[-2]
+        nfuncs = physical_values.shape[-3]
+        vs = self.value_size
+
+        shape = (vs,) + physical_values.shape[1:]
+        data = np.empty(shape, dtype=self.dtype)
+        _lib.ciarlet_element_pull_back(
+            self._rs_element,
+            npts,
+            nfuncs,
+            gdim,
+            _ffi.cast("void*", physical_values.ctypes.data),
+            nderivs,
+            _ffi.cast("void*", jacobians.ctypes.data),
+            _ffi.cast("void*", jacobian_determinants.ctypes.data),
+            _ffi.cast("void*", inverse_jacobians.ctypes.data),
             _ffi.cast("void*", data.ctypes.data),
         )
         return data
