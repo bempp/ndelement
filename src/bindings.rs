@@ -545,7 +545,10 @@ pub mod ciarlet {
         );
         let mut physical_values = rlst_array_from_slice_mut4!(
             unsafe {
-                from_raw_parts_mut(physical_values as *mut E::T, deriv_size * npoints * nfunctions * pvs)
+                from_raw_parts_mut(
+                    physical_values as *mut E::T,
+                    deriv_size * npoints * nfunctions * pvs,
+                )
             },
             [deriv_size, npoints, nfunctions, pvs]
         );
