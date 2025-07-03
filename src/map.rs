@@ -157,3 +157,248 @@ impl Map for ContravariantPiolaMap {
         vec![gdim]
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use approx::*;
+    use rlst::{rlst_dynamic_array3, rlst_dynamic_array4};
+
+    fn set_to_zero<T: RlstScalar, Array4: RandomAccessMut<4, Item = T> + Shape<4>>(
+        data: &mut Array4,
+    ) {
+        for i0 in 0..data.shape()[0] {
+            for i1 in 0..data.shape()[1] {
+                for i2 in 0..data.shape()[2] {
+                    for i3 in 0..data.shape()[3] {
+                        *data.get_mut([i0, i1, i2, i3]).unwrap() = T::from(0.0).unwrap();
+                    }
+                }
+            }
+        }
+    }
+    fn fill_jacobians<T: RlstScalar<Real = T>>(
+        j: &mut impl RandomAccessMut<3, Item = T>,
+        jdet: &mut [T],
+        jinv: &mut impl RandomAccessMut<3, Item = T>,
+    ) {
+        *j.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
+        *j.get_mut([0, 0, 1]).unwrap() = T::from(1.0).unwrap();
+        *j.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
+        *j.get_mut([0, 1, 1]).unwrap() = T::from(1.0).unwrap();
+        *j.get_mut([0, 0, 0]).unwrap() = T::from(2.0).unwrap();
+        *j.get_mut([0, 0, 1]).unwrap() = T::from(0.0).unwrap();
+        *j.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
+        *j.get_mut([0, 1, 1]).unwrap() = T::from(3.0).unwrap();
+        jdet[0] = T::from(1.0).unwrap();
+        jdet[1] = T::from(6.0).unwrap();
+        *jinv.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
+        *jinv.get_mut([0, 0, 1]).unwrap() = T::from(-1.0).unwrap();
+        *jinv.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
+        *jinv.get_mut([0, 1, 1]).unwrap() = T::from(1.0).unwrap();
+        *jinv.get_mut([0, 0, 0]).unwrap() = T::from(0.5).unwrap();
+        *jinv.get_mut([0, 0, 1]).unwrap() = T::from(0.0).unwrap();
+        *jinv.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
+        *jinv.get_mut([0, 1, 1]).unwrap() = T::from(1.0 / 3.0).unwrap();
+    }
+
+    #[test]
+    fn test_identity() {
+        let map = IdentityMap {};
+        let mut values = rlst_dynamic_array4!(f64, [1, 2, 2, 1]);
+        *values.get_mut([0, 0, 0, 0]).unwrap() = 1.0;
+        *values.get_mut([0, 1, 0, 0]).unwrap() = 0.0;
+        *values.get_mut([0, 0, 1, 0]).unwrap() = 0.5;
+        *values.get_mut([0, 1, 1, 0]).unwrap() = 2.0;
+
+        let mut j = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        let mut jdet = vec![0.0; 2];
+        let mut jinv = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        fill_jacobians(&mut j, &mut jdet, &mut jinv);
+
+        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 1]);
+
+        map.push_forward(&values, 0, &j, &jdet, &jinv, &mut physical_values);
+
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 0, 0]).unwrap(),
+            1.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 0, 0]).unwrap(),
+            0.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 1, 0]).unwrap(),
+            0.5,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 1, 0]).unwrap(),
+            2.0,
+            epsilon = 1e-14
+        );
+
+        set_to_zero(&mut values);
+        map.pull_back(&physical_values, 0, &j, &jdet, &jinv, &mut values);
+
+        assert_relative_eq!(*values.get([0, 0, 0, 0]).unwrap(), 1.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 0, 0]).unwrap(), 0.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 0, 1, 0]).unwrap(), 0.5, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 1, 0]).unwrap(), 2.0, epsilon = 1e-14);
+    }
+
+    #[test]
+    fn test_covariant_piola() {
+        let map = CovariantPiolaMap {};
+        let mut values = rlst_dynamic_array4!(f64, [1, 2, 2, 2]);
+        *values.get_mut([0, 0, 0, 0]).unwrap() = 1.0;
+        *values.get_mut([0, 0, 0, 1]).unwrap() = 0.0;
+        *values.get_mut([0, 1, 0, 0]).unwrap() = 0.0;
+        *values.get_mut([0, 1, 0, 1]).unwrap() = 1.0;
+        *values.get_mut([0, 0, 1, 0]).unwrap() = 0.5;
+        *values.get_mut([0, 0, 1, 1]).unwrap() = 1.5;
+        *values.get_mut([0, 1, 1, 0]).unwrap() = 2.0;
+        *values.get_mut([0, 1, 1, 1]).unwrap() = 2.0;
+
+        let mut j = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        let mut jdet = vec![0.0; 2];
+        let mut jinv = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        fill_jacobians(&mut j, &mut jdet, &mut jinv);
+
+        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 1]);
+
+        map.push_forward(&values, 0, &j, &jdet, &jinv, &mut physical_values);
+
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 0, 0]).unwrap(),
+            1.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 0, 1]).unwrap(),
+            -1.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 0, 0]).unwrap(),
+            0.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 0, 1]).unwrap(),
+            1.0 / 3.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 1, 0]).unwrap(),
+            0.5,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 1, 1]).unwrap(),
+            1.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 1, 0]).unwrap(),
+            1.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 1, 1]).unwrap(),
+            2.0 / 3.0,
+            epsilon = 1e-14
+        );
+
+        set_to_zero(&mut values);
+        map.pull_back(&physical_values, 0, &j, &jdet, &jinv, &mut values);
+
+        assert_relative_eq!(*values.get([0, 0, 0, 0]).unwrap(), 1.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 0, 0, 1]).unwrap(), 0.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 0, 0]).unwrap(), 0.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 0, 1]).unwrap(), 1.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 0, 1, 0]).unwrap(), 0.5, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 0, 1, 1]).unwrap(), 1.5, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 1, 0]).unwrap(), 2.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 1, 1]).unwrap(), 2.0, epsilon = 1e-14);
+    }
+
+    #[test]
+    fn test_contravariant_piola() {
+        let map = ContravariantPiolaMap {};
+        let mut values = rlst_dynamic_array4!(f64, [1, 2, 2, 2]);
+        *values.get_mut([0, 0, 0, 0]).unwrap() = 1.0;
+        *values.get_mut([0, 0, 0, 1]).unwrap() = 0.0;
+        *values.get_mut([0, 1, 0, 0]).unwrap() = 0.0;
+        *values.get_mut([0, 1, 0, 1]).unwrap() = 1.0;
+        *values.get_mut([0, 0, 1, 0]).unwrap() = 0.5;
+        *values.get_mut([0, 0, 1, 1]).unwrap() = 1.5;
+        *values.get_mut([0, 1, 1, 0]).unwrap() = 2.0;
+        *values.get_mut([0, 1, 1, 1]).unwrap() = 2.0;
+
+        let mut j = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        let mut jdet = vec![0.0; 2];
+        let mut jinv = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        fill_jacobians(&mut j, &mut jdet, &mut jinv);
+
+        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 1]);
+
+        map.push_forward(&values, 0, &j, &jdet, &jinv, &mut physical_values);
+
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 0, 0]).unwrap(),
+            1.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 0, 1]).unwrap(),
+            0.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 0, 0]).unwrap(),
+            0.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 0, 1]).unwrap(),
+            0.5,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 1, 0]).unwrap(),
+            2.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 0, 1, 1]).unwrap(),
+            1.5,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 1, 0]).unwrap(),
+            2.0 / 3.0,
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            *physical_values.get([0, 1, 1, 1]).unwrap(),
+            1.0,
+            epsilon = 1e-14
+        );
+
+        set_to_zero(&mut values);
+        map.pull_back(&physical_values, 0, &j, &jdet, &jinv, &mut values);
+
+        assert_relative_eq!(*values.get([0, 0, 0, 0]).unwrap(), 1.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 0, 0, 1]).unwrap(), 0.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 0, 0]).unwrap(), 0.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 0, 1]).unwrap(), 1.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 0, 1, 0]).unwrap(), 0.5, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 0, 1, 1]).unwrap(), 1.5, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 1, 0]).unwrap(), 2.0, epsilon = 1e-14);
+        assert_relative_eq!(*values.get([0, 1, 1, 1]).unwrap(), 2.0, epsilon = 1e-14);
+    }
+}
