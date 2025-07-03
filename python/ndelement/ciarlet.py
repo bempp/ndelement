@@ -58,7 +58,7 @@ class CiarletElement(object):
         return _lib.element_value_size(self._rs_element)
 
     @property
-    def value_shape(self) -> typing.Tuple[int, ...]:
+    def value_shape(self) -> tuple[int, ...]:
         """Value size of the element."""
         shape = np.empty(_lib.ciarlet_element_value_rank(self._rs_element), dtype=np.uintp)
         _lib.ciarlet_element_value_shape(
@@ -91,7 +91,7 @@ class CiarletElement(object):
         """Cell type of the element."""
         return ReferenceCellType(_lib.ciarlet_element_cell_type(self._rs_element))
 
-    def entity_dofs(self, entity_dim: int, entity_index: int) -> typing.List[int]:
+    def entity_dofs(self, entity_dim: int, entity_index: int) -> list[int]:
         """Get the DOFs associated with an entity."""
         dofs = np.empty(
             _lib.ciarlet_element_entity_dofs_size(self._rs_element, entity_dim, entity_index),
@@ -102,7 +102,7 @@ class CiarletElement(object):
         )
         return [int(i) for i in dofs]
 
-    def entity_closure_dofs(self, entity_dim: int, entity_index: int) -> typing.List[int]:
+    def entity_closure_dofs(self, entity_dim: int, entity_index: int) -> list[int]:
         """Get the DOFs associated with the closure of an entity."""
         dofs = np.empty(
             _lib.ciarlet_element_entity_closure_dofs_size(
@@ -115,7 +115,7 @@ class CiarletElement(object):
         )
         return [int(i) for i in dofs]
 
-    def interpolation_points(self) -> typing.List[typing.List[npt.NDArray]]:
+    def interpolation_points(self) -> list[list[npt.NDArray]]:
         """Interpolation points."""
         points = []
         tdim = dim(self.cell_type)
@@ -131,7 +131,7 @@ class CiarletElement(object):
             points.append(points_d)
         return points
 
-    def interpolation_weights(self) -> typing.List[typing.List[npt.NDArray]]:
+    def interpolation_weights(self) -> list[list[npt.NDArray]]:
         """Interpolation weights."""
         weights = []
         for d, n in enumerate(entity_counts(self.cell_type)):
@@ -172,7 +172,7 @@ class CiarletElement(object):
         """The physical value size of the element on a cell."""
         return _lib.ciarlet_element_physical_value_size(self._rs_element, gdim)
 
-    def physical_value_shape(self, gdim: int) -> tuple[int]:
+    def physical_value_shape(self, gdim: int) -> tuple[int, ...]:
         """The physical value shape of the element on a cell."""
         shape = np.empty(_lib.ciarlet_element_physical_value_rank(self._rs_element), dtype=np.uintp)
         _lib.ciarlet_element_physical_value_shape(
