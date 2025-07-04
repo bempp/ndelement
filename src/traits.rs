@@ -1,4 +1,5 @@
 //! Traits
+use crate::types::DofTransformation;
 use rlst::{RandomAccessByRef, RandomAccessMut, RlstScalar, Shape};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -9,6 +10,8 @@ pub trait FiniteElement {
     type T: RlstScalar;
     /// Cell type
     type CellType: Debug + PartialEq + Eq + Clone + Copy + Hash;
+    /// Transformation type
+    type TransformationType: Debug + PartialEq + Eq + Clone + Copy + Hash;
 
     /// The reference cell type
     fn cell_type(&self) -> Self::CellType;
@@ -83,6 +86,13 @@ pub trait FiniteElement {
         }
         vs
     }
+
+    /// The DOF transformation for a sub-entity
+    fn dof_transformation(
+        &self,
+        entity: Self::CellType,
+        transformation: Self::TransformationType,
+    ) -> Option<&DofTransformation<Self::T>>;
 }
 
 pub trait ElementFamily {

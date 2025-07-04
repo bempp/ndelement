@@ -3,12 +3,15 @@
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::reference_cell;
 use crate::traits::{FiniteElement, Map};
-use crate::types::{Continuity, ReferenceCellType};
+use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformation};
 use itertools::izip;
+use num::{One, Zero};
 use rlst::{
-    rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray, MatrixInverse, RandomAccessByRef,
-    RandomAccessMut, RlstScalar, Shape, VectorContainer,
+    rlst_dynamic_array2, rlst_dynamic_array3, rlst_dynamic_array4, Array, BaseArray, MatrixInverse,
+    RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
+    UnsafeRandomAccessMut, VectorContainer,
 };
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 pub mod lagrange;
@@ -51,6 +54,7 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse, M: Map> {
     interpolation_points: EntityPoints<T::Real>,
     interpolation_weights: EntityWeights<T>,
     map: M,
+    dof_transformations: HashMap<(ReferenceCellType, Transformation), DofTransformation<T>>,
 }
 
 impl<T: RlstScalar + MatrixInverse, M: Map> Debug for CiarletElement<T, M> {
@@ -102,6 +106,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             }
         }
 
+        // Format the interpolation points and weights
         let new_pts = if continuity == Continuity::Discontinuous {
             let mut new_pts: EntityPoints<T::Real> = [vec![], vec![], vec![], vec![]];
             let mut all_pts = rlst_dynamic_array2![T::Real, [tdim, npts]];
@@ -188,6 +193,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             }
         }
 
+        // Compute the coefficients that define the basis functions
         let mut inverse = rlst::rlst_dynamic_array2!(T, [dim, dim]);
 
         for i in 0..dim {
@@ -218,6 +224,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             }
         }
 
+        // Compute entity DOFs and entity closure DOFs
         let mut entity_dofs = [vec![], vec![], vec![], vec![]];
         let mut dof = 0;
         for i in 0..4 {
@@ -246,6 +253,230 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                 ecdofs.push(cdofs);
             }
         }
+
+        // Compute DOF transformations
+        let mut dof_transformations = HashMap::new();
+        for (entity, entity_id, transform, f) in match cell_type {
+            ReferenceCellType::Point => vec![],
+            ReferenceCellType::Interval => vec![],
+            ReferenceCellType::Triangle => vec![(
+                ReferenceCellType::Interval,
+                0,
+                Transformation::Reflection,
+                (|x| vec![x[1], x[0]]) as fn(&[T]) -> Vec<T>,
+            )],
+            ReferenceCellType::Quadrilateral => vec![(
+                ReferenceCellType::Interval,
+                0,
+                Transformation::Reflection,
+                (|x: &[T]| vec![T::from(1.0).unwrap() - x[0], x[1]]) as fn(&[T]) -> Vec<T>,
+            )],
+            ReferenceCellType::Tetrahedron => vec![
+                (
+                    ReferenceCellType::Interval,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[2], x[1], x[0]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    0,
+                    Transformation::Rotation,
+                    (|x| vec![x[2], x[0], x[1]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[0], x[2], x[1]]) as fn(&[T]) -> Vec<T>,
+                ),
+            ],
+            ReferenceCellType::Hexahedron => vec![
+                (
+                    ReferenceCellType::Interval,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![T::from(1.0).unwrap() - x[0], x[1], x[2]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    0,
+                    Transformation::Rotation,
+                    (|x| vec![T::from(1.0).unwrap() - x[1], x[0], x[2]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[T]) -> Vec<T>,
+                ),
+            ],
+            ReferenceCellType::Prism => vec![
+                (
+                    ReferenceCellType::Interval,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![T::from(1.0).unwrap() - x[0], x[1], x[2]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    0,
+                    Transformation::Rotation,
+                    (|x| vec![T::from(1.0).unwrap() - x[1] - x[0], x[0], x[2]])
+                        as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    1,
+                    Transformation::Rotation,
+                    (|x| vec![T::from(1.0).unwrap() - x[2], x[1], x[0]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    1,
+                    Transformation::Reflection,
+                    (|x| vec![x[2], x[1], x[0]]) as fn(&[T]) -> Vec<T>,
+                ),
+            ],
+            ReferenceCellType::Pyramid => vec![
+                (
+                    ReferenceCellType::Interval,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![T::from(1.0).unwrap() - x[0], x[1], x[2]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    1,
+                    Transformation::Rotation,
+                    (|x| vec![T::from(1.0).unwrap() - x[2] - x[0], x[1], x[0]])
+                        as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    1,
+                    Transformation::Reflection,
+                    (|x| vec![x[2], x[1], x[0]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    0,
+                    Transformation::Rotation,
+                    (|x| vec![T::from(1.0).unwrap() - x[1], x[0], x[2]]) as fn(&[T]) -> Vec<T>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[T]) -> Vec<T>,
+                ),
+            ],
+        } {
+            let edim = reference_cell::dim(entity);
+            let pts = &new_pts[edim][entity_id];
+            let wts = &new_wts[edim][entity_id];
+            let edofs = &entity_dofs[edim][entity_id];
+            let npts = pts.shape()[1];
+            println!("{entity:?} {transform:?} {pts:?} {wts:?} {edofs:?} {npts}");
+            let mut j = rlst_dynamic_array3![T::Real, [npts, tdim, tdim]];
+            for t_in in 0..tdim {
+                for (t_out, (a, b)) in izip!(
+                    f(&vec![T::zero(); tdim]),
+                    f(&{
+                        let mut axis = vec![T::zero(); tdim];
+                        axis[t_in] = T::one();
+                        axis
+                    })
+                )
+                .enumerate()
+                {
+                    for p in 0..npts {
+                        unsafe {
+                            *j.get_unchecked_mut([p, t_out, t_in]) = (b - a).re();
+                        }
+                    }
+                }
+            }
+            // f is linear. Use this to compute determinants
+            let jdet = vec![
+                match transform {
+                    Transformation::Reflection => -T::Real::one(),
+                    Transformation::Rotation => T::Real::one(),
+                };
+                npts
+            ];
+            let mut jinv = rlst_dynamic_array3![T::Real, [npts, tdim, tdim]];
+            let finv = match entity {
+                ReferenceCellType::Interval => {
+                    (|x, f| f(x)) as fn(&[T], fn(&[T]) -> Vec<T>) -> Vec<T>
+                }
+                ReferenceCellType::Triangle => {
+                    (|x, f| f(&f(x))) as fn(&[T], fn(&[T]) -> Vec<T>) -> Vec<T>
+                }
+                ReferenceCellType::Quadrilateral => {
+                    (|x, f| f(&f(&f(x)))) as fn(&[T], fn(&[T]) -> Vec<T>) -> Vec<T>
+                }
+                _ => panic!("Unsupported entity: {entity:?}"),
+            };
+            for t_in in 0..tdim {
+                for (t_out, (a, b)) in izip!(
+                    finv(&vec![T::zero(); tdim], f),
+                    finv(
+                        &{
+                            let mut axis = vec![T::zero(); tdim];
+                            axis[t_in] = T::one();
+                            axis
+                        },
+                        f
+                    )
+                )
+                .enumerate()
+                {
+                    for p in 0..npts {
+                        unsafe {
+                            *jinv.get_unchecked_mut([p, t_out, t_in]) = (b - a).re();
+                        }
+                    }
+                }
+            }
+
+            let mut table =
+                rlst_dynamic_array3!(T, legendre_shape(cell_type, pts, embedded_superdegree, 0));
+            tabulate_legendre_polynomials(cell_type, pts, embedded_superdegree, 0, &mut table);
+
+            let mut data = rlst_dynamic_array4!(T, [table.shape()[0], npts, dim, value_size]);
+            for d in 0..table.shape()[0] {
+                for p in 0..npts {
+                    for j in 0..value_size {
+                        for b in 0..dim {
+                            // data[d, p, b, j] = inner(self.coefficients[b, j, :], table[d, :, p])
+                            *data.get_mut([d, p, b, j]).unwrap() = coefficients
+                                .r()
+                                .slice(0, b)
+                                .slice(0, j)
+                                .inner(table.r().slice(0, d).slice(1, p));
+                        }
+                    }
+                }
+            }
+
+            let mut pushed_data =
+                rlst_dynamic_array4!(T, [table.shape()[0], npts, dim, value_size]);
+            map.push_forward(&data, 0, &j, &jdet, &jinv, &mut pushed_data);
+
+            let mut dof_transform = rlst_dynamic_array2!(T, [edofs.len(), edofs.len()]);
+
+            dof_transformations.insert(
+                (entity, transform),
+                DofTransformation::Transformation(dof_transform),
+            );
+        }
         CiarletElement::<T, M> {
             family_name,
             cell_type,
@@ -261,6 +492,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             interpolation_points: new_pts,
             interpolation_weights: new_wts,
             map,
+            dof_transformations,
         }
     }
 
@@ -283,6 +515,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
 }
 impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, M> {
     type CellType = ReferenceCellType;
+    type TransformationType = Transformation;
     type T = T;
     fn value_shape(&self) -> &[usize] {
         &self.value_shape
@@ -401,6 +634,13 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
     }
     fn physical_value_shape(&self, gdim: usize) -> Vec<usize> {
         self.map.physical_value_shape(gdim)
+    }
+    fn dof_transformation(
+        &self,
+        entity: ReferenceCellType,
+        transformation: Transformation,
+    ) -> Option<&DofTransformation<T>> {
+        self.dof_transformations.get(&(entity, transformation))
     }
 }
 
@@ -1318,4 +1558,61 @@ mod test {
     test_entity_closure_dofs_lagrange!(Tetrahedron, 5);
     test_entity_closure_dofs_lagrange!(Hexahedron, 2);
     test_entity_closure_dofs_lagrange!(Hexahedron, 3);
+
+    #[test]
+    fn test_dof_transformations() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Tetrahedron, 2, Continuity::Standard);
+        for (edim, entities) in reference_cell::entity_types(ReferenceCellType::Tetrahedron)
+            .iter()
+            .enumerate()
+        {
+            for entity in entities {
+                for t in match edim {
+                    1 => vec![Transformation::Reflection],
+                    2 => vec![Transformation::Reflection, Transformation::Rotation],
+                    _ => vec![],
+                } {
+                    let order = match t {
+                        Transformation::Reflection => 2,
+                        Transformation::Rotation => match entity {
+                            ReferenceCellType::Triangle => 3,
+                            ReferenceCellType::Quadrilateral => 4,
+                            _ => {
+                                panic!("Unsupported entity type: {entity:?}");
+                            }
+                        },
+                    };
+                    println!("-> {entity:?} {t:?}");
+                    match e.dof_transformation(*entity, t).unwrap() {
+                        DofTransformation::Identity => {}
+                        DofTransformation::Permutation(p) => {
+                            let mut data = (0..p.len()).collect::<Vec<_>>();
+                            for n in 0..order {
+                                for (i, j) in p.iter().enumerate() {
+                                    data.swap(i, *j);
+                                }
+                                if n == 0 {
+                                    let mut different = false;
+                                    for (i, j) in data.iter().enumerate() {
+                                        if i != *j {
+                                            different = true;
+                                            break;
+                                        }
+                                    }
+                                    assert!(different);
+                                }
+                            }
+                            for (i, j) in data.iter().enumerate() {
+                                assert_eq!(i, *j);
+                            }
+                        }
+                        DofTransformation::Transformation(t) => {
+                            println!("{t:?}");
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(1, 0);
+    }
 }
