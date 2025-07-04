@@ -1,14 +1,15 @@
 //! Finite element definitions
 
+use crate::math;
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::reference_cell;
 use crate::traits::{FiniteElement, Map};
 use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformation};
 use itertools::izip;
-use num::{One, Zero};
+use num::One;
 use rlst::{
     rlst_dynamic_array2, rlst_dynamic_array3, rlst_dynamic_array4, Array, BaseArray, MatrixInverse,
-    RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
+    RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, 
     UnsafeRandomAccessMut, VectorContainer,
 };
 use std::collections::HashMap;
@@ -471,10 +472,12 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             map.push_forward(&data, 0, &j, &jdet, &jinv, &mut pushed_data);
 
             let mut dof_transform = rlst_dynamic_array2!(T, [edofs.len(), edofs.len()]);
+            // TODO
+            let perm = math::prepare_matrix(&mut dof_transform);
 
             dof_transformations.insert(
                 (entity, transform),
-                DofTransformation::Transformation(dof_transform),
+                DofTransformation::Transformation(dof_transform, perm),
             );
         }
         CiarletElement::<T, M> {
@@ -1588,26 +1591,23 @@ mod test {
                         DofTransformation::Permutation(p) => {
                             let mut data = (0..p.len()).collect::<Vec<_>>();
                             for n in 0..order {
-                                for (i, j) in p.iter().enumerate() {
-                                    data.swap(i, *j);
-                                }
-                                if n == 0 {
-                                    let mut different = false;
-                                    for (i, j) in data.iter().enumerate() {
-                                        if i != *j {
-                                            different = true;
-                                            break;
-                                        }
-                                    }
-                                    assert!(different);
-                                }
+                                math::apply_permutation(&p, &mut data);
                             }
                             for (i, j) in data.iter().enumerate() {
                                 assert_eq!(i, *j);
                             }
                         }
-                        DofTransformation::Transformation(t) => {
-                            println!("{t:?}");
+                        DofTransformation::Transformation(m, p) => {
+                            let mut data = (0..p.len()).map(|i| i as f64).collect::<Vec<_>>();
+                            for n in 0..order {
+                                math::apply_perm_and_matrix(m, p, &mut data);
+                            }
+                            for (i, j) in data.iter().enumerate() {
+                                println!("{i} {j}");
+                            }
+                            for (i, j) in data.iter().enumerate() {
+                                assert!((i as f64 - j).abs() < 1e-5);
+                            }
                         }
                     }
                 }

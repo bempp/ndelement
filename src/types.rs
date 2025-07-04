@@ -98,7 +98,7 @@ pub enum DofTransformation<T: RlstScalar> {
     /// A permutation
     Permutation(Vec<usize>),
     /// A linear transformation
-    Transformation(Array2D<T>),
+    Transformation(Array2D<T>, Vec<usize>),
 }
 
 /// A transformation of a sub-entity

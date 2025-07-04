@@ -1,7 +1,6 @@
 //! Mathematical functions
-use crate::types::{Array2D, ArrayND};
 use rlst::{
-    RandomAccessByRef, RandomAccessMut, RawAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
+    RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
     UnsafeRandomAccessMut,
 };
 
