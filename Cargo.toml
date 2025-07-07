@@ -6,7 +6,7 @@ default = []
 
 [package]
 name = "ndelement"
-version = "0.3.0"
+version = "0.3.0-dev"
 edition = "2021"
 authors = ["Matthew Scroggs <rust@mscroggs.co.uk>"]
 description = "n-dimensional finite element definition library."
