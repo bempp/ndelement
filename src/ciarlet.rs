@@ -1652,7 +1652,7 @@ mod test {
                                     DofTransformation::Permutation(p) => {
                                         let mut data = (0..p.len()).collect::<Vec<_>>();
                                         for _ in 0..order {
-                                            math::apply_permutation(&p, &mut data);
+                                            math::apply_permutation(p, &mut data);
                                         }
                                         for (i, j) in data.iter().enumerate() {
                                             assert_eq!(i, *j);
@@ -1812,7 +1812,7 @@ mod test {
         {
             assert_eq!(p.len(), 2);
             let mut indices = vec![0, 1];
-            math::apply_permutation(&p, &mut indices);
+            math::apply_permutation(p, &mut indices);
             assert_eq!(indices[0], 1);
             assert_eq!(indices[1], 0);
         } else {
@@ -1867,7 +1867,7 @@ mod test {
         {
             assert_eq!(p.len(), 4);
             let mut indices = vec![0, 1, 2, 3];
-            math::apply_permutation(&p, &mut indices);
+            math::apply_permutation(p, &mut indices);
             assert_eq!(indices[0], 1);
             assert_eq!(indices[1], 0);
             assert_eq!(indices[2], 3);
@@ -1906,7 +1906,7 @@ mod test {
         {
             assert_eq!(p.len(), 3);
             let mut indices = vec![0, 1, 2];
-            math::apply_permutation(&p, &mut indices);
+            math::apply_permutation(p, &mut indices);
             assert_eq!(indices[0], 2);
             assert_eq!(indices[1], 1);
             assert_eq!(indices[2], 0);
@@ -1919,7 +1919,7 @@ mod test {
         {
             assert_eq!(p.len(), 3);
             let mut indices = vec![0, 1, 2];
-            math::apply_permutation(&p, &mut indices);
+            math::apply_permutation(p, &mut indices);
             assert_eq!(indices[0], 0);
             assert_eq!(indices[1], 2);
             assert_eq!(indices[2], 1);
@@ -1932,7 +1932,7 @@ mod test {
         {
             assert_eq!(p.len(), 3);
             let mut indices = vec![0, 1, 2];
-            math::apply_permutation(&p, &mut indices);
+            math::apply_permutation(p, &mut indices);
             assert_eq!(indices[0], 1);
             assert_eq!(indices[1], 2);
             assert_eq!(indices[2], 0);
