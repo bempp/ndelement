@@ -198,14 +198,16 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
 
         for i in 0..dim {
             for j in 0..dim {
-                let entry = inverse.get_mut([i, j]).unwrap();
-                *entry = T::zero();
-                for k in 0..value_size {
-                    for l in 0..pdim {
-                        *entry += *polynomial_coeffs.get([i, k, l]).unwrap()
-                            * *d_matrix.get([k, l, j]).unwrap();
-                    }
-                }
+                *inverse.get_mut([i, j]).unwrap() = (0..value_size)
+                    .map(|k| {
+                        (0..pdim)
+                            .map(|l| {
+                                *polynomial_coeffs.get([i, k, l]).unwrap()
+                                    * *d_matrix.get([k, l, j]).unwrap()
+                            })
+                            .sum::<T>()
+                    })
+                    .sum::<T>();
             }
         }
 
@@ -405,7 +407,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
 
             let mut pts = rlst_dynamic_array2!(T::Real, ref_pts.shape());
             for p in 0..npts {
-                for (i, c) in finv(&ref_pts.r().slice(1, p).data(), f).iter().enumerate() {
+                for (i, c) in finv(ref_pts.r().slice(1, p).data(), f).iter().enumerate() {
                     *pts.get_mut([i, p]).unwrap() = *c
                 }
             }
@@ -466,11 +468,11 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             let mut data = rlst_dynamic_array4!(T, [1, npts, endofs, value_size]);
             for p in 0..npts {
                 for j in 0..value_size {
-                    for b in 0..endofs {
+                    for (b, dof) in edofs.iter().enumerate() {
                         // data[0, p, b, j] = inner(self.coefficients[b, j, :], table[0, :, p])
                         *data.get_mut([0, p, b, j]).unwrap() = coefficients
                             .r()
-                            .slice(0, edofs[b])
+                            .slice(0, *dof)
                             .slice(0, j)
                             .inner(table.r().slice(0, 0).slice(1, p));
                     }
