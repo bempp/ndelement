@@ -120,9 +120,9 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                 for pts in pts_i {
                     let ncols = pts.shape()[1];
                     all_pts
-                        .r_mut()
+                        .view_mut()
                         .into_subview([0, col], [tdim, ncols])
-                        .fill_from(pts.r());
+                        .fill_from(pts.view());
                     col += ncols;
                 }
             }
@@ -146,9 +146,9 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                     let dim0 = mat.shape()[0];
                     let dim2 = mat.shape()[2];
                     all_mat
-                        .r_mut()
+                        .view_mut()
                         .into_subview([dn, 0, pn], [dim0, value_size, dim2])
-                        .fill_from(mat.r());
+                        .fill_from(mat.view());
                     dn += dim0;
                     pn += dim2;
                 }
@@ -181,10 +181,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                             for j in 0..value_size {
                                 // d_matrix[j, l, dof + i] = inner(mat[i, j, :], table[0, l, :])
                                 *d_matrix.get_mut([j, l, dof + i]).unwrap() = mat
-                                    .r()
+                                    .view()
                                     .slice(0, i)
                                     .slice(0, j)
-                                    .inner(table.r().slice(0, 0).slice(0, l));
+                                    .inner(table.view().slice(0, 0).slice(0, l));
                             }
                         }
                     }
@@ -211,7 +211,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             }
         }
 
-        inverse.r_mut().into_inverse_alloc().unwrap();
+        inverse.view_mut().into_inverse_alloc().unwrap();
 
         let mut coefficients = rlst_dynamic_array3!(T, [dim, value_size, pdim]);
         for i in 0..dim {
@@ -219,9 +219,9 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                 for k in 0..pdim {
                     // coefficients[i, j, k] = inner(inverse[i, :], polynomial_coeffs[:, j, k])
                     *coefficients.get_mut([i, j, k]).unwrap() = inverse
-                        .r()
+                        .view()
                         .slice(0, i)
-                        .inner(polynomial_coeffs.r().slice(1, j).slice(1, k));
+                        .inner(polynomial_coeffs.view().slice(1, j).slice(1, k));
                 }
             }
         }
@@ -407,7 +407,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
 
             let mut pts = rlst_dynamic_array2!(T::Real, ref_pts.shape());
             for p in 0..npts {
-                for (i, c) in finv(ref_pts.r().slice(1, p).data(), f).iter().enumerate() {
+                for (i, c) in finv(ref_pts.view().slice(1, p).data(), f).iter().enumerate() {
                     *pts.get_mut([i, p]).unwrap() = *c
                 }
             }
@@ -471,10 +471,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                     for (b, dof) in edofs.iter().enumerate() {
                         // data[0, p, b, j] = inner(self.coefficients[b, j, :], table[0, :, p])
                         *data.get_mut([0, p, b, j]).unwrap() = coefficients
-                            .r()
+                            .view()
                             .slice(0, *dof)
                             .slice(0, j)
-                            .inner(table.r().slice(0, 0).slice(1, p));
+                            .inner(table.view().slice(0, 0).slice(1, p));
                     }
                 }
             }
@@ -617,10 +617,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
                         // data[d, p, b, j] = inner(self.coefficients[b, j, :], table[d, :, p])
                         *data.get_mut([d, p, b, j]).unwrap() = self
                             .coefficients
-                            .r()
+                            .view()
                             .slice(0, b)
                             .slice(0, j)
-                            .inner(table.r().slice(0, d).slice(1, p));
+                            .inner(table.view().slice(0, d).slice(1, p));
                     }
                 }
             }
