@@ -1,4 +1,3 @@
-
 //! Finite element definitions
 
 use crate::math;
