@@ -1740,7 +1740,7 @@ mod test {
             assert_eq!(p.len(), 1);
             assert_eq!(m.shape()[0], 1);
             assert_eq!(m.shape()[1], 1);
-            assert_dof_transformation_equal(&p, m, vec![vec![-1.0]]);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0]]);
         } else {
             panic!("Should be a linear transformation");
         }
@@ -1756,7 +1756,7 @@ mod test {
             assert_eq!(p.len(), 2);
             assert_eq!(m.shape()[0], 2);
             assert_eq!(m.shape()[1], 2);
-            assert_dof_transformation_equal(&p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
         } else {
             panic!("Should be a linear transformation");
         }
@@ -1772,7 +1772,7 @@ mod test {
             assert_eq!(p.len(), 1);
             assert_eq!(m.shape()[0], 1);
             assert_eq!(m.shape()[1], 1);
-            assert_dof_transformation_equal(&p, m, vec![vec![-1.0]]);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0]]);
         } else {
             panic!("Should be a linear transformation");
         }
@@ -1802,7 +1802,7 @@ mod test {
             assert_eq!(p.len(), 2);
             assert_eq!(m.shape()[0], 2);
             assert_eq!(m.shape()[1], 2);
-            assert_dof_transformation_equal(&p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
         } else {
             panic!("Should be a linear transformation");
         }
@@ -1825,7 +1825,7 @@ mod test {
             assert_eq!(p.len(), 2);
             assert_eq!(m.shape()[0], 2);
             assert_eq!(m.shape()[1], 2);
-            assert_dof_transformation_equal(&p, m, vec![vec![-1.0, -1.0], vec![1.0, 0.0]]);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, -1.0], vec![1.0, 0.0]]);
         } else {
             panic!("Should be a linear transformation");
         }
@@ -1841,7 +1841,7 @@ mod test {
             assert_eq!(p.len(), 2);
             assert_eq!(m.shape()[0], 2);
             assert_eq!(m.shape()[1], 2);
-            assert_dof_transformation_equal(&p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
         } else {
             panic!("Should be a linear transformation");
         }
@@ -1857,7 +1857,7 @@ mod test {
             assert_eq!(p.len(), 2);
             assert_eq!(m.shape()[0], 2);
             assert_eq!(m.shape()[1], 2);
-            assert_dof_transformation_equal(&p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
         } else {
             panic!("Should be a linear transformation");
         }
@@ -1883,7 +1883,7 @@ mod test {
             assert_eq!(m.shape()[0], 4);
             assert_eq!(m.shape()[1], 4);
             assert_dof_transformation_equal(
-                &p,
+                p,
                 m,
                 vec![
                     vec![0.0, -1.0, 0.0, 0.0],
