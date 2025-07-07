@@ -407,7 +407,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
 
             let mut pts = rlst_dynamic_array2!(T::Real, ref_pts.shape());
             for p in 0..npts {
-                for (i, c) in finv(ref_pts.view().slice(1, p).data(), f).iter().enumerate() {
+                for (i, c) in finv(ref_pts.view().slice(1, p).data(), f)
+                    .iter()
+                    .enumerate()
+                {
                     *pts.get_mut([i, p]).unwrap() = *c
                 }
             }
