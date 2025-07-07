@@ -97,32 +97,34 @@ pub fn lu_transpose<
     let dim = mat.shape()[0];
     assert_eq!(mat.shape()[1], dim);
     let mut perm = (0..dim).collect::<Vec<_>>();
-    for i in 0..dim - 1 {
-        let mut max_col = i;
-        let mut max_value = unsafe { mat.get_unchecked([i, i]).abs() };
-        for j in i + 1..dim {
-            let value = unsafe { mat.get_unchecked([i, j]).abs() };
-            if value > max_value {
-                max_col = j;
-                max_value = value;
+    if dim > 0 {
+        for i in 0..dim - 1 {
+            let mut max_col = i;
+            let mut max_value = unsafe { mat.get_unchecked([i, i]).abs() };
+            for j in i + 1..dim {
+                let value = unsafe { mat.get_unchecked([i, j]).abs() };
+                if value > max_value {
+                    max_col = j;
+                    max_value = value;
+                }
             }
-        }
-        for j in 0..dim {
-            unsafe {
-                entry_swap(mat, [j, i], [j, max_col]);
-            }
-        }
-        perm.swap(i, max_col);
-
-        let diag = unsafe { *mat.get_unchecked([i, i]) };
-        for j in i + 1..dim {
-            unsafe {
-                *mat.get_unchecked_mut([i, j]) /= diag;
-            }
-            for k in i + 1..dim {
+            for j in 0..dim {
                 unsafe {
-                    let sub = *mat.get_unchecked([i, j]) * *mat.get_unchecked([k, i]);
-                    *mat.get_unchecked_mut([k, j]) -= sub;
+                    entry_swap(mat, [j, i], [j, max_col]);
+                }
+            }
+            perm.swap(i, max_col);
+
+            let diag = unsafe { *mat.get_unchecked([i, i]) };
+            for j in i + 1..dim {
+                unsafe {
+                    *mat.get_unchecked_mut([i, j]) /= diag;
+                }
+                for k in i + 1..dim {
+                    unsafe {
+                        let sub = *mat.get_unchecked([i, j]) * *mat.get_unchecked([k, i]);
+                        *mat.get_unchecked_mut([k, j]) -= sub;
+                    }
                 }
             }
         }
