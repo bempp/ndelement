@@ -498,10 +498,6 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                 }
             }
 
-            println!("{entity:?} {transform:?}");
-            println!("{:?}", dof_transform.data());
-            println!();
-
             let perm = math::prepare_matrix(&mut dof_transform);
 
             // Check if transformation is the identity or a permutation
