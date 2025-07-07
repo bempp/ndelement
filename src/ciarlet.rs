@@ -1,14 +1,17 @@
 //! Finite element definitions
 
+use crate::math;
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::reference_cell;
 use crate::traits::{FiniteElement, Map};
-use crate::types::{Continuity, ReferenceCellType};
+use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformation};
 use itertools::izip;
+use num::{One, Zero};
 use rlst::{
-    rlst_dynamic_array2, rlst_dynamic_array3, Array, BaseArray, MatrixInverse, RandomAccessByRef,
-    RandomAccessMut, RlstScalar, Shape, VectorContainer,
+    rlst_dynamic_array2, rlst_dynamic_array3, rlst_dynamic_array4, Array, BaseArray, MatrixInverse,
+    RandomAccessByRef, RandomAccessMut, RawAccess, RlstScalar, Shape, VectorContainer,
 };
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 pub mod lagrange;
@@ -51,6 +54,7 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse, M: Map> {
     interpolation_points: EntityPoints<T::Real>,
     interpolation_weights: EntityWeights<T>,
     map: M,
+    dof_transformations: HashMap<(ReferenceCellType, Transformation), DofTransformation<T>>,
 }
 
 impl<T: RlstScalar + MatrixInverse, M: Map> Debug for CiarletElement<T, M> {
@@ -102,6 +106,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             }
         }
 
+        // Format the interpolation points and weights
         let new_pts = if continuity == Continuity::Discontinuous {
             let mut new_pts: EntityPoints<T::Real> = [vec![], vec![], vec![], vec![]];
             let mut all_pts = rlst_dynamic_array2![T::Real, [tdim, npts]];
@@ -188,18 +193,21 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             }
         }
 
+        // Compute the coefficients that define the basis functions
         let mut inverse = rlst::rlst_dynamic_array2!(T, [dim, dim]);
 
         for i in 0..dim {
             for j in 0..dim {
-                let entry = inverse.get_mut([i, j]).unwrap();
-                *entry = T::from(0.0).unwrap();
-                for k in 0..value_size {
-                    for l in 0..pdim {
-                        *entry += *polynomial_coeffs.get([i, k, l]).unwrap()
-                            * *d_matrix.get([k, l, j]).unwrap();
-                    }
-                }
+                *inverse.get_mut([i, j]).unwrap() = (0..value_size)
+                    .map(|k| {
+                        (0..pdim)
+                            .map(|l| {
+                                *polynomial_coeffs.get([i, k, l]).unwrap()
+                                    * *d_matrix.get([k, l, j]).unwrap()
+                            })
+                            .sum::<T>()
+                    })
+                    .sum::<T>();
             }
         }
 
@@ -218,6 +226,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             }
         }
 
+        // Compute entity DOFs and entity closure DOFs
         let mut entity_dofs = [vec![], vec![], vec![], vec![]];
         let mut dof = 0;
         for i in 0..4 {
@@ -246,6 +255,287 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                 ecdofs.push(cdofs);
             }
         }
+
+        // Compute DOF transformations
+        let mut dof_transformations = HashMap::new();
+        for (entity, entity_id, transform, f) in match cell_type {
+            ReferenceCellType::Point => vec![],
+            ReferenceCellType::Interval => vec![],
+            ReferenceCellType::Triangle => vec![(
+                ReferenceCellType::Interval,
+                0,
+                Transformation::Reflection,
+                (|x| vec![x[1], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+            )],
+            ReferenceCellType::Quadrilateral => vec![(
+                ReferenceCellType::Interval,
+                0,
+                Transformation::Reflection,
+                (|x| vec![T::Real::one() - x[0], x[1]]) as fn(&[T::Real]) -> Vec<T::Real>,
+            )],
+            ReferenceCellType::Tetrahedron => vec![
+                (
+                    ReferenceCellType::Interval,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[0], x[2], x[1]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    0,
+                    Transformation::Rotation,
+                    (|x| vec![x[1], x[2], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[0], x[2], x[1]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+            ],
+            ReferenceCellType::Hexahedron => vec![
+                (
+                    ReferenceCellType::Interval,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![T::Real::one() - x[0], x[1], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    0,
+                    Transformation::Rotation,
+                    (|x| vec![x[1], T::Real::one() - x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+            ],
+            ReferenceCellType::Prism => vec![
+                (
+                    ReferenceCellType::Interval,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![T::Real::one() - x[0], x[1], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    0,
+                    Transformation::Rotation,
+                    (|x| vec![x[1], T::Real::one() - x[1] - x[0], x[2]])
+                        as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    1,
+                    Transformation::Rotation,
+                    (|x| vec![x[2], T::Real::one() - x[1], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    1,
+                    Transformation::Reflection,
+                    (|x| vec![x[2], x[1], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+            ],
+            ReferenceCellType::Pyramid => vec![
+                (
+                    ReferenceCellType::Interval,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![T::Real::one() - x[0], x[1], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    1,
+                    Transformation::Rotation,
+                    (|x| vec![x[2], x[1], T::Real::one() - x[2] - x[0]])
+                        as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Triangle,
+                    1,
+                    Transformation::Reflection,
+                    (|x| vec![x[2], x[1], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    0,
+                    Transformation::Rotation,
+                    (|x| vec![x[1], T::Real::one() - x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+                (
+                    ReferenceCellType::Quadrilateral,
+                    0,
+                    Transformation::Reflection,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                ),
+            ],
+        } {
+            let edim = reference_cell::dim(entity);
+            let ref_pts = &new_pts[edim][entity_id];
+            let npts = ref_pts.shape()[1];
+
+            let finv = match transform {
+                Transformation::Reflection => {
+                    (|x, f| f(x)) as fn(&[T::Real], fn(&[T::Real]) -> Vec<T::Real>) -> Vec<T::Real>
+                }
+                Transformation::Rotation => match entity {
+                    ReferenceCellType::Interval => {
+                        (|x, f| f(x))
+                            as fn(&[T::Real], fn(&[T::Real]) -> Vec<T::Real>) -> Vec<T::Real>
+                    }
+                    ReferenceCellType::Triangle => {
+                        (|x, f| f(&f(x)))
+                            as fn(&[T::Real], fn(&[T::Real]) -> Vec<T::Real>) -> Vec<T::Real>
+                    }
+                    ReferenceCellType::Quadrilateral => {
+                        (|x, f| f(&f(&f(x))))
+                            as fn(&[T::Real], fn(&[T::Real]) -> Vec<T::Real>) -> Vec<T::Real>
+                    }
+                    _ => panic!("Unsupported entity: {entity:?}"),
+                },
+            };
+
+            let mut pts = rlst_dynamic_array2!(T::Real, ref_pts.shape());
+            for p in 0..npts {
+                for (i, c) in finv(ref_pts.r().slice(1, p).data(), f).iter().enumerate() {
+                    *pts.get_mut([i, p]).unwrap() = *c
+                }
+            }
+
+            let wts = &new_wts[edim][entity_id];
+            let edofs = &entity_dofs[edim][entity_id];
+            let endofs = edofs.len();
+            let mut j = rlst_dynamic_array3![T::Real, [npts, tdim, tdim]];
+            for t_in in 0..tdim {
+                for (t_out, (a, b)) in izip!(
+                    f(&vec![T::Real::zero(); tdim]),
+                    f(&{
+                        let mut axis = vec![T::Real::zero(); tdim];
+                        axis[t_in] = T::Real::one();
+                        axis
+                    })
+                )
+                .enumerate()
+                {
+                    for p in 0..npts {
+                        *j.get_mut([p, t_out, t_in]).unwrap() = b - a;
+                    }
+                }
+            }
+            // f is linear. Use this to compute determinants
+            let jdet = vec![
+                match transform {
+                    Transformation::Reflection => -T::Real::one(),
+                    Transformation::Rotation => T::Real::one(),
+                };
+                npts
+            ];
+            let mut jinv = rlst_dynamic_array3![T::Real, [npts, tdim, tdim]];
+            for t_in in 0..tdim {
+                for (t_out, (a, b)) in izip!(
+                    finv(&vec![T::Real::zero(); tdim], f),
+                    finv(
+                        &{
+                            let mut axis = vec![T::Real::zero(); tdim];
+                            axis[t_in] = T::Real::one();
+                            axis
+                        },
+                        f
+                    )
+                )
+                .enumerate()
+                {
+                    for p in 0..npts {
+                        *jinv.get_mut([p, t_out, t_in]).unwrap() = (b - a).re();
+                    }
+                }
+            }
+
+            let mut table =
+                rlst_dynamic_array3!(T, legendre_shape(cell_type, &pts, embedded_superdegree, 0));
+            tabulate_legendre_polynomials(cell_type, &pts, embedded_superdegree, 0, &mut table);
+
+            let mut data = rlst_dynamic_array4!(T, [1, npts, endofs, value_size]);
+            for p in 0..npts {
+                for j in 0..value_size {
+                    for (b, dof) in edofs.iter().enumerate() {
+                        // data[0, p, b, j] = inner(self.coefficients[b, j, :], table[0, :, p])
+                        *data.get_mut([0, p, b, j]).unwrap() = coefficients
+                            .r()
+                            .slice(0, *dof)
+                            .slice(0, j)
+                            .inner(table.r().slice(0, 0).slice(1, p));
+                    }
+                }
+            }
+
+            let mut pushed_data = rlst_dynamic_array4!(T, [1, npts, endofs, value_size]);
+            map.push_forward(&data, 0, &j, &jdet, &jinv, &mut pushed_data);
+
+            let mut dof_transform = rlst_dynamic_array2!(T, [edofs.len(), edofs.len()]);
+            for i in 0..edofs.len() {
+                for j in 0..edofs.len() {
+                    *dof_transform.get_mut([i, j]).unwrap() = (0..value_size)
+                        .map(|l| {
+                            (0..npts)
+                                .map(|m| {
+                                    *wts.get([j, l, m]).unwrap()
+                                        * *pushed_data.get([0, m, i, l]).unwrap()
+                                })
+                                .sum::<T>()
+                        })
+                        .sum::<T>();
+                }
+            }
+
+            let perm = math::prepare_matrix(&mut dof_transform);
+
+            // Check if transformation is the identity or a permutation
+            let mut is_identity = true;
+            'outer: for j in 0..edofs.len() {
+                for i in 0..edofs.len() {
+                    if (*dof_transform.get([i, j]).unwrap()
+                        - if i == j { T::one() } else { T::zero() })
+                    .abs()
+                        > T::from(1e-8).unwrap().re()
+                    {
+                        is_identity = false;
+                        break 'outer;
+                    }
+                }
+            }
+
+            if is_identity {
+                let mut is_unpermuted = true;
+                for (i, p) in perm.iter().enumerate() {
+                    if i != *p {
+                        is_unpermuted = false;
+                        break;
+                    }
+                }
+                if is_unpermuted {
+                    dof_transformations.insert((entity, transform), DofTransformation::Identity);
+                } else {
+                    dof_transformations
+                        .insert((entity, transform), DofTransformation::Permutation(perm));
+                }
+            } else {
+                dof_transformations.insert(
+                    (entity, transform),
+                    DofTransformation::Transformation(dof_transform, perm),
+                );
+            }
+        }
         CiarletElement::<T, M> {
             family_name,
             cell_type,
@@ -261,6 +551,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             interpolation_points: new_pts,
             interpolation_weights: new_wts,
             map,
+            dof_transformations,
         }
     }
 
@@ -283,6 +574,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
 }
 impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, M> {
     type CellType = ReferenceCellType;
+    type TransformationType = Transformation;
     type T = T;
     fn value_shape(&self) -> &[usize] {
         &self.value_shape
@@ -401,6 +693,13 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
     }
     fn physical_value_shape(&self, gdim: usize) -> Vec<usize> {
         self.map.physical_value_shape(gdim)
+    }
+    fn dof_transformation(
+        &self,
+        entity: ReferenceCellType,
+        transformation: Transformation,
+    ) -> Option<&DofTransformation<T>> {
+        self.dof_transformations.get(&(entity, transformation))
     }
 }
 
@@ -1318,4 +1617,323 @@ mod test {
     test_entity_closure_dofs_lagrange!(Tetrahedron, 5);
     test_entity_closure_dofs_lagrange!(Hexahedron, 2);
     test_entity_closure_dofs_lagrange!(Hexahedron, 3);
+
+    macro_rules! test_dof_transformations {
+        ($cell:ident, $element:ident, $degree:expr) => {
+            paste! {
+
+                #[test]
+                fn [<test_dof_transformations_ $cell:lower _ $element:lower _ $degree>]() {
+                    let e = [<$element>]::create::<f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard);
+                    let tdim = reference_cell::dim(ReferenceCellType::[<$cell>]);
+                    for edim in 1..tdim {
+                        for entity in &reference_cell::entity_types(ReferenceCellType::[<$cell>])[edim] {
+                            for t in match edim {
+                                1 => vec![Transformation::Reflection],
+                                2 => vec![Transformation::Reflection, Transformation::Rotation],
+                                _ => { panic!("Shouldn't test this dimension"); },
+                            } {
+                                let order = match t {
+                                    Transformation::Reflection => 2,
+                                    Transformation::Rotation => match entity {
+                                        ReferenceCellType::Triangle => 3,
+                                        ReferenceCellType::Quadrilateral => 4,
+                                        _ => {
+                                            panic!("Unsupported entity type: {entity:?}");
+                                        }
+                                    },
+                                };
+                                match e.dof_transformation(*entity, t).unwrap() {
+                                    DofTransformation::Identity => {}
+                                    DofTransformation::Permutation(p) => {
+                                        let mut data = (0..p.len()).collect::<Vec<_>>();
+                                        for _ in 0..order {
+                                            math::apply_permutation(p, &mut data);
+                                        }
+                                        for (i, j) in data.iter().enumerate() {
+                                            assert_eq!(i, *j);
+                                        }
+                                    }
+                                    DofTransformation::Transformation(m, p) => {
+                                        let mut data = (0..p.len()).map(|i| i as f64).collect::<Vec<_>>();
+                                        for _ in 0..order {
+                                            math::apply_perm_and_matrix(m, p, &mut data);
+                                        }
+                                        for (i, j) in data.iter().enumerate() {
+                                            assert_relative_eq!(i as f64, j, epsilon=1e-10);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    test_dof_transformations!(Triangle, lagrange, 1);
+    test_dof_transformations!(Triangle, lagrange, 2);
+    test_dof_transformations!(Triangle, lagrange, 3);
+    test_dof_transformations!(Quadrilateral, lagrange, 1);
+    test_dof_transformations!(Quadrilateral, lagrange, 2);
+    test_dof_transformations!(Quadrilateral, lagrange, 3);
+    test_dof_transformations!(Tetrahedron, lagrange, 1);
+    test_dof_transformations!(Tetrahedron, lagrange, 2);
+    test_dof_transformations!(Tetrahedron, lagrange, 3);
+    test_dof_transformations!(Hexahedron, lagrange, 1);
+    test_dof_transformations!(Hexahedron, lagrange, 2);
+    test_dof_transformations!(Hexahedron, lagrange, 3);
+    test_dof_transformations!(Triangle, nedelec, 1);
+    test_dof_transformations!(Triangle, nedelec, 2);
+    test_dof_transformations!(Triangle, nedelec, 3);
+    test_dof_transformations!(Quadrilateral, nedelec, 1);
+    test_dof_transformations!(Quadrilateral, nedelec, 2);
+    test_dof_transformations!(Quadrilateral, nedelec, 3);
+    test_dof_transformations!(Tetrahedron, nedelec, 1);
+    test_dof_transformations!(Tetrahedron, nedelec, 2);
+    test_dof_transformations!(Tetrahedron, nedelec, 3);
+    test_dof_transformations!(Hexahedron, nedelec, 1);
+    test_dof_transformations!(Hexahedron, nedelec, 2);
+    test_dof_transformations!(Triangle, raviart_thomas, 1);
+    test_dof_transformations!(Triangle, raviart_thomas, 2);
+    test_dof_transformations!(Triangle, raviart_thomas, 3);
+    test_dof_transformations!(Quadrilateral, raviart_thomas, 1);
+    test_dof_transformations!(Quadrilateral, raviart_thomas, 2);
+    test_dof_transformations!(Quadrilateral, raviart_thomas, 3);
+    test_dof_transformations!(Tetrahedron, raviart_thomas, 1);
+    test_dof_transformations!(Tetrahedron, raviart_thomas, 2);
+    test_dof_transformations!(Tetrahedron, raviart_thomas, 3);
+    test_dof_transformations!(Hexahedron, raviart_thomas, 1);
+    test_dof_transformations!(Hexahedron, raviart_thomas, 2);
+
+    fn assert_dof_transformation_equal<Array2: RandomAccessByRef<2, Item = f64> + Shape<2>>(
+        p: &[usize],
+        m: &Array2,
+        expected: Vec<Vec<f64>>,
+    ) {
+        let ndofs = p.len();
+        assert_eq!(m.shape()[0], ndofs);
+        assert_eq!(m.shape()[1], ndofs);
+        assert_eq!(expected.len(), ndofs);
+        for i in 0..ndofs {
+            let mut col = vec![0.0; ndofs];
+            col[i] = 1.0;
+            math::apply_perm_and_matrix(m, p, &mut col);
+            for (j, c) in col.iter().enumerate() {
+                assert_relative_eq!(expected[j][i], *c, epsilon = 1e-10);
+            }
+        }
+    }
+
+    #[test]
+    fn test_nedelec1_triangle_dof_transformations() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
+        if let DofTransformation::Transformation(m, p) = e
+            .dof_transformation(ReferenceCellType::Interval, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 1);
+            assert_eq!(m.shape()[0], 1);
+            assert_eq!(m.shape()[1], 1);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0]]);
+        } else {
+            panic!("Should be a linear transformation");
+        }
+    }
+
+    #[test]
+    fn test_nedelec2_triangle_dof_transformations() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
+        if let DofTransformation::Transformation(m, p) = e
+            .dof_transformation(ReferenceCellType::Interval, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 2);
+            assert_eq!(m.shape()[0], 2);
+            assert_eq!(m.shape()[1], 2);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
+        } else {
+            panic!("Should be a linear transformation");
+        }
+    }
+
+    #[test]
+    fn test_nedelec1_tetrahedron_dof_transformations() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
+        if let DofTransformation::Transformation(m, p) = e
+            .dof_transformation(ReferenceCellType::Interval, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 1);
+            assert_eq!(m.shape()[0], 1);
+            assert_eq!(m.shape()[1], 1);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0]]);
+        } else {
+            panic!("Should be a linear transformation");
+        }
+        if let DofTransformation::Identity = e
+            .dof_transformation(ReferenceCellType::Triangle, Transformation::Reflection)
+            .unwrap()
+        {
+        } else {
+            panic!("Should be an identity transformation");
+        }
+        if let DofTransformation::Identity = e
+            .dof_transformation(ReferenceCellType::Triangle, Transformation::Rotation)
+            .unwrap()
+        {
+        } else {
+            panic!("Should be an identity transformation");
+        }
+    }
+
+    #[test]
+    fn test_nedelec2_tetrahedron_dof_transformations() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Tetrahedron, 2, Continuity::Standard);
+        if let DofTransformation::Transformation(m, p) = e
+            .dof_transformation(ReferenceCellType::Interval, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 2);
+            assert_eq!(m.shape()[0], 2);
+            assert_eq!(m.shape()[1], 2);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
+        } else {
+            panic!("Should be a linear transformation");
+        }
+        if let DofTransformation::Permutation(p) = e
+            .dof_transformation(ReferenceCellType::Triangle, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 2);
+            let mut indices = vec![0, 1];
+            math::apply_permutation(p, &mut indices);
+            assert_eq!(indices[0], 1);
+            assert_eq!(indices[1], 0);
+        } else {
+            panic!("Should be a permutation");
+        }
+        if let DofTransformation::Transformation(m, p) = e
+            .dof_transformation(ReferenceCellType::Triangle, Transformation::Rotation)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 2);
+            assert_eq!(m.shape()[0], 2);
+            assert_eq!(m.shape()[1], 2);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, -1.0], vec![1.0, 0.0]]);
+        } else {
+            panic!("Should be a linear transformation");
+        }
+    }
+
+    #[test]
+    fn test_nedelec2_quadrilateral_dof_transformations() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Hexahedron, 2, Continuity::Standard);
+        if let DofTransformation::Transformation(m, p) = e
+            .dof_transformation(ReferenceCellType::Interval, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 2);
+            assert_eq!(m.shape()[0], 2);
+            assert_eq!(m.shape()[1], 2);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
+        } else {
+            panic!("Should be a linear transformation");
+        }
+    }
+
+    #[test]
+    fn test_nedelec2_hexahedron_dof_transformations() {
+        let e = nedelec::create::<f64>(ReferenceCellType::Hexahedron, 2, Continuity::Standard);
+        if let DofTransformation::Transformation(m, p) = e
+            .dof_transformation(ReferenceCellType::Interval, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 2);
+            assert_eq!(m.shape()[0], 2);
+            assert_eq!(m.shape()[1], 2);
+            assert_dof_transformation_equal(p, m, vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
+        } else {
+            panic!("Should be a linear transformation");
+        }
+        if let DofTransformation::Permutation(p) = e
+            .dof_transformation(ReferenceCellType::Quadrilateral, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 4);
+            let mut indices = vec![0, 1, 2, 3];
+            math::apply_permutation(p, &mut indices);
+            assert_eq!(indices[0], 1);
+            assert_eq!(indices[1], 0);
+            assert_eq!(indices[2], 3);
+            assert_eq!(indices[3], 2);
+        } else {
+            panic!("Should be a permutation");
+        }
+        if let DofTransformation::Transformation(m, p) = e
+            .dof_transformation(ReferenceCellType::Quadrilateral, Transformation::Rotation)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 4);
+            assert_eq!(m.shape()[0], 4);
+            assert_eq!(m.shape()[1], 4);
+            assert_dof_transformation_equal(
+                p,
+                m,
+                vec![
+                    vec![0.0, -1.0, 0.0, 0.0],
+                    vec![1.0, 0.0, 0.0, 0.0],
+                    vec![0.0, 0.0, 0.0, 1.0],
+                    vec![0.0, 0.0, 1.0, 0.0],
+                ],
+            );
+        } else {
+            panic!("Should be a linear transformation");
+        }
+    }
+
+    #[test]
+    fn test_lagrange4_tetrahedron_dof_transformations() {
+        let e = lagrange::create::<f64>(ReferenceCellType::Tetrahedron, 4, Continuity::Standard);
+        if let DofTransformation::Permutation(p) = e
+            .dof_transformation(ReferenceCellType::Interval, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 3);
+            let mut indices = vec![0, 1, 2];
+            math::apply_permutation(p, &mut indices);
+            assert_eq!(indices[0], 2);
+            assert_eq!(indices[1], 1);
+            assert_eq!(indices[2], 0);
+        } else {
+            panic!("Should be a permutation");
+        }
+        if let DofTransformation::Permutation(p) = e
+            .dof_transformation(ReferenceCellType::Triangle, Transformation::Reflection)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 3);
+            let mut indices = vec![0, 1, 2];
+            math::apply_permutation(p, &mut indices);
+            assert_eq!(indices[0], 0);
+            assert_eq!(indices[1], 2);
+            assert_eq!(indices[2], 1);
+        } else {
+            panic!("Should be a permutation");
+        }
+        if let DofTransformation::Permutation(p) = e
+            .dof_transformation(ReferenceCellType::Triangle, Transformation::Rotation)
+            .unwrap()
+        {
+            assert_eq!(p.len(), 3);
+            let mut indices = vec![0, 1, 2];
+            math::apply_permutation(p, &mut indices);
+            assert_eq!(indices[0], 1);
+            assert_eq!(indices[1], 2);
+            assert_eq!(indices[2], 0);
+        } else {
+            panic!("Should be a permutation");
+        }
+    }
 }

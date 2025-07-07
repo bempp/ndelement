@@ -1,7 +1,7 @@
 //! Types
 #[cfg(feature = "mpi")]
 use mpi::traits::Equivalence;
-use rlst::{Array, BaseArray, VectorContainer};
+use rlst::{Array, BaseArray, RlstScalar, VectorContainer};
 use strum_macros::EnumIter;
 
 /// An N-dimensional array
@@ -86,4 +86,27 @@ unsafe impl Equivalence for ReferenceCellType {
     fn equivalent_datatype() -> <u8 as Equivalence>::Out {
         <u8 as Equivalence>::equivalent_datatype()
     }
+}
+
+/// A DOF transformation
+#[derive(Debug)]
+#[repr(u8)]
+pub enum DofTransformation<T: RlstScalar> {
+    /// An identity transformation
+    Identity,
+    /// A permutation
+    Permutation(Vec<usize>),
+    /// A linear transformation
+    Transformation(Array2D<T>, Vec<usize>),
+}
+
+/// A transformation of a sub-entity
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[repr(u8)]
+pub enum Transformation {
+    /// A reflection
+    Reflection,
+    /// A rotation
+    Rotation,
 }
