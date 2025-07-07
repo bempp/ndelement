@@ -1,4 +1,4 @@
-//! Finite element definitions
+    //! Finite element definitions
 
 use crate::math;
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};

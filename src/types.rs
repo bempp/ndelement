@@ -89,7 +89,6 @@ unsafe impl Equivalence for ReferenceCellType {
 }
 
 /// A DOF transformation
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug)]
 #[repr(u8)]
 pub enum DofTransformation<T: RlstScalar> {
