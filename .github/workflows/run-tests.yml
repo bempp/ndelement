@@ -38,7 +38,7 @@ jobs:
       - name: Run tests
         run: RUST_MIN_STACK=8388608 cargo test --examples --release ${{ matrix.feature-flags }}
       - name: Run examples
-        run: cargo templated-examples NPROCESSES 2,4
+        run: cargo templated-examples
 
   run-tests-python:
      name: Run Python tests
