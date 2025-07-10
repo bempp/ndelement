@@ -43,7 +43,7 @@ jobs:
       - name: Run tests
         run: RUST_MIN_STACK=8388608 cargo test --examples --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
       - name: Run examples
-        run: cargo templated-examples NPROCESSES 2,4
+        run: cargo templated-examples
 
       - name: Build docs
         run: cargo doc --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}" --no-deps
