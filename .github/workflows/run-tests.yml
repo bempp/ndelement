@@ -25,8 +25,8 @@ jobs:
         uses: mpi4py/setup-mpi@v1
         with:
           mpi: ${{ matrix.mpi }}
-      - name: Install cargo-mpirun
-        run: cargo install cargo-mpirun
+      - name: Install cargo-mpirun and cargo-templated-examples
+        run: cargo install cargo-mpirun cargo-templated-examples
       - uses: actions/checkout@v4
       - name: Install LAPACK, OpenBLAS
         run: sudo apt-get install -y libopenblas-dev liblapack-dev
@@ -38,10 +38,7 @@ jobs:
       - name: Run tests
         run: RUST_MIN_STACK=8388608 cargo test --examples --release ${{ matrix.feature-flags }}
       - name: Run examples
-        run: |
-          python3 find_examples.py
-          chmod +x examples.sh
-          ./examples.sh
+        run: cargo templated-examples NPROCESSES 2,4
 
   run-tests-python:
      name: Run Python tests
