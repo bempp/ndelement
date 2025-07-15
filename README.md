@@ -1,6 +1,8 @@
 # ndelement
 
 [![DefElement verification](https://defelement.org/badges/ndelement.svg)](https://defelement.org/verification/ndelement.html)
+[![crates.io](https://img.shields.io/crates/v/ndelement)](https://crates.io/crates/ndelement)
+[![docs.rs](https://img.shields.io/docsrs/ndelement?label=docs.rs)](https://docs.rs/ndelement/latest/ndelement/)
 
 ndelement is an open-source library written in Rust that can be used to create n-dimensional finite elements.
 
@@ -37,6 +39,9 @@ python -m pytest python/test
 Examples of use can be found in the [examples folder](examples/).
 
 ## Getting help
+Documentation of the latest release of ndelement can be found on [docs.rs](https://docs.rs/ndelement/latest/ndelement/).
+Documentation of the latest development version of ndelement can be found at [bempp.github.io/ndelement/ndelement](https://bempp.github.io/ndelement/ndelement).
+
 Errors in the library should be added to the [GitHub issue tracker](https://github.com/bempp/ndelement/issues).
 
 Questions about the library and its use can be asked on the [Bempp Discourse](https://bempp.discourse.group).
