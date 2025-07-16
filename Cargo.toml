@@ -44,3 +44,14 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [lints.clippy]
 wildcard_imports = "forbid"
+
+[[example]]
+name = "element_family"
+doc-scrape-examples = true
+
+[[example]]
+name = "lagrange_element"
+doc-scrape-examples = true
+
+[[example]]
+name = "test_high_degree"
