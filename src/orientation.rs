@@ -23,7 +23,6 @@ pub fn compute_orientation(entity_type: ReferenceCellType, vertices: &[usize]) -
             &reference_cell::entity_types(entity_type)[2],
             reference_cell::faces(entity_type)
         ) {
-            println!("{t:?} {v:?}");
             match t {
                 ReferenceCellType::Triangle => {
                     let m = v
@@ -71,7 +70,6 @@ pub fn compute_orientation(entity_type: ReferenceCellType, vertices: &[usize]) -
             }
         }
     }
-    println!("{entity_type:?} {vertices:?} -> {orientation}");
     orientation
 }
 
