@@ -143,8 +143,12 @@ pub fn prepare_permutation(perm: &mut [usize]) {
 
 /// Apply a permutation to some data
 pub fn apply_permutation<T>(perm: &[usize], data: &mut [T]) {
+    debug_assert!(data.len() % perm.len() == 0);
+    let block_size = data.len() / perm.len();
     for (i, j) in perm.iter().enumerate() {
-        data.swap(i, *j);
+        for k in 0..block_size {
+            data.swap(i * block_size + k, *j * block_size + k);
+        }
     }
 }
 
@@ -176,15 +180,24 @@ pub fn apply_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shap
     data: &mut [T],
 ) {
     let dim = mat.shape()[0];
+    debug_assert!(data.len() % dim == 0);
+    let block_size = data.len() / dim;
     for i in 0..dim {
         for j in i + 1..dim {
-            data[i] += *mat.get([i, j]).unwrap() * data[j];
+            for k in 0..block_size {
+                data[i * block_size + k] += *mat.get([i, j]).unwrap() * data[j * block_size + k];
+            }
         }
     }
     for i in 1..=dim {
-        data[dim - i] *= *mat.get([dim - i, dim - i]).unwrap();
+        for k in 0..block_size {
+            data[(dim - i) * block_size + k] *= *mat.get([dim - i, dim - i]).unwrap();
+        }
         for j in 0..dim - i {
-            data[dim - i] += *mat.get([dim - i, j]).unwrap() * data[j];
+            for k in 0..block_size {
+                data[(dim - i) * block_size + k] +=
+                    *mat.get([dim - i, j]).unwrap() * data[j * block_size + k];
+            }
         }
     }
 }
@@ -193,6 +206,7 @@ pub fn apply_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shap
 mod test {
     use super::*;
     use approx::*;
+    use itertools::izip;
     use rlst::rlst_dynamic_array2;
 
     #[test]
@@ -205,8 +219,18 @@ mod test {
 
         prepare_permutation(&mut perm2);
         apply_permutation(&perm2, &mut data2);
-        for (i, d) in data2.iter().enumerate() {
-            assert_eq!(*d, data[perm[i]]);
+        for (i, p) in perm.iter().enumerate() {
+            assert_eq!(data2[i], data[*p]);
+        }
+
+        let data = (0..21).map(|i| format!("{i}")).collect::<Vec<_>>();
+        let mut data2 = data.clone();
+
+        apply_permutation(&perm2, &mut data2);
+        for (i, p) in perm.iter().enumerate() {
+            for (a, b) in izip!(&data2[3 * i..3 * i + 3], &data[3 * p..3 * p + 3]) {
+                assert_eq!(a, b);
+            }
         }
     }
 
@@ -220,9 +244,6 @@ mod test {
 
         let perm = prepare_matrix(&mut matrix);
 
-        let mut data = vec![1.0, 2.0];
-        apply_perm_and_matrix(&matrix, &perm, &mut data);
-
         assert_eq!(perm[0], 1);
         assert_eq!(perm[1], 1);
 
@@ -231,8 +252,19 @@ mod test {
         assert_relative_eq!(*matrix.get([1, 0]).unwrap(), 1.0);
         assert_relative_eq!(*matrix.get([1, 1]).unwrap(), 2.0 / 3.0);
 
+        let mut data = vec![1.0, 2.0];
+        apply_perm_and_matrix(&matrix, &perm, &mut data);
+
         assert_relative_eq!(data[0], 3.5);
         assert_relative_eq!(data[1], 3.0);
+
+        let mut data = vec![1.0, 2.0, 3.0, 4.0];
+        apply_perm_and_matrix(&matrix, &perm, &mut data);
+
+        assert_relative_eq!(data[0], 5.0);
+        assert_relative_eq!(data[1], 7.0);
+        assert_relative_eq!(data[2], 4.0);
+        assert_relative_eq!(data[3], 6.0);
     }
 
     #[test]
@@ -250,9 +282,6 @@ mod test {
 
         let perm = prepare_matrix(&mut matrix);
 
-        let mut data = vec![1.0, 2.0, 3.0];
-        apply_perm_and_matrix(&matrix, &perm, &mut data);
-
         assert_eq!(perm[0], 1);
         assert_eq!(perm[1], 1);
         assert_eq!(perm[2], 2);
@@ -267,8 +296,21 @@ mod test {
         assert_relative_eq!(*matrix.get([2, 1]).unwrap(), 1.0 / 6.0);
         assert_relative_eq!(*matrix.get([2, 2]).unwrap(), -0.25);
 
+        let mut data = vec![1.0, 2.0, 3.0];
+        apply_perm_and_matrix(&matrix, &perm, &mut data);
+
         assert_relative_eq!(data[0], 6.5);
         assert_relative_eq!(data[1], 6.0);
         assert_relative_eq!(data[2], 4.0);
+
+        let mut data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        apply_perm_and_matrix(&matrix, &perm, &mut data);
+
+        assert_relative_eq!(data[0], 10.0);
+        assert_relative_eq!(data[1], 13.0);
+        assert_relative_eq!(data[2], 9.0);
+        assert_relative_eq!(data[3], 12.0);
+        assert_relative_eq!(data[4], 6.0);
+        assert_relative_eq!(data[5], 8.0);
     }
 }
