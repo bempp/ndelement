@@ -195,7 +195,8 @@ pub fn apply_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shap
         }
         for j in 0..dim - i {
             for k in 0..block_size {
-                data[(dim - i) * block_size + k] += *mat.get([dim - i, j]).unwrap() * data[j * block_size + k];
+                data[(dim - i) * block_size + k] +=
+                    *mat.get([dim - i, j]).unwrap() * data[j * block_size + k];
             }
         }
     }
@@ -205,8 +206,8 @@ pub fn apply_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shap
 mod test {
     use super::*;
     use approx::*;
-    use rlst::rlst_dynamic_array2;
     use itertools::izip;
+    use rlst::rlst_dynamic_array2;
 
     #[test]
     fn test_permutation() {
@@ -227,7 +228,7 @@ mod test {
 
         apply_permutation(&perm2, &mut data2);
         for (i, p) in perm.iter().enumerate() {
-            for (a, b) in izip!(&data2[3*i..3*i+3], &data[3*p..3*p + 3]) {
+            for (a, b) in izip!(&data2[3 * i..3 * i + 3], &data[3 * p..3 * p + 3]) {
                 assert_eq!(a, b);
             }
         }
