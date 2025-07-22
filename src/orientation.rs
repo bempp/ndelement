@@ -5,7 +5,9 @@ use itertools::izip;
 
 /// Compute a 32-bit integer that encodes the orientation differences between the reference cell and a cell with vertices numbered as input
 ///
-/// TODO: document
+/// From right to left, the bits of this function's output encode:
+///  - 1 bit for each edge - set to 1 if the edge needs reversing
+///  - 3 bits for each face - two rightmost bits encode number of rotations that need to be applied to face; left bit encodes whether it needs reflecting
 pub fn compute_orientation(entity_type: ReferenceCellType, vertices: &[usize]) -> i32 {
     let mut orientation = 0;
     let mut n = 0;
