@@ -3,9 +3,9 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod reference_cell {
-    use crate::reference_cell;
-    use crate::types::ReferenceCellType;
+    use crate::{orientation, reference_cell, types::ReferenceCellType};
     use rlst::RlstScalar;
+    use std::slice::from_raw_parts;
 
     #[no_mangle]
     pub unsafe extern "C" fn dim(cell: ReferenceCellType) -> usize {
@@ -115,11 +115,18 @@ pub mod reference_cell {
             *c.add(i) = *j;
         }
     }
+    #[no_mangle]
+    pub unsafe extern "C" fn compute_orientation(
+        cell: ReferenceCellType,
+        vertices: *const usize,
+    ) -> i32 {
+        let vertices = from_raw_parts(vertices, reference_cell::entity_counts(cell)[0]);
+        orientation::compute_orientation(cell, vertices)
+    }
 }
 
 pub mod quadrature {
-    use crate::quadrature;
-    use crate::types::ReferenceCellType;
+    use crate::{quadrature, types::ReferenceCellType};
 
     #[no_mangle]
     pub unsafe extern "C" fn gauss_jacobi_quadrature_npoints(
@@ -146,8 +153,7 @@ pub mod quadrature {
 }
 
 pub mod polynomials {
-    use crate::types::ReferenceCellType;
-    use crate::{polynomials, reference_cell};
+    use crate::{polynomials, reference_cell, types::ReferenceCellType};
     use rlst::{rlst_array_from_slice2, rlst_array_from_slice_mut3, RlstScalar};
     use std::slice::{from_raw_parts, from_raw_parts_mut};
 
