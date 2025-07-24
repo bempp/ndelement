@@ -258,11 +258,7 @@ class CiarletElement(object):
         )
         return data
 
-    def apply_dof_permutations(
-        self,
-        data: npt.NDArray,
-        orientation: np.int32
-    ):
+    def apply_dof_permutations(self, data: npt.NDArray, orientation: np.int32):
         """Apply permutation parts of DOF transformations."""
         if np.issubdtype(data.dtype, np.integer):
             _lib.ciarlet_element_apply_dof_permutations_usize(
@@ -278,11 +274,8 @@ class CiarletElement(object):
                 len(data),
                 orientation,
             )
-    def apply_dof_transformations(
-        self,
-        data: npt.NDArray[np.floating],
-        orientation: np.int32
-    ):
+
+    def apply_dof_transformations(self, data: npt.NDArray[np.floating], orientation: np.int32):
         """Apply non-permutation parts of DOF transformations."""
         _lib.ciarlet_element_apply_dof_transformations(
             self._rs_element,
@@ -292,9 +285,7 @@ class CiarletElement(object):
         )
 
     def apply_dof_permutations_and_transformations(
-        self,
-        data: npt.NDArray[np.floating],
-        orientation: np.int32
+        self, data: npt.NDArray[np.floating], orientation: np.int32
     ):
         """Apply DOF transformations."""
         _lib.ciarlet_element_apply_dof_permutations_and_transformations(
