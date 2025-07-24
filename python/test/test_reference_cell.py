@@ -12,6 +12,7 @@ from ndelement.reference_cell import (
     is_simplex,
     entity_types,
     connectivity,
+    compute_orientation,
 )
 
 cells = [
@@ -88,3 +89,15 @@ def test_connectivity(cell):
                 assert set([j for j, e in enumerate(e_j) if all([k in e for k in e_di])]) == set(
                     c_dij
                 )
+
+
+@pytest.mark.parametrize(
+    ("cell", "vertices", "expected"),
+    [
+        (ReferenceCellType.Triangle, [0, 1, 2], 0),
+        (ReferenceCellType.Triangle, [0, 2, 1], 1),
+        (ReferenceCellType.Triangle, [2, 1, 0], 7),
+    ],
+)
+def test_orientation(cell, vertices, expected):
+    assert compute_orientation(cell, vertices) == expected

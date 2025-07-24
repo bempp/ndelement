@@ -93,6 +93,22 @@ pub trait FiniteElement {
         entity: Self::CellType,
         transformation: Self::TransformationType,
     ) -> Option<&DofTransformation<Self::T>>;
+
+    /// Apply permutation parts of DOF transformations
+    fn apply_dof_permutations<T>(&self, data: &mut [T], cell_orientation: i32);
+
+    /// Apply non-permutation parts of DOF transformations
+    fn apply_dof_transformations(&self, data: &mut [Self::T], cell_orientation: i32);
+
+    /// Apply DOF transformations
+    fn apply_dof_permutations_and_transformations(
+        &self,
+        data: &mut [Self::T],
+        cell_orientation: i32,
+    ) {
+        self.apply_dof_permutations(data, cell_orientation);
+        self.apply_dof_transformations(data, cell_orientation);
+    }
 }
 
 pub trait ElementFamily {

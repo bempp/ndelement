@@ -137,3 +137,13 @@ def connectivity(
             c_i.append(c_ij)
         c.append(c_i)
     return c
+
+
+def compute_orientation(
+    cell: ReferenceCellType,
+    vertices: typing.List[int],
+) -> np.int32:
+    """Compute a 32-bit integer encoding the orientation differences between the reference cell and a cell."""
+    return _lib.compute_orientation(
+        cell.value, _ffi.cast("uintptr_t*", np.array(vertices).ctypes.data)
+    )

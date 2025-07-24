@@ -258,6 +258,43 @@ class CiarletElement(object):
         )
         return data
 
+    def apply_dof_permutations(self, data: npt.NDArray, orientation: np.int32):
+        """Apply permutation parts of DOF transformations."""
+        if np.issubdtype(data.dtype, np.integer):
+            _lib.ciarlet_element_apply_dof_permutations_usize(
+                self._rs_element,
+                _ffi.cast("uintptr_t*", data.ctypes.data),
+                len(data),
+                orientation,
+            )
+        else:
+            _lib.ciarlet_element_apply_dof_permutations(
+                self._rs_element,
+                _ffi.cast("void*", data.ctypes.data),
+                len(data),
+                orientation,
+            )
+
+    def apply_dof_transformations(self, data: npt.NDArray[np.floating], orientation: np.int32):
+        """Apply non-permutation parts of DOF transformations."""
+        _lib.ciarlet_element_apply_dof_transformations(
+            self._rs_element,
+            _ffi.cast("void*", data.ctypes.data),
+            len(data),
+            orientation,
+        )
+
+    def apply_dof_permutations_and_transformations(
+        self, data: npt.NDArray[np.floating], orientation: np.int32
+    ):
+        """Apply DOF transformations."""
+        _lib.ciarlet_element_apply_dof_permutations_and_transformations(
+            self._rs_element,
+            _ffi.cast("void*", data.ctypes.data),
+            len(data),
+            orientation,
+        )
+
 
 class ElementFamily(object):
     """Ciarlet element."""
