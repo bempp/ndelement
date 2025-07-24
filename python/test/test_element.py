@@ -309,3 +309,18 @@ def test_push_forward_pull_back(ftype, reference_values, physical_values):
 
     assert np.allclose(physical_values, element.push_forward(reference_values, 0, j, jdet, jinv))
     assert np.allclose(reference_values, element.pull_back(physical_values, 0, j, jdet, jinv))
+
+
+def test_dof_permuting_triangle():
+    family = create_family(Family.Lagrange, 3, continuity=Continuity.Standard)
+    element = family.element(ReferenceCellType.Triangle)
+
+    data = np.array(range(10))
+    element.apply_dof_permutations(data, 7)
+    for i, j in enumerate([0, 1, 2, 4, 3, 6, 5, 8, 7, 9]):
+        assert data[i] == j
+
+    data = np.array(range(20))
+    element.apply_dof_permutations(data, 7)
+    for i, j in enumerate([0, 1, 2, 3, 4, 5, 8, 9, 6, 7, 12, 13, 10, 11, 16, 17, 14, 15, 18, 19]):
+        assert data[i] == j

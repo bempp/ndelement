@@ -852,4 +852,76 @@ pub mod ciarlet {
             }
         }
     }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub unsafe fn ciarlet_element_apply_dof_permutations_usize<
+        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
+    >(
+        element: &CiarletElement<T, M>,
+        data: *mut usize,
+        data_size: usize,
+        orientation: i32,
+    ) {
+        element.apply_dof_permutations(from_raw_parts_mut(data, data_size), orientation);
+    }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub unsafe fn ciarlet_element_apply_dof_permutations<
+        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
+    >(
+        element: &CiarletElement<T, M>,
+        data: *mut c_void,
+        data_size: usize,
+        orientation: i32,
+    ) {
+        element.apply_dof_permutations(from_raw_parts_mut(data as *mut T, data_size), orientation);
+    }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub unsafe fn ciarlet_element_apply_dof_transformations<
+        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
+    >(
+        element: &CiarletElement<T, M>,
+        data: *mut c_void,
+        data_size: usize,
+        orientation: i32,
+    ) {
+        element
+            .apply_dof_transformations(from_raw_parts_mut(data as *mut T, data_size), orientation);
+    }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub unsafe fn ciarlet_element_apply_dof_permutations_and_transformations<
+        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        M: Map,
+    >(
+        element: &CiarletElement<T, M>,
+        data: *mut c_void,
+        data_size: usize,
+        orientation: i32,
+    ) {
+        element.apply_dof_permutations_and_transformations(
+            from_raw_parts_mut(data as *mut T, data_size),
+            orientation,
+        );
+    }
 }
