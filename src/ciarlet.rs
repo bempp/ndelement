@@ -701,6 +701,157 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
     ) -> Option<&DofTransformation<T>> {
         self.dof_transformations.get(&(entity, transformation))
     }
+
+    fn apply_dof_permutations<Type>(&self, data: &mut [Type], cell_orientation: i32) {
+        debug_assert_eq!(data.len() % self.dim, 0);
+        let block_size = data.len() / self.dim;
+        let tdim = reference_cell::dim(self.cell_type);
+        let mut n = 0;
+        if tdim > 1 {
+            if let Some(perm) = match self
+                .dof_transformations
+                .get(&(ReferenceCellType::Interval, Transformation::Reflection))
+            {
+                Some(DofTransformation::Permutation(p)) => Some(p),
+                Some(DofTransformation::Transformation(_, p)) => Some(p),
+                _ => None,
+            } {
+                for dofs in &self.entity_dofs[1] {
+                    #[cfg(debug_assertions)]
+                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                        assert_eq!(i + 1, *j);
+                    }
+                    if (cell_orientation >> n) & 1 == 1 {
+                        math::apply_permutation(
+                            perm,
+                            &mut data
+                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                        )
+                    }
+                    n += 1
+                }
+            }
+        }
+        if tdim > 2 {
+            for (ftype, dofs) in izip!(
+                &reference_cell::entity_types(self.cell_type)[2],
+                &self.entity_dofs[2]
+            ) {
+                #[cfg(debug_assertions)]
+                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                    assert_eq!(i + 1, *j);
+                }
+                if let Some(perm) = match self
+                    .dof_transformations
+                    .get(&(*ftype, Transformation::Rotation))
+                {
+                    Some(DofTransformation::Permutation(p)) => Some(p),
+                    Some(DofTransformation::Transformation(_, p)) => Some(p),
+                    _ => None,
+                } {
+                    for _ in 0..(cell_orientation >> n) & 3 {
+                        math::apply_permutation(
+                            perm,
+                            &mut data
+                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                        )
+                    }
+                }
+                n += 2;
+                if let Some(perm) = match self
+                    .dof_transformations
+                    .get(&(*ftype, Transformation::Reflection))
+                {
+                    Some(DofTransformation::Permutation(p)) => Some(p),
+                    Some(DofTransformation::Transformation(_, p)) => Some(p),
+                    _ => None,
+                } {
+                    if (cell_orientation >> n) & 1 == 1 {
+                        math::apply_permutation(
+                            perm,
+                            &mut data
+                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                        )
+                    }
+                }
+                n += 1;
+            }
+        }
+    }
+
+    fn apply_dof_transformations(&self, data: &mut [Self::T], cell_orientation: i32) {
+        debug_assert_eq!(data.len() % self.dim, 0);
+        let block_size = data.len() / self.dim;
+        let tdim = reference_cell::dim(self.cell_type);
+        let mut n = 0;
+        if tdim > 1 {
+            if let Some(mat) = match self
+                .dof_transformations
+                .get(&(ReferenceCellType::Interval, Transformation::Reflection))
+            {
+                Some(DofTransformation::Transformation(m, _)) => Some(m),
+                _ => None,
+            } {
+                for dofs in &self.entity_dofs[1] {
+                    #[cfg(debug_assertions)]
+                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                        assert_eq!(i + 1, *j);
+                    }
+                    if (cell_orientation >> n) & 1 == 1 {
+                        math::apply_matrix(
+                            mat,
+                            &mut data
+                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                        )
+                    }
+                    n += 1
+                }
+            }
+        }
+        if tdim > 2 {
+            for (ftype, dofs) in izip!(
+                &reference_cell::entity_types(self.cell_type)[2],
+                &self.entity_dofs[2]
+            ) {
+                #[cfg(debug_assertions)]
+                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                    assert_eq!(i + 1, *j);
+                }
+                if let Some(mat) = match self
+                    .dof_transformations
+                    .get(&(*ftype, Transformation::Rotation))
+                {
+                    Some(DofTransformation::Transformation(m, _)) => Some(m),
+                    _ => None,
+                } {
+                    for _ in 0..(cell_orientation >> n) & 3 {
+                        math::apply_matrix(
+                            mat,
+                            &mut data
+                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                        )
+                    }
+                }
+                n += 2;
+                if let Some(mat) = match self
+                    .dof_transformations
+                    .get(&(*ftype, Transformation::Reflection))
+                {
+                    Some(DofTransformation::Transformation(m, _)) => Some(m),
+                    _ => None,
+                } {
+                    if (cell_orientation >> n) & 1 == 1 {
+                        math::apply_matrix(
+                            mat,
+                            &mut data
+                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                        )
+                    }
+                }
+                n += 1;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1934,6 +2085,40 @@ mod test {
             assert_eq!(indices[2], 0);
         } else {
             panic!("Should be a permutation");
+        }
+    }
+
+    #[test]
+    fn test_dof_permuting_triangle() {
+        let e = lagrange::create::<f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
+
+        let mut n = (0..10).collect::<Vec<_>>();
+        e.apply_dof_permutations(&mut n, 7);
+        for (i, j) in izip!(&n, [0, 1, 2, 4, 3, 6, 5, 8, 7, 9]) {
+            assert_eq!(*i, j);
+        }
+
+        let mut n = (0..20).collect::<Vec<_>>();
+        e.apply_dof_permutations(&mut n, 7);
+        for (i, j) in izip!(
+            &n,
+            [0, 1, 2, 3, 4, 5, 8, 9, 6, 7, 12, 13, 10, 11, 16, 17, 14, 15, 18, 19]
+        ) {
+            assert_eq!(*i, j);
+        }
+    }
+
+    #[test]
+    fn test_dof_permuting_tetrahedron() {
+        let e = lagrange::create::<f64>(ReferenceCellType::Tetrahedron, 3, Continuity::Standard);
+
+        let mut n = (0..20).collect::<Vec<_>>();
+        e.apply_dof_permutations(&mut n, 63);
+        for (i, j) in izip!(
+            &n,
+            [0, 1, 2, 3, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 16, 17, 18, 19]
+        ) {
+            assert_eq!(*i, j);
         }
     }
 }
