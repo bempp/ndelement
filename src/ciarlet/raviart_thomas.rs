@@ -188,7 +188,7 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         m,
         continuity,
         degree,
-        ContravariantPiolaMap {}, // TODO
+        ContravariantPiolaMap {},
     )
 }
 
@@ -476,7 +476,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
         m,
         continuity,
         degree,
-        ContravariantPiolaMap {}, // TODO
+        ContravariantPiolaMap {},
     )
 }
 

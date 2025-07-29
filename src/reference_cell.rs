@@ -262,7 +262,6 @@ pub fn facet_normals<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Ve
             vec![-one, zero],
             vec![zero, one],
         ],
-        // TODO: check signs in all of the following
         ReferenceCellType::Tetrahedron => vec![
             vec![one, one, one],
             vec![one, zero, zero],
@@ -559,6 +558,8 @@ pub fn connectivity(cell: ReferenceCellType) -> Vec<Vec<Vec<Vec<usize>>>> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use approx::*;
+    use itertools::izip;
     use paste::paste;
 
     macro_rules! test_cell {
@@ -632,4 +633,63 @@ mod test {
     test_cell!(Hexahedron);
     test_cell!(Prism);
     test_cell!(Pyramid);
+
+    macro_rules! test_facet_normals_2d {
+        ($cell:ident) => {
+            paste! {
+
+                #[test]
+                fn [<test_ $cell:lower _facet_normals>]() {
+                    let v = vertices::<f64>(ReferenceCellType::[<$cell>]);
+                    let ns = facet_normals::<f64>(ReferenceCellType::[<$cell>]);
+                    let es = edges(ReferenceCellType::[<$cell>]);
+
+                    for (e, n) in izip!(es, ns) {
+                        let tangent = (0..2).map(|i| v[e[1]][i] - v[e[0]][i]).collect::<Vec<_>>();
+                        assert_relative_eq!(n[0], -tangent[1]);
+                        assert_relative_eq!(n[1], tangent[0]);
+                    }
+                }
+            }
+        };
+    }
+
+    fn cross<T: RlstScalar>(a: &[T], b: &[T]) -> Vec<T> {
+        assert_eq!(a.len(), 3);
+        assert_eq!(b.len(), 3);
+        vec![
+            a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0],
+        ]
+    }
+
+    macro_rules! test_facet_normals_3d {
+        ($cell:ident) => {
+            paste! {
+
+                #[test]
+                fn [<test_ $cell:lower _facet_normals>]() {
+                    let v = vertices::<f64>(ReferenceCellType::[<$cell>]);
+                    let ns = facet_normals::<f64>(ReferenceCellType::[<$cell>]);
+                    let fs = faces(ReferenceCellType::[<$cell>]);
+
+                    for (f, n) in izip!(fs, ns) {
+                        let tangent0 = (0..3).map(|i| v[f[1]][i] - v[f[0]][i]).collect::<Vec<_>>();
+                        let tangent1 = (0..3).map(|i| v[f[2]][i] - v[f[0]][i]).collect::<Vec<_>>();
+                        for (i, j) in izip!(n, cross(&tangent0, &tangent1)) {
+                            assert_relative_eq!(i, j);
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    test_facet_normals_2d!(Triangle);
+    test_facet_normals_2d!(Quadrilateral);
+    test_facet_normals_3d!(Tetrahedron);
+    test_facet_normals_3d!(Hexahedron);
+    test_facet_normals_3d!(Prism);
+    test_facet_normals_3d!(Pyramid);
 }

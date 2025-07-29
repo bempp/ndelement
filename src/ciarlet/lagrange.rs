@@ -52,7 +52,6 @@ pub fn create<T: RlstScalar + MatrixInverse>(
         let edges = reference_cell::edges(cell_type);
         let faces = reference_cell::faces(cell_type);
         let volumes = reference_cell::volumes(cell_type);
-        // TODO: GLL points
         for vertex in &vertices {
             let mut pts = rlst_dynamic_array2!(T::Real, [tdim, 1]);
             for (i, v) in vertex.iter().enumerate() {
