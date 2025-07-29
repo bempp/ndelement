@@ -26,7 +26,7 @@ bempp-quadrature = { version = "0.1.0" }
 itertools = "0.14.*"
 mpi = { version = "0.8.*", optional = true }
 num = "0.4"
-rlst = { git = "https://github.com/linalg-rs/rlst.git", branch = "prerelease/0.3" }
+rlst = { git = "https://github.com/linalg-rs/rlst.git" }
 serde = { version = "1", features = ["derive"], optional = true }
 strum = "0.27"
 strum_macros = "0.27"
