@@ -634,7 +634,6 @@ mod test {
     test_cell!(Prism);
     test_cell!(Pyramid);
 
-
     macro_rules! test_facet_normals_2d {
         ($cell:ident) => {
             paste! {
