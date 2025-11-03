@@ -143,7 +143,7 @@ pub fn prepare_permutation(perm: &mut [usize]) {
 
 /// Apply a permutation to some data
 pub fn apply_permutation<T>(perm: &[usize], data: &mut [T]) {
-    debug_assert!(data.len() % perm.len() == 0);
+    debug_assert!(data.len().is_multiple_of(perm.len()));
     let block_size = data.len() / perm.len();
     for (i, j) in perm.iter().enumerate() {
         for k in 0..block_size {
@@ -180,7 +180,7 @@ pub fn apply_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shap
     data: &mut [T],
 ) {
     let dim = mat.shape()[0];
-    debug_assert!(data.len() % dim == 0);
+    debug_assert!(data.len().is_multiple_of(dim));
     let block_size = data.len() / dim;
     for i in 0..dim {
         for j in i + 1..dim {
