@@ -8,8 +8,8 @@ use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformat
 use itertools::izip;
 use num::{One, Zero};
 use rlst::{
-    rlst_dynamic_array2, rlst_dynamic_array3, rlst_dynamic_array4, Array, BaseArray, MatrixInverse,
-    RandomAccessByRef, RandomAccessMut, RawAccess, RlstScalar, Shape, VectorContainer,
+    rlst_dynamic_array, DynArray, Array, MatrixInverse,
+    RandomAccessByRef, RandomAccessMut, RawAccess, RlstScalar, Shape,
 };
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -21,8 +21,8 @@ pub use lagrange::LagrangeElementFamily;
 pub use nedelec::NedelecFirstKindElementFamily;
 pub use raviart_thomas::RaviartThomasElementFamily;
 
-type EntityPoints<T> = [Vec<Array<T, BaseArray<T, VectorContainer<T>, 2>, 2>>; 4];
-type EntityWeights<T> = [Vec<Array<T, BaseArray<T, VectorContainer<T>, 3>, 3>>; 4];
+type EntityPoints<T> = [Vec<Array<T, 2>>; 4];
+type EntityWeights<T> = [Vec<Array<T, 3>>; 4];
 
 /// Compute the number of derivatives for a cell
 fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usize {
@@ -48,7 +48,7 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse, M: Map> {
     value_size: usize,
     continuity: Continuity,
     dim: usize,
-    coefficients: Array<T, BaseArray<T, VectorContainer<T>, 3>, 3>,
+    coefficients: Array<T, 3>,
     entity_dofs: [Vec<Vec<usize>>; 4],
     entity_closure_dofs: [Vec<Vec<usize>>; 4],
     interpolation_points: EntityPoints<T::Real>,
@@ -75,7 +75,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
         cell_type: ReferenceCellType,
         degree: usize,
         value_shape: Vec<usize>,
-        polynomial_coeffs: Array<T, BaseArray<T, VectorContainer<T>, 3>, 3>,
+        polynomial_coeffs: Array<T, 3>,
         interpolation_points: EntityPoints<T::Real>,
         interpolation_weights: EntityWeights<T>,
         continuity: Continuity,
@@ -109,10 +109,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
         // Format the interpolation points and weights
         let new_pts = if continuity == Continuity::Discontinuous {
             let mut new_pts: EntityPoints<T::Real> = [vec![], vec![], vec![], vec![]];
-            let mut all_pts = rlst_dynamic_array2![T::Real, [tdim, npts]];
+            let mut all_pts = rlst_dynamic_array!(T::Real, [tdim, npts]);
             for (i, pts_i) in interpolation_points.iter().take(tdim).enumerate() {
                 for _pts in pts_i {
-                    new_pts[i].push(rlst_dynamic_array2![T::Real, [tdim, 0]]);
+                    new_pts[i].push(rlst_dynamic_array!(T::Real, [tdim, 0]));
                 }
             }
             let mut col = 0;
@@ -135,10 +135,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             let mut new_wts = [vec![], vec![], vec![], vec![]];
             let mut pn = 0;
             let mut dn = 0;
-            let mut all_mat = rlst_dynamic_array3!(T, [dim, value_size, npts]);
+            let mut all_mat = rlst_dynamic_array!(T, [dim, value_size, npts]);
             for (i, mi) in interpolation_weights.iter().take(tdim).enumerate() {
                 for _mat in mi {
-                    new_wts[i].push(rlst_dynamic_array3!(T, [0, value_size, 0]));
+                    new_wts[i].push(rlst_dynamic_array!(T, [0, value_size, 0]));
                 }
             }
             for mi in interpolation_weights.iter() {
@@ -161,13 +161,13 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
 
         // Compute the dual matrix
         let pdim = polynomial_count(cell_type, embedded_superdegree);
-        let mut d_matrix = rlst_dynamic_array3!(T, [value_size, pdim, dim]);
+        let mut d_matrix = rlst_dynamic_array!(T, [value_size, pdim, dim]);
 
         let mut dof = 0;
         for d in 0..4 {
             for (e, pts) in new_pts[d].iter().enumerate() {
                 if pts.shape()[1] > 0 {
-                    let mut table = rlst_dynamic_array3!(T, [1, pdim, pts.shape()[1]]);
+                    let mut table = rlst_dynamic_array!(T, [1, pdim, pts.shape()[1]]);
                     tabulate_legendre_polynomials(
                         cell_type,
                         pts,
@@ -194,7 +194,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
         }
 
         // Compute the coefficients that define the basis functions
-        let mut inverse = rlst::rlst_dynamic_array2!(T, [dim, dim]);
+        let mut inverse = rlst::rlst_dynamic_array!(T, [dim, dim]);
 
         for i in 0..dim {
             for j in 0..dim {
@@ -213,7 +213,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
 
         inverse.r_mut().into_inverse_alloc().unwrap();
 
-        let mut coefficients = rlst_dynamic_array3!(T, [dim, value_size, pdim]);
+        let mut coefficients = rlst_dynamic_array!(T, [dim, value_size, pdim]);
         for i in 0..dim {
             for j in 0..value_size {
                 for k in 0..pdim {
@@ -405,7 +405,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                 },
             };
 
-            let mut pts = rlst_dynamic_array2!(T::Real, ref_pts.shape());
+            let mut pts = DynArray::<T::Real, 2>::from_shape(ref_pts.shape());
             for p in 0..npts {
                 for (i, c) in finv(ref_pts.r().slice(1, p).data(), f).iter().enumerate() {
                     *pts.get_mut([i, p]).unwrap() = *c
@@ -415,7 +415,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             let wts = &new_wts[edim][entity_id];
             let edofs = &entity_dofs[edim][entity_id];
             let endofs = edofs.len();
-            let mut j = rlst_dynamic_array3![T::Real, [npts, tdim, tdim]];
+            let mut j = rlst_dynamic_array![T::Real, [npts, tdim, tdim]];
             for t_in in 0..tdim {
                 for (t_out, (a, b)) in izip!(
                     f(&vec![T::Real::zero(); tdim]),
@@ -440,7 +440,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                 };
                 npts
             ];
-            let mut jinv = rlst_dynamic_array3![T::Real, [npts, tdim, tdim]];
+            let mut jinv = rlst_dynamic_array![T::Real, [npts, tdim, tdim]];
             for t_in in 0..tdim {
                 for (t_out, (a, b)) in izip!(
                     finv(&vec![T::Real::zero(); tdim], f),
@@ -462,10 +462,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             }
 
             let mut table =
-                rlst_dynamic_array3!(T, legendre_shape(cell_type, &pts, embedded_superdegree, 0));
+                DynArray::<T, 3>::from_shape(legendre_shape(cell_type, &pts, embedded_superdegree, 0));
             tabulate_legendre_polynomials(cell_type, &pts, embedded_superdegree, 0, &mut table);
 
-            let mut data = rlst_dynamic_array4!(T, [1, npts, endofs, value_size]);
+            let mut data = rlst_dynamic_array!(T, [1, npts, endofs, value_size]);
             for p in 0..npts {
                 for j in 0..value_size {
                     for (b, dof) in edofs.iter().enumerate() {
@@ -479,10 +479,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                 }
             }
 
-            let mut pushed_data = rlst_dynamic_array4!(T, [1, npts, endofs, value_size]);
+            let mut pushed_data = rlst_dynamic_array!(T, [1, npts, endofs, value_size]);
             map.push_forward(&data, 0, &j, &jdet, &jinv, &mut pushed_data);
 
-            let mut dof_transform = rlst_dynamic_array2!(T, [edofs.len(), edofs.len()]);
+            let mut dof_transform = rlst_dynamic_array!(T, [edofs.len(), edofs.len()]);
             for i in 0..edofs.len() {
                 for j in 0..edofs.len() {
                     *dof_transform.get_mut([i, j]).unwrap() = (0..value_size)
@@ -598,8 +598,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
         nderivs: usize,
         data: &mut impl RandomAccessMut<4, Item = T>,
     ) {
-        let mut table = rlst_dynamic_array3!(
-            T,
+        let mut table = DynArray::<T, 3>::from_shape(
             legendre_shape(self.cell_type, points, self.embedded_superdegree, nderivs)
         );
         tabulate_legendre_polynomials(
@@ -859,7 +858,7 @@ mod test {
     use super::*;
     use approx::*;
     use paste::paste;
-    use rlst::rlst_dynamic_array4;
+    use rlst::rlst_dynamic_array;
 
     fn check_dofs(e: impl FiniteElement<CellType = ReferenceCellType>) {
         let mut ndofs = 0;
@@ -893,8 +892,8 @@ mod test {
     fn test_lagrange_0_interval() {
         let e = lagrange::create::<f64>(ReferenceCellType::Interval, 0, Continuity::Discontinuous);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 4));
-        let mut points = rlst_dynamic_array2!(f64, [1, 4]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 4));
+        let mut points = rlst_dynamic_array!(f64, [1, 4]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 0.2;
         *points.get_mut([0, 2]).unwrap() = 0.4;
@@ -911,8 +910,8 @@ mod test {
     fn test_lagrange_1_interval() {
         let e = lagrange::create::<f64>(ReferenceCellType::Interval, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 4));
-        let mut points = rlst_dynamic_array2!(f64, [1, 4]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 4));
+        let mut points = rlst_dynamic_array!(f64, [1, 4]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 0.2;
         *points.get_mut([0, 2]).unwrap() = 0.4;
@@ -931,9 +930,9 @@ mod test {
     fn test_lagrange_0_triangle() {
         let e = lagrange::create::<f64>(ReferenceCellType::Triangle, 0, Continuity::Discontinuous);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
 
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
@@ -959,8 +958,8 @@ mod test {
     fn test_lagrange_1_triangle() {
         let e = lagrange::create::<f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
@@ -993,8 +992,8 @@ mod test {
             Continuity::Discontinuous,
         );
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
@@ -1019,8 +1018,8 @@ mod test {
     fn test_lagrange_1_quadrilateral() {
         let e = lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
@@ -1051,8 +1050,8 @@ mod test {
     fn test_lagrange_2_quadrilateral() {
         let e = lagrange::create::<f64>(ReferenceCellType::Quadrilateral, 2, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
@@ -1125,8 +1124,8 @@ mod test {
         let e =
             lagrange::create::<f64>(ReferenceCellType::Tetrahedron, 0, Continuity::Discontinuous);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [3, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [3, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([2, 0]).unwrap() = 0.0;
@@ -1157,8 +1156,8 @@ mod test {
     fn test_lagrange_1_tetrahedron() {
         let e = lagrange::create::<f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [3, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [3, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([2, 0]).unwrap() = 0.0;
@@ -1201,8 +1200,8 @@ mod test {
         let e =
             lagrange::create::<f64>(ReferenceCellType::Hexahedron, 0, Continuity::Discontinuous);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [3, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [3, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([2, 0]).unwrap() = 0.0;
@@ -1233,8 +1232,8 @@ mod test {
     fn test_lagrange_1_hexahedron() {
         let e = lagrange::create::<f64>(ReferenceCellType::Hexahedron, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 1);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [3, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [3, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([2, 0]).unwrap() = 0.0;
@@ -1363,8 +1362,8 @@ mod test {
     fn test_raviart_thomas_1_triangle() {
         let e = raviart_thomas::create(ReferenceCellType::Triangle, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
@@ -1409,8 +1408,8 @@ mod test {
     fn test_raviart_thomas_1_quadrilateral() {
         let e = raviart_thomas::create(ReferenceCellType::Quadrilateral, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
@@ -1490,8 +1489,8 @@ mod test {
     fn test_raviart_thomas_1_hexahedron() {
         let e = raviart_thomas::create(ReferenceCellType::Hexahedron, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 3);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [3, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [3, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([2, 0]).unwrap() = 0.0;
@@ -1547,8 +1546,8 @@ mod test {
     fn test_nedelec_1_triangle() {
         let e = nedelec::create(ReferenceCellType::Triangle, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
@@ -1593,8 +1592,8 @@ mod test {
     fn test_nedelec_1_quadrilateral() {
         let e = nedelec::create(ReferenceCellType::Quadrilateral, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [2, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
@@ -1663,8 +1662,8 @@ mod test {
     fn test_nedelec_1_hexahedron() {
         let e = nedelec::create(ReferenceCellType::Hexahedron, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 3);
-        let mut data = rlst_dynamic_array4!(f64, e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array2!(f64, [3, 6]);
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut points = rlst_dynamic_array!(f64, [3, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
         *points.get_mut([2, 0]).unwrap() = 0.0;

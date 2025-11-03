@@ -6,7 +6,7 @@ use crate::polynomials::polynomial_count;
 use crate::reference_cell;
 use crate::traits::ElementFamily;
 use crate::types::{Continuity, ReferenceCellType};
-use rlst::{rlst_dynamic_array2, rlst_dynamic_array3, MatrixInverse, RandomAccessMut, RlstScalar};
+use rlst::{rlst_dynamic_array, MatrixInverse, RandomAccessMut, RlstScalar};
 use std::marker::PhantomData;
 
 /// Create a Lagrange element
@@ -17,7 +17,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
 ) -> CiarletElement<T, IdentityMap> {
     let dim = polynomial_count(cell_type, degree);
     let tdim = reference_cell::dim(cell_type);
-    let mut wcoeffs = rlst_dynamic_array3!(T, [dim, 1, dim]);
+    let mut wcoeffs = rlst_dynamic_array!(T, [dim, 1, dim]);
     for i in 0..dim {
         *wcoeffs.get_mut([i, 0, i]).unwrap() = T::from(1.0).unwrap();
     }
@@ -32,11 +32,11 @@ pub fn create<T: RlstScalar + MatrixInverse>(
         }
         for (d, counts) in entity_counts.iter().enumerate() {
             for _e in 0..*counts {
-                x[d].push(rlst_dynamic_array2!(T::Real, [tdim, 0]));
-                m[d].push(rlst_dynamic_array3!(T, [0, 1, 0]));
+                x[d].push(rlst_dynamic_array!(T::Real, [tdim, 0]));
+                m[d].push(rlst_dynamic_array!(T, [0, 1, 0]));
             }
         }
-        let mut midp = rlst_dynamic_array2!(T::Real, [tdim, 1]);
+        let mut midp = rlst_dynamic_array!(T::Real, [tdim, 1]);
         let nvertices = entity_counts[0];
         for i in 0..tdim {
             for vertex in &vertices {
@@ -45,7 +45,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
             *midp.get_mut([i, 0]).unwrap() /= num::cast::<_, T::Real>(nvertices).unwrap();
         }
         x[tdim].push(midp);
-        let mut mentry = rlst_dynamic_array3!(T, [1, 1, 1]);
+        let mut mentry = rlst_dynamic_array!(T, [1, 1, 1]);
         *mentry.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
         m[tdim].push(mentry);
     } else {
@@ -53,23 +53,23 @@ pub fn create<T: RlstScalar + MatrixInverse>(
         let faces = reference_cell::faces(cell_type);
         let volumes = reference_cell::volumes(cell_type);
         for vertex in &vertices {
-            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, 1]);
+            let mut pts = rlst_dynamic_array!(T::Real, [tdim, 1]);
             for (i, v) in vertex.iter().enumerate() {
                 *pts.get_mut([i, 0]).unwrap() = num::cast::<_, T::Real>(*v).unwrap();
             }
             x[0].push(pts);
-            let mut mentry = rlst_dynamic_array3!(T, [1, 1, 1]);
+            let mut mentry = rlst_dynamic_array!(T, [1, 1, 1]);
             *mentry.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
             m[0].push(mentry);
         }
         for e in &edges {
-            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, degree - 1]);
+            let mut pts = rlst_dynamic_array!(T::Real, [tdim, degree - 1]);
             let [vn0, vn1] = e[..] else {
                 panic!();
             };
             let v0 = &vertices[vn0];
             let v1 = &vertices[vn1];
-            let mut ident = rlst_dynamic_array3!(T, [degree - 1, 1, degree - 1]);
+            let mut ident = rlst_dynamic_array!(T, [degree - 1, 1, degree - 1]);
 
             for i in 1..degree {
                 *ident.get_mut([i - 1, 0, i - 1]).unwrap() = T::from(1.0).unwrap();
@@ -100,7 +100,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
                     panic!("Unsupported face type");
                 }
             };
-            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, npts]);
+            let mut pts = rlst_dynamic_array!(T::Real, [tdim, npts]);
 
             let [vn0, vn1, vn2] = faces[e][..3] else {
                 panic!();
@@ -151,7 +151,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
                 }
             };
 
-            let mut ident = rlst_dynamic_array3!(T, [npts, 1, npts]);
+            let mut ident = rlst_dynamic_array!(T, [npts, 1, npts]);
             for i in 0..npts {
                 *ident.get_mut([i, 0, i]).unwrap() = T::from(1.0).unwrap();
             }
@@ -175,7 +175,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
                     panic!("Unsupported face type");
                 }
             };
-            let mut pts = rlst_dynamic_array2!(T::Real, [tdim, npts]);
+            let mut pts = rlst_dynamic_array!(T::Real, [tdim, npts]);
 
             match volume_type {
                 ReferenceCellType::Tetrahedron => {
@@ -245,7 +245,7 @@ pub fn create<T: RlstScalar + MatrixInverse>(
                 }
             };
 
-            let mut ident = rlst_dynamic_array3!(T, [npts, 1, npts]);
+            let mut ident = rlst_dynamic_array!(T, [npts, 1, npts]);
             for i in 0..npts {
                 *ident.get_mut([i, 0, i]).unwrap() = T::from(1.0).unwrap();
             }

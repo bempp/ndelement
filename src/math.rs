@@ -207,7 +207,7 @@ mod test {
     use super::*;
     use approx::*;
     use itertools::izip;
-    use rlst::rlst_dynamic_array2;
+    use rlst::rlst_dynamic_array;
 
     #[test]
     fn test_permutation() {
@@ -236,7 +236,7 @@ mod test {
 
     #[test]
     fn test_matrix_2by2() {
-        let mut matrix = rlst_dynamic_array2!(f64, [2, 2]);
+        let mut matrix = rlst_dynamic_array!(f64, [2, 2]);
         matrix[[0, 0]] = 0.5;
         matrix[[0, 1]] = 1.5;
         matrix[[1, 0]] = 1.0;
@@ -269,7 +269,7 @@ mod test {
 
     #[test]
     fn test_matrix_3by3() {
-        let mut matrix = rlst_dynamic_array2!(f64, [3, 3]);
+        let mut matrix = rlst_dynamic_array!(f64, [3, 3]);
         matrix[[0, 0]] = 0.5;
         matrix[[0, 1]] = 1.5;
         matrix[[0, 2]] = 1.0;

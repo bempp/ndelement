@@ -255,7 +255,7 @@ impl Map for ContravariantPiolaMap {
 mod test {
     use super::*;
     use approx::*;
-    use rlst::{rlst_dynamic_array3, rlst_dynamic_array4};
+    use rlst::{rlst_dynamic_array};
 
     fn set_to_zero<T: RlstScalar, Array4: RandomAccessMut<4, Item = T> + Shape<4>>(
         data: &mut Array4,
@@ -298,18 +298,18 @@ mod test {
     #[test]
     fn test_identity() {
         let map = IdentityMap {};
-        let mut values = rlst_dynamic_array4!(f64, [1, 2, 2, 1]);
+        let mut values = rlst_dynamic_array!(f64, [1, 2, 2, 1]);
         *values.get_mut([0, 0, 0, 0]).unwrap() = 1.0;
         *values.get_mut([0, 1, 0, 0]).unwrap() = 0.0;
         *values.get_mut([0, 0, 1, 0]).unwrap() = 0.5;
         *values.get_mut([0, 1, 1, 0]).unwrap() = 2.0;
 
-        let mut j = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        let mut j = rlst_dynamic_array!(f64, [2, 2, 2]);
         let mut jdet = vec![0.0; 2];
-        let mut jinv = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        let mut jinv = rlst_dynamic_array!(f64, [2, 2, 2]);
         fill_jacobians(&mut j, &mut jdet, &mut jinv);
 
-        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 1]);
+        let mut physical_values = rlst_dynamic_array!(f64, [1, 2, 2, 1]);
 
         map.push_forward(&values, 0, &j, &jdet, &jinv, &mut physical_values);
 
@@ -346,7 +346,7 @@ mod test {
     #[test]
     fn test_covariant_piola() {
         let map = CovariantPiolaMap {};
-        let mut values = rlst_dynamic_array4!(f64, [1, 2, 2, 2]);
+        let mut values = rlst_dynamic_array!(f64, [1, 2, 2, 2]);
         *values.get_mut([0, 0, 0, 0]).unwrap() = 1.0;
         *values.get_mut([0, 0, 0, 1]).unwrap() = 0.0;
         *values.get_mut([0, 1, 0, 0]).unwrap() = 0.0;
@@ -356,12 +356,12 @@ mod test {
         *values.get_mut([0, 1, 1, 0]).unwrap() = 2.0;
         *values.get_mut([0, 1, 1, 1]).unwrap() = 2.0;
 
-        let mut j = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        let mut j = rlst_dynamic_array!(f64, [2, 2, 2]);
         let mut jdet = vec![0.0; 2];
-        let mut jinv = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        let mut jinv = rlst_dynamic_array!(f64, [2, 2, 2]);
         fill_jacobians(&mut j, &mut jdet, &mut jinv);
 
-        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 2]);
+        let mut physical_values = rlst_dynamic_array!(f64, [1, 2, 2, 2]);
 
         map.push_forward(&values, 0, &j, &jdet, &jinv, &mut physical_values);
 
@@ -422,7 +422,7 @@ mod test {
     #[test]
     fn test_contravariant_piola() {
         let map = ContravariantPiolaMap {};
-        let mut values = rlst_dynamic_array4!(f64, [1, 2, 2, 2]);
+        let mut values = rlst_dynamic_array!(f64, [1, 2, 2, 2]);
         *values.get_mut([0, 0, 0, 0]).unwrap() = 1.0;
         *values.get_mut([0, 0, 0, 1]).unwrap() = 0.0;
         *values.get_mut([0, 1, 0, 0]).unwrap() = 0.0;
@@ -432,12 +432,12 @@ mod test {
         *values.get_mut([0, 1, 1, 0]).unwrap() = 2.0;
         *values.get_mut([0, 1, 1, 1]).unwrap() = 2.0;
 
-        let mut j = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        let mut j = rlst_dynamic_array!(f64, [2, 2, 2]);
         let mut jdet = vec![0.0; 2];
-        let mut jinv = rlst_dynamic_array3!(f64, [2, 2, 2]);
+        let mut jinv = rlst_dynamic_array!(f64, [2, 2, 2]);
         fill_jacobians(&mut j, &mut jdet, &mut jinv);
 
-        let mut physical_values = rlst_dynamic_array4!(f64, [1, 2, 2, 2]);
+        let mut physical_values = rlst_dynamic_array!(f64, [1, 2, 2, 2]);
 
         map.push_forward(&values, 0, &j, &jdet, &jinv, &mut physical_values);
 
