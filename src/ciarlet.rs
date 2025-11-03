@@ -1,5 +1,7 @@
 //! Finite element definitions
 
+extern crate lapack_src;
+
 use crate::math;
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::reference_cell;
@@ -196,11 +198,11 @@ impl<T: RlstScalar + Getrf + Getri, M: Map> CiarletElement<T, M> {
         }
 
         // Compute the coefficients that define the basis functions
-        let mut inverse = rlst::rlst_dynamic_array!(T, [dim, dim]);
+        let mut dual_mat = rlst::rlst_dynamic_array!(T, [dim, dim]);
 
         for i in 0..dim {
             for j in 0..dim {
-                *inverse.get_mut([i, j]).unwrap() = (0..value_size)
+                *dual_mat.get_mut([i, j]).unwrap() = (0..value_size)
                     .map(|k| {
                         (0..pdim)
                             .map(|l| {
@@ -213,7 +215,7 @@ impl<T: RlstScalar + Getrf + Getri, M: Map> CiarletElement<T, M> {
             }
         }
 
-        inverse.r_mut().inverse().unwrap();
+        let inverse = dual_mat.inverse().unwrap();
 
         let mut coefficients = rlst_dynamic_array!(T, [dim, value_size, pdim]);
         for i in 0..dim {
