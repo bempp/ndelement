@@ -66,7 +66,8 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         polynomial_count(cell_type, degree - 3)
     };
 
-    let mut wcoeffs = rlst_dynamic_array!(T, [pdim_minus1 * tdim + pdim_facet_minus1 * (tdim - 1) + pdim_edge_minus1 * (tdim - 2), tdim, pdim]);
+    let wdim = pdim_minus1 * tdim + pdim_facet_minus1 * (tdim - 1) + pdim_edge_minus1 * (tdim - 2);
+    let mut wcoeffs = rlst_dynamic_array!(T, [wdim, tdim, pdim]);
 
     // vector polynomials of degree <= n-1
     for i in 0..tdim {
@@ -364,16 +365,10 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
 
     let entity_counts = reference_cell::entity_counts(cell_type);
 
-    let mut wcoeffs = rlst_dynamic_array!(
-        T,
-        [
-            entity_counts[1] * pdim_edge_minus1
-                + entity_counts[2] * 2 * pdim_edge_minus1 * pdim_edge_minus2
-                + entity_counts[3] * 3 * pdim_edge_minus1 * pdim_edge_minus2 * pdim_edge_minus2,
-            tdim,
-            pdim
-        ]
-    );
+    let wdim = entity_counts[1] * pdim_edge_minus1
+        + entity_counts[2] * 2 * pdim_edge_minus1 * pdim_edge_minus2
+        + entity_counts[3] * 3 * pdim_edge_minus1 * pdim_edge_minus2 * pdim_edge_minus2;
+    let mut wcoeffs = rlst_dynamic_array!(T, [wdim, tdim, pdim]);
 
     // vector polynomials of degree <= n-1
     if tdim == 2 {
@@ -512,7 +507,8 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
 
         for face in reference_cell::faces(cell_type) {
             let mut pts = rlst_dynamic_array!(T::Real, [tdim, face_q.npoints]);
-            let mut mat = rlst_dynamic_array!(T, [2 * pdim_edge_minus2 * pdim_edge_minus1, tdim, face_q.npoints]);
+            let mdim = 2 * pdim_edge_minus2 * pdim_edge_minus1;
+            let mut mat = rlst_dynamic_array!(T, [mdim, tdim, face_q.npoints]);
 
             for (w_i, wt) in face_q.weights.iter().enumerate() {
                 for i in 0..tdim {
@@ -571,14 +567,8 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
             );
 
             let mut pts = rlst_dynamic_array!(T::Real, [tdim, interior_q.npoints]);
-            let mut mat = rlst_dynamic_array!(
-                T,
-                [
-                    3 * pdim_edge_minus2.pow(2) * pdim_edge_minus1,
-                    tdim,
-                    interior_q.npoints
-                ]
-            );
+            let mdim = 3 * pdim_edge_minus2.pow(2) * pdim_edge_minus1;
+            let mut mat = rlst_dynamic_array!(T, [mdim, tdim, interior_q.npoints]);
 
             for (w_i, wt) in interior_q.weights.iter().enumerate() {
                 for i in 0..tdim {
