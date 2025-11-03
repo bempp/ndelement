@@ -34,13 +34,10 @@ pub fn derivative_count(cell_type: ReferenceCellType, derivatives: usize) -> usi
 mod test {
     use super::*;
     use crate::quadrature::gauss_jacobi_rule;
-    use crate::types::{Array2D, ReferenceCellType};
+    use crate::types::ReferenceCellType;
     use approx::*;
     use paste::paste;
-    use rlst::{
-        rlst_array_from_slice2, rlst_dynamic_array2, rlst_dynamic_array3, RandomAccessByRef,
-        RandomAccessMut, Shape,
-    };
+    use rlst::{rlst_dynamic_array, DynArray, SliceArray};
 
     macro_rules! test_orthogonal {
         ($cell:ident, $degree:expr) => {
@@ -53,10 +50,9 @@ mod test {
                     ).unwrap();
 
 
-                    let points = rlst_array_from_slice2!(&rule.points, [rule.dim, rule.npoints]);
+                    let points = SliceArray::<f64, 2>::from_shape(&rule.points, [rule.dim, rule.npoints]);
 
-                    let mut data = rlst_dynamic_array3!(
-                        f64,
+                    let mut data = DynArray::<f64, 3>::from_shape(
                         legendre_shape(ReferenceCellType::[<$cell>], &points, [<$degree>], 0,)
                     );
                     tabulate_legendre_polynomials(ReferenceCellType::[<$cell>], &points, [<$degree>], 0, &mut data);
@@ -107,17 +103,17 @@ mod test {
     test_orthogonal!(Hexahedron, 5);
     test_orthogonal!(Hexahedron, 6);
 
-    fn generate_points(cell: ReferenceCellType, epsilon: f64) -> Array2D<f64> {
+    fn generate_points(cell: ReferenceCellType, epsilon: f64) -> DynArray<f64, 2> {
         let mut points = match cell {
             ReferenceCellType::Interval => {
-                let mut points = rlst_dynamic_array2!(f64, [1, 20]);
+                let mut points = rlst_dynamic_array!(f64, [1, 20]);
                 for i in 0..10 {
                     *points.get_mut([0, 2 * i]).unwrap() = i as f64 / 10.0;
                 }
                 points
             }
             ReferenceCellType::Triangle => {
-                let mut points = rlst_dynamic_array2!(f64, [2, 165]);
+                let mut points = rlst_dynamic_array!(f64, [2, 165]);
                 let mut index = 0;
                 for i in 0..10 {
                     for j in 0..10 - i {
@@ -129,7 +125,7 @@ mod test {
                 points
             }
             ReferenceCellType::Quadrilateral => {
-                let mut points = rlst_dynamic_array2!(f64, [2, 300]);
+                let mut points = rlst_dynamic_array!(f64, [2, 300]);
                 for i in 0..10 {
                     for j in 0..10 {
                         let index = 10 * i + j;
@@ -140,7 +136,7 @@ mod test {
                 points
             }
             ReferenceCellType::Tetrahedron => {
-                let mut points = rlst_dynamic_array2!(f64, [3, 140]);
+                let mut points = rlst_dynamic_array!(f64, [3, 140]);
                 let mut index = 0;
                 for i in 0..5 {
                     for j in 0..5 - i {
@@ -155,7 +151,7 @@ mod test {
                 points
             }
             ReferenceCellType::Hexahedron => {
-                let mut points = rlst_dynamic_array2!(f64, [3, 500]);
+                let mut points = rlst_dynamic_array!(f64, [3, 500]);
                 for i in 0..5 {
                     for j in 0..5 {
                         for k in 0..5 {
@@ -193,8 +189,7 @@ mod test {
                     let epsilon = 1e-10;
                     let points = generate_points(ReferenceCellType::[<$cell>], epsilon);
 
-                    let mut data = rlst_dynamic_array3!(
-                        f64,
+                    let mut data = DynArray::<f64, 3>::from_shape(
                         legendre_shape(ReferenceCellType::[<$cell>], &points, [<$degree>], 1,)
                     );
                     tabulate_legendre_polynomials(ReferenceCellType::[<$cell>], &points, [<$degree>], 1, &mut data);
@@ -251,15 +246,17 @@ mod test {
     fn test_legendre_interval_against_known_polynomials() {
         let degree = 3;
 
-        let mut points = rlst_dynamic_array2!(f64, [1, 11]);
+        let mut points = rlst_dynamic_array!(f64, [1, 11]);
         for i in 0..11 {
             *points.get_mut([0, i]).unwrap() = i as f64 / 10.0;
         }
 
-        let mut data = rlst_dynamic_array3!(
-            f64,
-            legendre_shape(ReferenceCellType::Interval, &points, degree, 3,)
-        );
+        let mut data = DynArray::<f64, 3>::from_shape(legendre_shape(
+            ReferenceCellType::Interval,
+            &points,
+            degree,
+            3,
+        ));
         tabulate_legendre_polynomials(ReferenceCellType::Interval, &points, degree, 3, &mut data);
 
         for k in 0..points.shape()[0] {
@@ -331,7 +328,7 @@ mod test {
     fn test_legendre_quadrilateral_against_known_polynomials() {
         let degree = 2;
 
-        let mut points = rlst_dynamic_array2!(f64, [2, 121]);
+        let mut points = rlst_dynamic_array!(f64, [2, 121]);
         for i in 0..11 {
             for j in 0..11 {
                 *points.get_mut([0, 11 * i + j]).unwrap() = i as f64 / 10.0;
@@ -339,10 +336,12 @@ mod test {
             }
         }
 
-        let mut data = rlst_dynamic_array3!(
-            f64,
-            legendre_shape(ReferenceCellType::Quadrilateral, &points, degree, 1)
-        );
+        let mut data = DynArray::<f64, 3>::from_shape(legendre_shape(
+            ReferenceCellType::Quadrilateral,
+            &points,
+            degree,
+            1,
+        ));
         tabulate_legendre_polynomials(
             ReferenceCellType::Quadrilateral,
             &points,

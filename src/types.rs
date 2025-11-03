@@ -1,13 +1,8 @@
 //! Types
 #[cfg(feature = "mpi")]
 use mpi::traits::Equivalence;
-use rlst::{Array, BaseArray, RlstScalar, VectorContainer};
+use rlst::{DynArray, RlstScalar};
 use strum_macros::EnumIter;
-
-/// An N-dimensional array
-pub type ArrayND<const N: usize, T> = Array<T, BaseArray<T, VectorContainer<T>, N>, N>;
-/// A 2-dimensional array
-pub type Array2D<T> = ArrayND<2, T>;
 
 /// Continuity type
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -97,7 +92,7 @@ pub enum DofTransformation<T: RlstScalar> {
     /// A permutation
     Permutation(Vec<usize>),
     /// A linear transformation
-    Transformation(Array2D<T>, Vec<usize>),
+    Transformation(DynArray<T, 2>, Vec<usize>),
 }
 
 /// A transformation of a sub-entity

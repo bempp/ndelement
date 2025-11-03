@@ -1,15 +1,15 @@
 //! Mathematical functions
 use rlst::{
-    RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
+    Array, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
     UnsafeRandomAccessMut,
 };
 
 /// Orthogonalise the rows of a matrix, starting with the row numbered `start`
 pub fn orthogonalise<
     T: RlstScalar,
-    Array2: RandomAccessByRef<2, Item = T> + RandomAccessMut<2, Item = T> + Shape<2>,
+    Array2Mut: RandomAccessByRef<2, Item = T> + RandomAccessMut<2, Item = T> + Shape<2>,
 >(
-    mat: &mut Array2,
+    mat: &mut Array<Array2Mut, 2>,
     start: usize,
 ) {
     for row in start..mat.shape()[0] {
@@ -35,9 +35,9 @@ pub fn orthogonalise<
 /// Orthogonalise the rows of a matrix, starting with the row numbered `start`
 pub fn orthogonalise_3<
     T: RlstScalar,
-    Array3: RandomAccessByRef<3, Item = T> + RandomAccessMut<3, Item = T> + Shape<3>,
+    Array3Mut: RandomAccessByRef<3, Item = T> + RandomAccessMut<3, Item = T> + Shape<3>,
 >(
-    mat: &mut Array3,
+    mat: &mut Array<Array3Mut, 3>,
     start: usize,
 ) {
     for row in start..mat.shape()[0] {
@@ -78,7 +78,7 @@ unsafe fn entry_swap<
     T: RlstScalar,
     ArrayMut: UnsafeRandomAccessMut<N, Item = T> + UnsafeRandomAccessByRef<N, Item = T> + Shape<N>,
 >(
-    mat: &mut ArrayMut,
+    mat: &mut Array<ArrayMut, N>,
     mindex0: [usize; N],
     mindex1: [usize; N],
 ) {
@@ -92,7 +92,7 @@ pub fn lu_transpose<
     T: RlstScalar,
     Array2Mut: UnsafeRandomAccessMut<2, Item = T> + UnsafeRandomAccessByRef<2, Item = T> + Shape<2>,
 >(
-    mat: &mut Array2Mut,
+    mat: &mut Array<Array2Mut, 2>,
 ) -> Vec<usize> {
     let dim = mat.shape()[0];
     assert_eq!(mat.shape()[1], dim);
@@ -143,7 +143,7 @@ pub fn prepare_permutation(perm: &mut [usize]) {
 
 /// Apply a permutation to some data
 pub fn apply_permutation<T>(perm: &[usize], data: &mut [T]) {
-    debug_assert!(data.len() % perm.len() == 0);
+    debug_assert!(data.len().is_multiple_of(perm.len()));
     let block_size = data.len() / perm.len();
     for (i, j) in perm.iter().enumerate() {
         for k in 0..block_size {
@@ -157,7 +157,7 @@ pub fn prepare_matrix<
     T: RlstScalar,
     Array2Mut: UnsafeRandomAccessMut<2, Item = T> + UnsafeRandomAccessByRef<2, Item = T> + Shape<2>,
 >(
-    mat: &mut Array2Mut,
+    mat: &mut Array<Array2Mut, 2>,
 ) -> Vec<usize> {
     let mut perm = lu_transpose(mat);
     prepare_permutation(&mut perm);
@@ -166,7 +166,7 @@ pub fn prepare_matrix<
 
 /// Apply a permutation and a matrix to some data
 pub fn apply_perm_and_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
-    mat: &Array2,
+    mat: &Array<Array2, 2>,
     perm: &[usize],
     data: &mut [T],
 ) {
@@ -176,11 +176,11 @@ pub fn apply_perm_and_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = 
 
 /// Apply a matrix to some data
 pub fn apply_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
-    mat: &Array2,
+    mat: &Array<Array2, 2>,
     data: &mut [T],
 ) {
     let dim = mat.shape()[0];
-    debug_assert!(data.len() % dim == 0);
+    debug_assert!(data.len().is_multiple_of(dim));
     let block_size = data.len() / dim;
     for i in 0..dim {
         for j in i + 1..dim {
@@ -207,7 +207,7 @@ mod test {
     use super::*;
     use approx::*;
     use itertools::izip;
-    use rlst::rlst_dynamic_array2;
+    use rlst::rlst_dynamic_array;
 
     #[test]
     fn test_permutation() {
@@ -236,7 +236,7 @@ mod test {
 
     #[test]
     fn test_matrix_2by2() {
-        let mut matrix = rlst_dynamic_array2!(f64, [2, 2]);
+        let mut matrix = rlst_dynamic_array!(f64, [2, 2]);
         matrix[[0, 0]] = 0.5;
         matrix[[0, 1]] = 1.5;
         matrix[[1, 0]] = 1.0;
@@ -269,7 +269,7 @@ mod test {
 
     #[test]
     fn test_matrix_3by3() {
-        let mut matrix = rlst_dynamic_array2!(f64, [3, 3]);
+        let mut matrix = rlst_dynamic_array!(f64, [3, 3]);
         matrix[[0, 0]] = 0.5;
         matrix[[0, 1]] = 1.5;
         matrix[[0, 2]] = 1.0;

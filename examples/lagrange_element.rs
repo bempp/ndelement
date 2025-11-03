@@ -3,7 +3,7 @@ use ndelement::{
     traits::FiniteElement,
     types::{Continuity, ReferenceCellType},
 };
-use rlst::{rlst_dynamic_array2, rlst_dynamic_array4, RawAccess};
+use rlst::{rlst_dynamic_array, DynArray};
 
 fn main() {
     // Create a P2 element on a triangle
@@ -12,9 +12,9 @@ fn main() {
     println!("This element has {} basis functions.", element.dim());
 
     // Create an array to store the basis function values
-    let mut basis_values = rlst_dynamic_array4!(f64, element.tabulate_array_shape(0, 1));
+    let mut basis_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, 1));
     // Create array containing the point [1/3, 1/3]
-    let mut points = rlst_dynamic_array2!(f64, [2, 1]);
+    let mut points = rlst_dynamic_array!(f64, [2, 1]);
     points[[0, 0]] = 1.0 / 3.0;
     points[[1, 0]] = 1.0 / 3.0;
     // Tabulate the element's basis functions at the point
