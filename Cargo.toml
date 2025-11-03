@@ -32,6 +32,12 @@ strum = "0.27"
 strum_macros = "0.27"
 c-api-tools = { version = "0.1.0" }
 
+[target.'cfg(target_os = "macos")'.dependencies]
+lapack-src = { version = "0.13", features = ["accelerate"]}
+
+[target.'cfg(target_os = "linux")'.dependencies]
+lapack-src = { version = "0.13", features = ["netlib"]}
+
 [dev-dependencies]
 paste = "1.*"
 approx = "0.5"

@@ -1,6 +1,9 @@
 //! Traits
 use crate::types::DofTransformation;
-use rlst::{RandomAccessByRef, RandomAccessMut, RlstScalar, Shape};
+use rlst::{
+    Array, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
+    UnsafeRandomAccessMut,
+};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -29,11 +32,14 @@ pub trait FiniteElement {
     fn value_size(&self) -> usize;
 
     /// Tabulate the values of the basis functions and their derivatives at a set of points
-    fn tabulate<Array2: RandomAccessByRef<2, Item = <Self::T as RlstScalar>::Real> + Shape<2>>(
+    fn tabulate<
+        Array2: RandomAccessByRef<2, Item = <Self::T as RlstScalar>::Real> + Shape<2>,
+        Array4Mut: RandomAccessMut<4, Item = Self::T> + UnsafeRandomAccessMut<4, Item = Self::T>,
+    >(
         &self,
-        points: &Array2,
+        points: &Array<Array2, 2>,
         nderivs: usize,
-        data: &mut impl RandomAccessMut<4, Item = Self::T>,
+        data: &mut Array<Array4Mut, 4>,
     );
 
     /// The DOFs that are associated with a subentity of the reference cell
@@ -47,32 +53,32 @@ pub trait FiniteElement {
 
     /// Push function values forward to a physical cell
     fn push_forward<
-        Array3Real: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = Self::T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = Self::T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = Self::T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = Self::T> + Shape<4>,
     >(
         &self,
-        reference_values: &Array4,
+        reference_values: &Array<Array4, 4>,
         nderivs: usize,
-        jacobians: &Array3Real,
+        jacobians: &Array<Array3Real, 3>,
         jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array3Real,
-        physical_values: &mut Array4Mut,
+        inverse_jacobians: &Array<Array3Real, 3>,
+        physical_values: &mut Array<Array4Mut, 4>,
     );
 
     /// Pull function values back to the reference cell
     fn pull_back<
-        Array3Real: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = Self::T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = Self::T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = Self::T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = Self::T> + Shape<4>,
     >(
         &self,
-        physical_values: &Array4,
+        physical_values: &Array<Array4, 4>,
         nderivs: usize,
-        jacobians: &Array3Real,
+        jacobians: &Array<Array3Real, 3>,
         jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array3Real,
-        reference_values: &mut Array4Mut,
+        inverse_jacobians: &Array<Array3Real, 3>,
+        reference_values: &mut Array<Array4Mut, 4>,
     );
 
     /// The value shape on a physical cell
@@ -144,33 +150,33 @@ pub trait Map {
     /// Push function values forward to a physical cell
     fn push_forward<
         T: RlstScalar,
-        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = T::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        reference_values: &Array4,
+        reference_values: &Array<Array4, 4>,
         nderivs: usize,
-        jacobians: &Array3Real,
+        jacobians: &Array<Array3Real, 3>,
         jacobian_determinants: &[T::Real],
-        inverse_jacobians: &Array3Real,
-        physical_values: &mut Array4Mut,
+        inverse_jacobians: &Array<Array3Real, 3>,
+        physical_values: &mut Array<Array4Mut, 4>,
     );
 
     /// Pull function values back to the reference cell
     fn pull_back<
         T: RlstScalar,
-        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = T::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        physical_values: &Array4,
+        physical_values: &Array<Array4, 4>,
         nderivs: usize,
-        jacobians: &Array3Real,
+        jacobians: &Array<Array3Real, 3>,
         jacobian_determinants: &[T::Real],
-        inverse_jacobians: &Array3Real,
-        reference_values: &mut Array4Mut,
+        inverse_jacobians: &Array<Array3Real, 3>,
+        reference_values: &mut Array<Array4Mut, 4>,
     );
 
     /// The value shape on a physical cell
