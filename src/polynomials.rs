@@ -37,10 +37,7 @@ mod test {
     use crate::types::ReferenceCellType;
     use approx::*;
     use paste::paste;
-    use rlst::{ Array,
-        DynArray, SliceArray, rlst_dynamic_array, RandomAccessByRef,
-        RandomAccessMut, Shape,
-    };
+    use rlst::{rlst_dynamic_array, DynArray, SliceArray};
 
     macro_rules! test_orthogonal {
         ($cell:ident, $degree:expr) => {
@@ -106,7 +103,7 @@ mod test {
     test_orthogonal!(Hexahedron, 5);
     test_orthogonal!(Hexahedron, 6);
 
-    fn generate_points(cell: ReferenceCellType, epsilon: f64) -> Array<f64, 2> {
+    fn generate_points(cell: ReferenceCellType, epsilon: f64) -> DynArray<f64, 2> {
         let mut points = match cell {
             ReferenceCellType::Interval => {
                 let mut points = rlst_dynamic_array!(f64, [1, 20]);
@@ -254,9 +251,12 @@ mod test {
             *points.get_mut([0, i]).unwrap() = i as f64 / 10.0;
         }
 
-        let mut data = DynArray::<f64, 3>::from_shape(
-            legendre_shape(ReferenceCellType::Interval, &points, degree, 3,)
-        );
+        let mut data = DynArray::<f64, 3>::from_shape(legendre_shape(
+            ReferenceCellType::Interval,
+            &points,
+            degree,
+            3,
+        ));
         tabulate_legendre_polynomials(ReferenceCellType::Interval, &points, degree, 3, &mut data);
 
         for k in 0..points.shape()[0] {
@@ -336,9 +336,12 @@ mod test {
             }
         }
 
-        let mut data = DynArray::<f64, 3>::from_shape(
-            legendre_shape(ReferenceCellType::Quadrilateral, &points, degree, 1)
-        );
+        let mut data = DynArray::<f64, 3>::from_shape(legendre_shape(
+            ReferenceCellType::Quadrilateral,
+            &points,
+            degree,
+            1,
+        ));
         tabulate_legendre_polynomials(
             ReferenceCellType::Quadrilateral,
             &points,

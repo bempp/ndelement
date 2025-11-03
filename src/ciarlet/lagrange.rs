@@ -6,11 +6,12 @@ use crate::polynomials::polynomial_count;
 use crate::reference_cell;
 use crate::traits::ElementFamily;
 use crate::types::{Continuity, ReferenceCellType};
-use rlst::{rlst_dynamic_array, MatrixInverse, RandomAccessMut, RlstScalar};
+use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
+use rlst::{rlst_dynamic_array, RlstScalar};
 use std::marker::PhantomData;
 
 /// Create a Lagrange element
-pub fn create<T: RlstScalar + MatrixInverse>(
+pub fn create<T: RlstScalar + Getrf + Getri>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
@@ -268,13 +269,13 @@ pub fn create<T: RlstScalar + MatrixInverse>(
 }
 
 /// Lagrange element family
-pub struct LagrangeElementFamily<T: RlstScalar + MatrixInverse> {
+pub struct LagrangeElementFamily<T: RlstScalar + Getrf + Getri> {
     degree: usize,
     continuity: Continuity,
     _t: PhantomData<T>,
 }
 
-impl<T: RlstScalar + MatrixInverse> LagrangeElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri> LagrangeElementFamily<T> {
     /// Create new family
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
@@ -285,7 +286,7 @@ impl<T: RlstScalar + MatrixInverse> LagrangeElementFamily<T> {
     }
 }
 
-impl<T: RlstScalar + MatrixInverse> ElementFamily for LagrangeElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri> ElementFamily for LagrangeElementFamily<T> {
     type T = T;
     type FiniteElement = CiarletElement<T, IdentityMap>;
     type CellType = ReferenceCellType;

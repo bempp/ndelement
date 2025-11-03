@@ -154,7 +154,7 @@ pub mod quadrature {
 
 pub mod polynomials {
     use crate::{polynomials, reference_cell, types::ReferenceCellType};
-    use rlst::{SliceArray, SliceArrayMut, RlstScalar};
+    use rlst::{RlstScalar, SliceArray, SliceArrayMut};
     use std::slice::{from_raw_parts, from_raw_parts_mut};
 
     #[no_mangle]
@@ -178,12 +178,13 @@ pub mod polynomials {
         data: *mut T,
     ) {
         let tdim = reference_cell::dim(cell);
-        let points = SliceArray::<T::Real, 2>::from_shape(from_raw_parts(points, npts * tdim), [tdim, npts]);
+        let points =
+            SliceArray::<T::Real, 2>::from_shape(from_raw_parts(points, npts * tdim), [tdim, npts]);
         let npoly = polynomials::polynomial_count(cell, degree);
         let nderiv = polynomials::derivative_count(cell, derivatives);
         let mut data = SliceArrayMut::<T, 3>::from_shape(
             from_raw_parts_mut(data, npts * npoly * nderiv),
-            [nderiv, npoly, npts]
+            [nderiv, npoly, npts],
         );
         polynomials::tabulate_legendre_polynomials(cell, &points, degree, derivatives, &mut data);
     }
@@ -221,9 +222,8 @@ pub mod ciarlet {
         types::{Continuity, ReferenceCellType},
     };
     use c_api_tools::{cfuncs, concretise_types, DType, DTypeIdentifier};
-    use rlst::{
-        c32, c64, SliceArray, SliceArrayMut, MatrixInverse, RawAccess, RlstScalar, Shape,
-    };
+    use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
+    use rlst::{c32, c64, RlstScalar, SliceArray, SliceArrayMut};
     use std::ffi::c_void;
     use std::slice::{from_raw_parts, from_raw_parts_mut};
 
@@ -355,7 +355,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element_family", wrapper = "ElementFamilyT", replace_with = ["crate::ciarlet::LagrangeElementFamily<{{dtype}}>", "ciarlet::RaviartThomasElementFamily<{{dtype}}>", "ciarlet::NedelecFirstKindElementFamily<{{dtype}}>"])
     )]
     pub fn element_family_dtype<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        T: RlstScalar + DTypeIdentifier,
         F: ElementFamily<CellType = ReferenceCellType, T = T>,
     >(
         _elem: &F,
@@ -368,10 +368,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_dtype<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
-        E: FiniteElement<T = T>,
-    >(
+    pub fn ciarlet_element_dtype<T: RlstScalar + DTypeIdentifier, E: FiniteElement<T = T>>(
         _elem: &E,
     ) -> DType {
         <T as DTypeIdentifier>::dtype()
@@ -414,14 +411,14 @@ pub mod ciarlet {
         let tdim = reference_cell::dim(element.cell_type());
         let points = points as *mut <E::T as RlstScalar>::Real;
         let data = data as *mut E::T;
-        let points = SliceArray::<E::T, 2>::from_shape(
+        let points = SliceArray::<<E::T as RlstScalar>::Real, 2>::from_shape(
             unsafe { from_raw_parts(points, npoints * tdim) },
-            [tdim, npoints]
+            [tdim, npoints],
         );
         let shape = element.tabulate_array_shape(nderivs, npoints);
         let mut data = SliceArrayMut::<E::T, 4>::from_shape(
             unsafe { from_raw_parts_mut(data, shape[0] * shape[1] * shape[2] * shape[3]) },
-            shape
+            shape,
         );
         element.tabulate(&points, nderivs, &mut data);
     }
@@ -527,26 +524,26 @@ pub mod ciarlet {
                     deriv_size * npoints * nfunctions * vs,
                 )
             },
-            [deriv_size, npoints, nfunctions, vs]
+            [deriv_size, npoints, nfunctions, vs],
         );
-        let j = SliceArray::<E::T, 3>::from_shape(
+        let j = SliceArray::<<E::T as RlstScalar>::Real, 3>::from_shape(
             unsafe {
                 from_raw_parts(
                     j as *const <E::T as RlstScalar>::Real,
                     npoints * gdim * tdim,
                 )
             },
-            [npoints, gdim, tdim]
+            [npoints, gdim, tdim],
         );
         let jdet = unsafe { from_raw_parts(jdet as *const <E::T as RlstScalar>::Real, npoints) };
-        let jinv = SliceArray::<E::T, 3>::from_shape(
+        let jinv = SliceArray::<<E::T as RlstScalar>::Real, 3>::from_shape(
             unsafe {
                 from_raw_parts(
                     jinv as *const <E::T as RlstScalar>::Real,
                     npoints * tdim * gdim,
                 )
             },
-            [npoints, tdim, gdim]
+            [npoints, tdim, gdim],
         );
         let mut physical_values = SliceArrayMut::<E::T, 4>::from_shape(
             unsafe {
@@ -555,7 +552,7 @@ pub mod ciarlet {
                     deriv_size * npoints * nfunctions * pvs,
                 )
             },
-            [deriv_size, npoints, nfunctions, pvs]
+            [deriv_size, npoints, nfunctions, pvs],
         );
         element.push_forward(
             &reference_values,
@@ -596,26 +593,26 @@ pub mod ciarlet {
                     deriv_size * npoints * nfunctions * pvs,
                 )
             },
-            [deriv_size, npoints, nfunctions, pvs]
+            [deriv_size, npoints, nfunctions, pvs],
         );
-        let j = SliceArray::<E::T, 3>::from_shape(
+        let j = SliceArray::<<E::T as RlstScalar>::Real, 3>::from_shape(
             unsafe {
                 from_raw_parts(
                     j as *const <E::T as RlstScalar>::Real,
                     npoints * gdim * tdim,
                 )
             },
-            [npoints, gdim, tdim]
+            [npoints, gdim, tdim],
         );
         let jdet = unsafe { from_raw_parts(jdet as *const <E::T as RlstScalar>::Real, npoints) };
-        let jinv = SliceArray::<E::T, 3>::from_shape(
+        let jinv = SliceArray::<<E::T as RlstScalar>::Real, 3>::from_shape(
             unsafe {
                 from_raw_parts(
                     jinv as *const <E::T as RlstScalar>::Real,
                     npoints * tdim * gdim,
                 )
             },
-            [npoints, tdim, gdim]
+            [npoints, tdim, gdim],
         );
         let mut reference_values = SliceArrayMut::<E::T, 4>::from_shape(
             unsafe {
@@ -624,7 +621,7 @@ pub mod ciarlet {
                     deriv_size * npoints * nfunctions * vs,
                 )
             },
-            [deriv_size, npoints, nfunctions, vs]
+            [deriv_size, npoints, nfunctions, vs],
         );
         element.pull_back(
             &physical_values,
@@ -641,7 +638,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_degree<T: RlstScalar + MatrixInverse + DTypeIdentifier, M: Map>(
+    pub fn ciarlet_element_degree<T: RlstScalar + DTypeIdentifier + Getrf + Getri, M: Map>(
         element: &CiarletElement<T, M>,
     ) -> usize {
         element.degree()
@@ -670,7 +667,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_continuity<T: RlstScalar + MatrixInverse + DTypeIdentifier, M: Map>(
+    pub fn ciarlet_element_continuity<T: RlstScalar + DTypeIdentifier + Getrf + Getri, M: Map>(
         element: &CiarletElement<T, M>,
     ) -> Continuity {
         element.continuity()
@@ -728,10 +725,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_entity_closure_dofs_size<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
-        M: Map,
-    >(
+    pub fn ciarlet_element_entity_closure_dofs_size<T: RlstScalar + DTypeIdentifier, M: Map>(
         element: &CiarletElement<T, M>,
         entity_dim: usize,
         entity_index: usize,
@@ -747,10 +741,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_entity_closure_dofs<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
-        M: Map,
-    >(
+    pub fn ciarlet_element_entity_closure_dofs<T: RlstScalar + DTypeIdentifier, M: Map>(
         element: &CiarletElement<T, M>,
         entity_dim: usize,
         entity_index: usize,
@@ -774,7 +765,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_interpolation_npoints<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        T: RlstScalar + DTypeIdentifier + Getrf + Getri,
         M: Map,
     >(
         element: &CiarletElement<T, M>,
@@ -790,7 +781,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_interpolation_ndofs<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        T: RlstScalar + DTypeIdentifier + Getrf + Getri,
         M: Map,
     >(
         element: &CiarletElement<T, M>,
@@ -806,7 +797,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_interpolation_points<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        T: RlstScalar + DTypeIdentifier + Getrf + Getri,
         M: Map,
     >(
         element: &CiarletElement<T, M>,
@@ -832,7 +823,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_interpolation_weights<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        T: RlstScalar + DTypeIdentifier + Getrf + Getri,
         M: Map,
     >(
         element: &CiarletElement<T, M>,
@@ -858,7 +849,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub unsafe fn ciarlet_element_apply_dof_permutations_usize<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        T: RlstScalar + DTypeIdentifier + Getrf + Getri,
         M: Map,
     >(
         element: &CiarletElement<T, M>,
@@ -875,7 +866,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub unsafe fn ciarlet_element_apply_dof_permutations<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        T: RlstScalar + DTypeIdentifier + Getrf + Getri,
         M: Map,
     >(
         element: &CiarletElement<T, M>,
@@ -892,7 +883,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub unsafe fn ciarlet_element_apply_dof_transformations<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        T: RlstScalar + DTypeIdentifier + Getrf + Getri,
         M: Map,
     >(
         element: &CiarletElement<T, M>,
@@ -910,7 +901,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub unsafe fn ciarlet_element_apply_dof_permutations_and_transformations<
-        T: RlstScalar + MatrixInverse + DTypeIdentifier,
+        T: RlstScalar + DTypeIdentifier + Getrf + Getri,
         M: Map,
     >(
         element: &CiarletElement<T, M>,

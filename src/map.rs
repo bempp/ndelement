@@ -1,6 +1,6 @@
 //! Maps from the reference cell to/from physical cells
 use crate::traits::Map;
-use rlst::{RandomAccessByRef, RandomAccessMut, RlstScalar, Shape};
+use rlst::{Array, RlstScalar, Shape, UnsafeRandomAccessByRef, UnsafeRandomAccessMut};
 
 /// Identity map
 pub struct IdentityMap {}
@@ -8,17 +8,17 @@ pub struct IdentityMap {}
 impl Map for IdentityMap {
     fn push_forward<
         T: RlstScalar,
-        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = T::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        reference_values: &Array4,
+        reference_values: &Array<Array4, 4>,
         nderivs: usize,
-        _jacobians: &Array3Real,
+        _jacobians: &Array<Array3Real, 3>,
         _jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array3Real,
-        physical_values: &mut Array4Mut,
+        _inverse_jacobians: &Array<Array3Real, 3>,
+        physical_values: &mut Array<Array4Mut, 4>,
     ) {
         assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
         assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
@@ -40,17 +40,17 @@ impl Map for IdentityMap {
     }
     fn pull_back<
         T: RlstScalar,
-        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = T::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        physical_values: &Array4,
+        physical_values: &Array<Array4, 4>,
         nderivs: usize,
-        _jacobians: &Array3Real,
+        _jacobians: &Array<Array3Real, 3>,
         _jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array3Real,
-        reference_values: &mut Array4Mut,
+        _inverse_jacobians: &Array<Array3Real, 3>,
+        reference_values: &mut Array<Array4Mut, 4>,
     ) {
         assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
         assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
@@ -81,17 +81,17 @@ pub struct CovariantPiolaMap {}
 impl Map for CovariantPiolaMap {
     fn push_forward<
         T: RlstScalar,
-        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = T::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        reference_values: &Array4,
+        reference_values: &Array<Array4, 4>,
         nderivs: usize,
-        _jacobians: &Array3Real,
+        _jacobians: &Array<Array3Real, 3>,
         _jacobian_determinants: &[T::Real],
-        inverse_jacobians: &Array3Real,
-        physical_values: &mut Array4Mut,
+        inverse_jacobians: &Array<Array3Real, 3>,
+        physical_values: &mut Array<Array4Mut, 4>,
     ) {
         let tdim = inverse_jacobians.shape()[1];
         let gdim = inverse_jacobians.shape()[2];
@@ -120,17 +120,17 @@ impl Map for CovariantPiolaMap {
     }
     fn pull_back<
         T: RlstScalar,
-        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = T::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        physical_values: &Array4,
+        physical_values: &Array<Array4, 4>,
         nderivs: usize,
-        jacobians: &Array3Real,
+        jacobians: &Array<Array3Real, 3>,
         _jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array3Real,
-        reference_values: &mut Array4Mut,
+        _inverse_jacobians: &Array<Array3Real, 3>,
+        reference_values: &mut Array<Array4Mut, 4>,
     ) {
         let gdim = jacobians.shape()[1];
         let tdim = jacobians.shape()[2];
@@ -168,17 +168,17 @@ pub struct ContravariantPiolaMap {}
 impl Map for ContravariantPiolaMap {
     fn push_forward<
         T: RlstScalar,
-        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = T::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        reference_values: &Array4,
+        reference_values: &Array<Array4, 4>,
         nderivs: usize,
-        jacobians: &Array3Real,
+        jacobians: &Array<Array3Real, 3>,
         jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array3Real,
-        physical_values: &mut Array4Mut,
+        _inverse_jacobians: &Array<Array3Real, 3>,
+        physical_values: &mut Array<Array4Mut, 4>,
     ) {
         let gdim = jacobians.shape()[1];
         let tdim = jacobians.shape()[2];
@@ -208,17 +208,17 @@ impl Map for ContravariantPiolaMap {
     }
     fn pull_back<
         T: RlstScalar,
-        Array3Real: RandomAccessByRef<3, Item = T::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = T::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + Shape<4>,
     >(
         &self,
-        physical_values: &Array4,
+        physical_values: &Array<Array4, 4>,
         nderivs: usize,
-        _jacobians: &Array3Real,
+        _jacobians: &Array<Array3Real, 3>,
         jacobian_determinants: &[T::Real],
-        inverse_jacobians: &Array3Real,
-        reference_values: &mut Array4Mut,
+        inverse_jacobians: &Array<Array3Real, 3>,
+        reference_values: &mut Array<Array4Mut, 4>,
     ) {
         let tdim = inverse_jacobians.shape()[1];
         let gdim = inverse_jacobians.shape()[2];
@@ -255,10 +255,10 @@ impl Map for ContravariantPiolaMap {
 mod test {
     use super::*;
     use approx::*;
-    use rlst::{rlst_dynamic_array};
+    use rlst::{rlst_dynamic_array, Array, RandomAccessMut};
 
     fn set_to_zero<T: RlstScalar, Array4: RandomAccessMut<4, Item = T> + Shape<4>>(
-        data: &mut Array4,
+        data: &mut Array<Array4, 4>,
     ) {
         for i0 in 0..data.shape()[0] {
             for i1 in 0..data.shape()[1] {
@@ -270,10 +270,14 @@ mod test {
             }
         }
     }
-    fn fill_jacobians<T: RlstScalar<Real = T>>(
-        j: &mut impl RandomAccessMut<3, Item = T>,
+    fn fill_jacobians<
+        T: RlstScalar<Real = T>,
+        Array3: RandomAccessMut<3, Item = T>,
+        Array3Mut: RandomAccessMut<3, Item = T>,
+    >(
+        j: &mut Array<Array3, 3>,
         jdet: &mut [T],
-        jinv: &mut impl RandomAccessMut<3, Item = T>,
+        jinv: &mut Array<Array3Mut, 3>,
     ) {
         *j.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
         *j.get_mut([0, 0, 1]).unwrap() = T::from(1.0).unwrap();

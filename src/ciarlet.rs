@@ -8,8 +8,9 @@ use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformat
 use itertools::izip;
 use num::{One, Zero};
 use rlst::{
-    rlst_dynamic_array, DynArray, Array, MatrixInverse,
-    RandomAccessByRef, RandomAccessMut, RawAccess, RlstScalar, Shape,
+    dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri},
+    rlst_dynamic_array, Array, DynArray, Inverse, RandomAccessByRef, RandomAccessMut, RlstScalar,
+    Shape, UnsafeRandomAccessByRef, UnsafeRandomAccessMut,
 };
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -21,8 +22,8 @@ pub use lagrange::LagrangeElementFamily;
 pub use nedelec::NedelecFirstKindElementFamily;
 pub use raviart_thomas::RaviartThomasElementFamily;
 
-type EntityPoints<T> = [Vec<Array<T, 2>>; 4];
-type EntityWeights<T> = [Vec<Array<T, 3>>; 4];
+type EntityPoints<T> = [Vec<DynArray<T, 2>>; 4];
+type EntityWeights<T> = [Vec<DynArray<T, 3>>; 4];
 
 /// Compute the number of derivatives for a cell
 fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usize {
@@ -39,7 +40,7 @@ fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usi
 }
 
 /// A Ciarlet element
-pub struct CiarletElement<T: RlstScalar + MatrixInverse, M: Map> {
+pub struct CiarletElement<T: RlstScalar, M: Map> {
     family_name: String,
     cell_type: ReferenceCellType,
     degree: usize,
@@ -48,7 +49,7 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse, M: Map> {
     value_size: usize,
     continuity: Continuity,
     dim: usize,
-    coefficients: Array<T, 3>,
+    coefficients: DynArray<T, 3>,
     entity_dofs: [Vec<Vec<usize>>; 4],
     entity_closure_dofs: [Vec<Vec<usize>>; 4],
     interpolation_points: EntityPoints<T::Real>,
@@ -57,7 +58,7 @@ pub struct CiarletElement<T: RlstScalar + MatrixInverse, M: Map> {
     dof_transformations: HashMap<(ReferenceCellType, Transformation), DofTransformation<T>>,
 }
 
-impl<T: RlstScalar + MatrixInverse, M: Map> Debug for CiarletElement<T, M> {
+impl<T: RlstScalar, M: Map> Debug for CiarletElement<T, M> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_tuple("CiarletElement")
             .field(&self.family_name)
@@ -67,7 +68,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> Debug for CiarletElement<T, M> {
     }
 }
 
-impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
+impl<T: RlstScalar + Getrf + Getri, M: Map> CiarletElement<T, M> {
     /// Create a Ciarlet element
     #[allow(clippy::too_many_arguments)]
     pub fn create(
@@ -75,7 +76,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
         cell_type: ReferenceCellType,
         degree: usize,
         value_shape: Vec<usize>,
-        polynomial_coeffs: Array<T, 3>,
+        polynomial_coeffs: DynArray<T, 3>,
         interpolation_points: EntityPoints<T::Real>,
         interpolation_weights: EntityWeights<T>,
         continuity: Continuity,
@@ -122,7 +123,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                     all_pts
                         .r_mut()
                         .into_subview([0, col], [tdim, ncols])
-                        .fill_from(pts.r());
+                        .fill_from(pts);
                     col += ncols;
                 }
             }
@@ -148,7 +149,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                     all_mat
                         .r_mut()
                         .into_subview([dn, 0, pn], [dim0, value_size, dim2])
-                        .fill_from(mat.r());
+                        .fill_from(mat);
                     dn += dim0;
                     pn += dim2;
                 }
@@ -182,9 +183,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                                 // d_matrix[j, l, dof + i] = inner(mat[i, j, :], table[0, l, :])
                                 *d_matrix.get_mut([j, l, dof + i]).unwrap() = mat
                                     .r()
-                                    .slice(0, i)
+                                    .slice::<2>(0, i)
                                     .slice(0, j)
-                                    .inner(table.r().slice(0, 0).slice(0, l));
+                                    .inner(&table.r().slice::<2>(0, 0).slice(0, l))
+                                    .unwrap();
                             }
                         }
                     }
@@ -211,7 +213,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
             }
         }
 
-        inverse.r_mut().into_inverse_alloc().unwrap();
+        inverse.r_mut().inverse().unwrap();
 
         let mut coefficients = rlst_dynamic_array!(T, [dim, value_size, pdim]);
         for i in 0..dim {
@@ -220,8 +222,9 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                     // coefficients[i, j, k] = inner(inverse[i, :], polynomial_coeffs[:, j, k])
                     *coefficients.get_mut([i, j, k]).unwrap() = inverse
                         .r()
-                        .slice(0, i)
-                        .inner(polynomial_coeffs.r().slice(1, j).slice(1, k));
+                        .slice::<1>(0, i)
+                        .inner(&polynomial_coeffs.r().slice::<2>(1, j).slice(1, k))
+                        .unwrap();
                 }
             }
         }
@@ -407,7 +410,13 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
 
             let mut pts = DynArray::<T::Real, 2>::from_shape(ref_pts.shape());
             for p in 0..npts {
-                for (i, c) in finv(ref_pts.r().slice(1, p).data(), f).iter().enumerate() {
+                for (i, c) in finv(
+                    &ref_pts.data()[ref_pts.shape()[0] * p..ref_pts.shape()[0] * (p + 1)],
+                    f,
+                )
+                .iter()
+                .enumerate()
+                {
                     *pts.get_mut([i, p]).unwrap() = *c
                 }
             }
@@ -461,8 +470,12 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                 }
             }
 
-            let mut table =
-                DynArray::<T, 3>::from_shape(legendre_shape(cell_type, &pts, embedded_superdegree, 0));
+            let mut table = DynArray::<T, 3>::from_shape(legendre_shape(
+                cell_type,
+                &pts,
+                embedded_superdegree,
+                0,
+            ));
             tabulate_legendre_polynomials(cell_type, &pts, embedded_superdegree, 0, &mut table);
 
             let mut data = rlst_dynamic_array!(T, [1, npts, endofs, value_size]);
@@ -472,9 +485,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
                         // data[0, p, b, j] = inner(self.coefficients[b, j, :], table[0, :, p])
                         *data.get_mut([0, p, b, j]).unwrap() = coefficients
                             .r()
-                            .slice(0, *dof)
+                            .slice::<2>(0, *dof)
                             .slice(0, j)
-                            .inner(table.r().slice(0, 0).slice(1, p));
+                            .inner(&table.r().slice::<2>(0, 0).slice(1, p))
+                            .unwrap();
                     }
                 }
             }
@@ -572,7 +586,7 @@ impl<T: RlstScalar + MatrixInverse, M: Map> CiarletElement<T, M> {
         &self.interpolation_weights
     }
 }
-impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, M> {
+impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
     type CellType = ReferenceCellType;
     type TransformationType = Transformation;
     type T = T;
@@ -592,15 +606,21 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
     fn dim(&self) -> usize {
         self.dim
     }
-    fn tabulate<Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>>(
+    fn tabulate<
+        Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + RandomAccessMut<4, Item = T>,
+    >(
         &self,
-        points: &Array2,
+        points: &Array<Array2, 2>,
         nderivs: usize,
-        data: &mut impl RandomAccessMut<4, Item = T>,
+        data: &mut Array<Array4Mut, 4>,
     ) {
-        let mut table = DynArray::<T, 3>::from_shape(
-            legendre_shape(self.cell_type, points, self.embedded_superdegree, nderivs)
-        );
+        let mut table = DynArray::<T, 3>::from_shape(legendre_shape(
+            self.cell_type,
+            points,
+            self.embedded_superdegree,
+            nderivs,
+        ));
         tabulate_legendre_polynomials(
             self.cell_type,
             points,
@@ -617,9 +637,10 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
                         *data.get_mut([d, p, b, j]).unwrap() = self
                             .coefficients
                             .r()
-                            .slice(0, b)
+                            .slice::<2>(0, b)
                             .slice(0, j)
-                            .inner(table.r().slice(0, d).slice(1, p));
+                            .inner(&table.r().slice::<2>(0, d).slice(1, p))
+                            .unwrap();
                     }
                 }
             }
@@ -647,17 +668,17 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
         [deriv_count, point_count, basis_count, value_size]
     }
     fn push_forward<
-        Array3Real: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = Self::T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = Self::T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = Self::T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = Self::T> + Shape<4>,
     >(
         &self,
-        reference_values: &Array4,
+        reference_values: &Array<Array4, 4>,
         nderivs: usize,
-        jacobians: &Array3Real,
+        jacobians: &Array<Array3Real, 3>,
         jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array3Real,
-        physical_values: &mut Array4Mut,
+        inverse_jacobians: &Array<Array3Real, 3>,
+        physical_values: &mut Array<Array4Mut, 4>,
     ) {
         self.map.push_forward(
             reference_values,
@@ -669,17 +690,17 @@ impl<T: RlstScalar + MatrixInverse, M: Map> FiniteElement for CiarletElement<T, 
         )
     }
     fn pull_back<
-        Array3Real: RandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: RandomAccessByRef<4, Item = Self::T> + Shape<4>,
-        Array4Mut: RandomAccessMut<4, Item = Self::T> + Shape<4>,
+        Array3Real: UnsafeRandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
+        Array4: UnsafeRandomAccessByRef<4, Item = Self::T> + Shape<4>,
+        Array4Mut: UnsafeRandomAccessMut<4, Item = Self::T> + Shape<4>,
     >(
         &self,
-        physical_values: &Array4,
+        physical_values: &Array<Array4, 4>,
         nderivs: usize,
-        jacobians: &Array3Real,
+        jacobians: &Array<Array3Real, 3>,
         jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array3Real,
-        reference_values: &mut Array4Mut,
+        inverse_jacobians: &Array<Array3Real, 3>,
+        reference_values: &mut Array<Array4Mut, 4>,
     ) {
         self.map.pull_back(
             physical_values,
@@ -1859,7 +1880,7 @@ mod test {
 
     fn assert_dof_transformation_equal<Array2: RandomAccessByRef<2, Item = f64> + Shape<2>>(
         p: &[usize],
-        m: &Array2,
+        m: &Array<Array2, 2>,
         expected: Vec<Vec<f64>>,
     ) {
         let ndofs = p.len();

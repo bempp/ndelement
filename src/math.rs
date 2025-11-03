@@ -1,15 +1,15 @@
 //! Mathematical functions
 use rlst::{
-    RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
+    Array, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
     UnsafeRandomAccessMut,
 };
 
 /// Orthogonalise the rows of a matrix, starting with the row numbered `start`
 pub fn orthogonalise<
     T: RlstScalar,
-    Array2: RandomAccessByRef<2, Item = T> + RandomAccessMut<2, Item = T> + Shape<2>,
+    Array2Mut: RandomAccessByRef<2, Item = T> + RandomAccessMut<2, Item = T> + Shape<2>,
 >(
-    mat: &mut Array2,
+    mat: &mut Array<Array2Mut, 2>,
     start: usize,
 ) {
     for row in start..mat.shape()[0] {
@@ -35,9 +35,9 @@ pub fn orthogonalise<
 /// Orthogonalise the rows of a matrix, starting with the row numbered `start`
 pub fn orthogonalise_3<
     T: RlstScalar,
-    Array3: RandomAccessByRef<3, Item = T> + RandomAccessMut<3, Item = T> + Shape<3>,
+    Array3Mut: RandomAccessByRef<3, Item = T> + RandomAccessMut<3, Item = T> + Shape<3>,
 >(
-    mat: &mut Array3,
+    mat: &mut Array<Array3Mut, 3>,
     start: usize,
 ) {
     for row in start..mat.shape()[0] {
@@ -78,7 +78,7 @@ unsafe fn entry_swap<
     T: RlstScalar,
     ArrayMut: UnsafeRandomAccessMut<N, Item = T> + UnsafeRandomAccessByRef<N, Item = T> + Shape<N>,
 >(
-    mat: &mut ArrayMut,
+    mat: &mut Array<ArrayMut, N>,
     mindex0: [usize; N],
     mindex1: [usize; N],
 ) {
@@ -92,7 +92,7 @@ pub fn lu_transpose<
     T: RlstScalar,
     Array2Mut: UnsafeRandomAccessMut<2, Item = T> + UnsafeRandomAccessByRef<2, Item = T> + Shape<2>,
 >(
-    mat: &mut Array2Mut,
+    mat: &mut Array<Array2Mut, 2>,
 ) -> Vec<usize> {
     let dim = mat.shape()[0];
     assert_eq!(mat.shape()[1], dim);
@@ -157,7 +157,7 @@ pub fn prepare_matrix<
     T: RlstScalar,
     Array2Mut: UnsafeRandomAccessMut<2, Item = T> + UnsafeRandomAccessByRef<2, Item = T> + Shape<2>,
 >(
-    mat: &mut Array2Mut,
+    mat: &mut Array<Array2Mut, 2>,
 ) -> Vec<usize> {
     let mut perm = lu_transpose(mat);
     prepare_permutation(&mut perm);
@@ -166,7 +166,7 @@ pub fn prepare_matrix<
 
 /// Apply a permutation and a matrix to some data
 pub fn apply_perm_and_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
-    mat: &Array2,
+    mat: &Array<Array2, 2>,
     perm: &[usize],
     data: &mut [T],
 ) {
@@ -176,7 +176,7 @@ pub fn apply_perm_and_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = 
 
 /// Apply a matrix to some data
 pub fn apply_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
-    mat: &Array2,
+    mat: &Array<Array2, 2>,
     data: &mut [T],
 ) {
     let dim = mat.shape()[0];

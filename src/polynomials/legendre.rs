@@ -4,8 +4,7 @@
 //! <https://github.com/FEniCS/basix/blob/main/cpp/basix/polyset.cpp>
 use super::{derivative_count, polynomial_count};
 use crate::types::ReferenceCellType;
-use rlst::RlstScalar;
-use rlst::{RandomAccessByRef, RandomAccessMut, Shape};
+use rlst::{Array, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape};
 
 fn tri_index(i: usize, j: usize) -> usize {
     (i + j + 1) * (i + j) / 2 + j
@@ -41,10 +40,10 @@ fn tabulate_interval<
     Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
     Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
 >(
-    points: &Array2,
+    points: &Array<Array2, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array3Mut,
+    data: &mut Array<Array3Mut, 3>,
 ) {
     debug_assert!(data.shape()[0] == derivatives + 1);
     debug_assert!(data.shape()[1] == degree + 1);
@@ -102,10 +101,10 @@ fn tabulate_quadrilateral<
     Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
     Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
 >(
-    points: &Array2,
+    points: &Array<Array2, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array3Mut,
+    data: &mut Array<Array3Mut, 3>,
 ) {
     debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) / 2);
     debug_assert!(data.shape()[1] == (degree + 1) * (degree + 1));
@@ -255,10 +254,10 @@ fn tabulate_triangle<
     Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
     Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
 >(
-    points: &Array2,
+    points: &Array<Array2, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array3Mut,
+    data: &mut Array<Array3Mut, 3>,
 ) {
     debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) / 2);
     debug_assert!(data.shape()[1] == (degree + 1) * (degree + 2) / 2);
@@ -456,10 +455,10 @@ fn tabulate_tetrahedron<
     Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
     Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
 >(
-    points: &Array2,
+    points: &Array<Array2, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array3Mut,
+    data: &mut Array<Array3Mut, 3>,
 ) {
     debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) * (derivatives + 3) / 6);
     debug_assert!(data.shape()[1] == (degree + 1) * (degree + 2) * (degree + 3) / 6);
@@ -815,10 +814,10 @@ fn tabulate_hexahedron<
     Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
     Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
 >(
-    points: &Array2,
+    points: &Array<Array2, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array3Mut,
+    data: &mut Array<Array3Mut, 3>,
 ) {
     debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) * (derivatives + 3) / 6);
     debug_assert!(data.shape()[1] == (degree + 1) * (degree + 1) * (degree + 1));
@@ -1032,7 +1031,7 @@ fn tabulate_hexahedron<
 /// The shape of a table containing the values of Legendre polynomials
 pub fn shape<T, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
     cell_type: ReferenceCellType,
-    points: &Array2,
+    points: &Array<Array2, 2>,
     degree: usize,
     derivatives: usize,
 ) -> [usize; 3] {
@@ -1050,10 +1049,10 @@ pub fn tabulate<
     Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
 >(
     cell_type: ReferenceCellType,
-    points: &Array2,
+    points: &Array<Array2, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array3Mut,
+    data: &mut Array<Array3Mut, 3>,
 ) {
     match cell_type {
         ReferenceCellType::Interval => tabulate_interval(points, degree, derivatives, data),

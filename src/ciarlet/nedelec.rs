@@ -9,13 +9,11 @@ use crate::reference_cell;
 use crate::traits::ElementFamily;
 use crate::types::{Continuity, ReferenceCellType};
 use itertools::izip;
-use rlst::{
-    SliceArray, DynArray, rlst_dynamic_array, MatrixInverse,
-    RandomAccessMut, RlstScalar, Shape,
-};
+use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
+use rlst::{rlst_dynamic_array, DynArray, RlstScalar, SliceArray};
 use std::marker::PhantomData;
 
-fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + MatrixInverse>(
+fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getrf + Getri>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
@@ -37,7 +35,7 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         .collect::<Vec<_>>();
     let pts = SliceArray::<TReal, 2>::from_shape(&pts_t, [tdim, cell_q.npoints]);
 
-    let mut phi = DynArray::<T, 4>::from_shape(legendre_shape(cell_type, &pts, degree, 0));
+    let mut phi = DynArray::<T, 3>::from_shape(legendre_shape(cell_type, &pts, degree, 0));
     tabulate_legendre_polynomials(cell_type, &pts, degree, 0, &mut phi);
 
     let pdim = phi.shape()[1];
@@ -68,14 +66,7 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         polynomial_count(cell_type, degree - 3)
     };
 
-    let mut wcoeffs = rlst_dynamic_array!(
-        T,
-        [
-            pdim_minus1 * tdim + pdim_facet_minus1 * (tdim - 1) + pdim_edge_minus1 * (tdim - 2),
-            tdim,
-            pdim
-        ]
-    );
+    let mut wcoeffs = rlst_dynamic_array!(T, [pdim_minus1 * tdim + pdim_facet_minus1 * (tdim - 1) + pdim_edge_minus1 * (tdim - 2), tdim, pdim]);
 
     // vector polynomials of degree <= n-1
     for i in 0..tdim {
@@ -202,9 +193,12 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         .collect::<Vec<_>>();
     let edge_pts = SliceArray::<TReal, 2>::from_shape(&edge_pts_t, [1, edge_q.npoints]);
 
-    let mut edge_phi = DynArray::<T, 3>::from_shape(
-        legendre_shape(ReferenceCellType::Interval, &edge_pts, degree - 1, 0)
-    );
+    let mut edge_phi = DynArray::<T, 3>::from_shape(legendre_shape(
+        ReferenceCellType::Interval,
+        &edge_pts,
+        degree - 1,
+        0,
+    ));
     tabulate_legendre_polynomials(
         ReferenceCellType::Interval,
         &edge_pts,
@@ -249,9 +243,12 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
             .collect::<Vec<_>>();
         let face_pts = SliceArray::<TReal, 2>::from_shape(&face_pts_t, [2, face_q.npoints]);
 
-        let mut face_phi = DynArray::<T, 3>::from_shape(
-            legendre_shape(ReferenceCellType::Triangle, &face_pts, degree - 2, 0)
-        );
+        let mut face_phi = DynArray::<T, 3>::from_shape(legendre_shape(
+            ReferenceCellType::Triangle,
+            &face_pts,
+            degree - 2,
+            0,
+        ));
         tabulate_legendre_polynomials(
             ReferenceCellType::Triangle,
             &face_pts,
@@ -330,7 +327,7 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     )
 }
 
-fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + MatrixInverse>(
+fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getrf + Getri>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
@@ -449,9 +446,12 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
         .collect::<Vec<_>>();
     let edge_pts = SliceArray::<TReal, 2>::from_shape(&edge_pts_t, [1, edge_q.npoints]);
 
-    let mut edge_phi = DynArray::<T, 3>::from_shape(
-        legendre_shape(ReferenceCellType::Interval, &edge_pts, degree - 1, 0)
-    );
+    let mut edge_phi = DynArray::<T, 3>::from_shape(legendre_shape(
+        ReferenceCellType::Interval,
+        &edge_pts,
+        degree - 1,
+        0,
+    ));
     tabulate_legendre_polynomials(
         ReferenceCellType::Interval,
         &edge_pts,
@@ -496,9 +496,12 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
             .collect::<Vec<_>>();
         let face_pts = SliceArray::<TReal, 2>::from_shape(&face_pts_t, [2, face_q.npoints]);
 
-        let mut face_phi = DynArray::<T, 3>::from_shape(
-            legendre_shape(ReferenceCellType::Quadrilateral, &face_pts, degree - 1, 0)
-        );
+        let mut face_phi = DynArray::<T, 3>::from_shape(legendre_shape(
+            ReferenceCellType::Quadrilateral,
+            &face_pts,
+            degree - 1,
+            0,
+        ));
         tabulate_legendre_polynomials(
             ReferenceCellType::Quadrilateral,
             &face_pts,
@@ -509,14 +512,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
 
         for face in reference_cell::faces(cell_type) {
             let mut pts = rlst_dynamic_array!(T::Real, [tdim, face_q.npoints]);
-            let mut mat = rlst_dynamic_array!(
-                T,
-                [
-                    2 * pdim_edge_minus2 * pdim_edge_minus1,
-                    tdim,
-                    face_q.npoints
-                ]
-            );
+            let mut mat = rlst_dynamic_array!(T, [2 * pdim_edge_minus2 * pdim_edge_minus1, tdim, face_q.npoints]);
 
             for (w_i, wt) in face_q.weights.iter().enumerate() {
                 for i in 0..tdim {
@@ -557,11 +553,15 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
                 .iter()
                 .map(|i| TReal::from(*i).unwrap())
                 .collect::<Vec<_>>();
-            let interior_pts = SliceArray::<TReal, 2>::from_shape(&interior_pts_t, [3, interior_q.npoints]);
+            let interior_pts =
+                SliceArray::<TReal, 2>::from_shape(&interior_pts_t, [3, interior_q.npoints]);
 
-            let mut interior_phi = DynArray::<T, 3>::from_shape(
-                legendre_shape(ReferenceCellType::Hexahedron, &interior_pts, degree - 1, 0)
-            );
+            let mut interior_phi = DynArray::<T, 3>::from_shape(legendre_shape(
+                ReferenceCellType::Hexahedron,
+                &interior_pts,
+                degree - 1,
+                0,
+            ));
             tabulate_legendre_polynomials(
                 ReferenceCellType::Hexahedron,
                 &interior_pts,
@@ -633,7 +633,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
 }
 
 /// Create a Nedelec (first kind) element
-pub fn create<T: RlstScalar + MatrixInverse>(
+pub fn create<T: RlstScalar + Getrf + Getri>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
@@ -650,13 +650,13 @@ pub fn create<T: RlstScalar + MatrixInverse>(
 }
 
 /// Nedelec (first kind) element family
-pub struct NedelecFirstKindElementFamily<T: RlstScalar + MatrixInverse> {
+pub struct NedelecFirstKindElementFamily<T: RlstScalar + Getrf + Getri> {
     degree: usize,
     continuity: Continuity,
     _t: PhantomData<T>,
 }
 
-impl<T: RlstScalar + MatrixInverse> NedelecFirstKindElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri> NedelecFirstKindElementFamily<T> {
     /// Create new family
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
@@ -667,7 +667,7 @@ impl<T: RlstScalar + MatrixInverse> NedelecFirstKindElementFamily<T> {
     }
 }
 
-impl<T: RlstScalar + MatrixInverse> ElementFamily for NedelecFirstKindElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri> ElementFamily for NedelecFirstKindElementFamily<T> {
     type T = T;
     type CellType = ReferenceCellType;
     type FiniteElement = CiarletElement<T, CovariantPiolaMap>;

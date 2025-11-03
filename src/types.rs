@@ -1,7 +1,7 @@
 //! Types
 #[cfg(feature = "mpi")]
 use mpi::traits::Equivalence;
-use rlst::{Array, RlstScalar};
+use rlst::{DynArray, RlstScalar};
 use strum_macros::EnumIter;
 
 /// Continuity type
@@ -92,7 +92,7 @@ pub enum DofTransformation<T: RlstScalar> {
     /// A permutation
     Permutation(Vec<usize>),
     /// A linear transformation
-    Transformation(Array<T, 2>, Vec<usize>),
+    Transformation(DynArray<T, 2>, Vec<usize>),
 }
 
 /// A transformation of a sub-entity

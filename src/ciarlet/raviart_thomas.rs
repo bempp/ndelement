@@ -9,13 +9,11 @@ use crate::reference_cell;
 use crate::traits::ElementFamily;
 use crate::types::{Continuity, ReferenceCellType};
 use itertools::izip;
-use rlst::{
-    SliceArray, DynArray, rlst_dynamic_array, MatrixInverse,
-    RandomAccessMut, RlstScalar, Shape,
-};
+use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
+use rlst::{rlst_dynamic_array, DynArray, RlstScalar, SliceArray};
 use std::marker::PhantomData;
 
-fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + MatrixInverse>(
+fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getrf + Getri>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
@@ -192,7 +190,7 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     )
 }
 
-fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + MatrixInverse>(
+fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getrf + Getri>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
@@ -237,14 +235,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
 
     let entity_counts = reference_cell::entity_counts(cell_type);
 
-    let mut wcoeffs = rlst_dynamic_array!(
-        T,
-        [
-            entity_counts[tdim - 1] * pdim_facet_minus1 + entity_counts[tdim] * pdim_internal,
-            tdim,
-            pdim,
-        ]
-    );
+    let mut wcoeffs = rlst_dynamic_array!(T, [entity_counts[tdim - 1] * pdim_facet_minus1 + entity_counts[tdim] * pdim_internal, tdim, pdim]);
 
     // vector polynomials of degree <= n-1
     if tdim == 2 {
@@ -363,9 +354,12 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
             .collect::<Vec<_>>();
         let face_pts = SliceArray::<TReal, 2>::from_shape(&face_pts_t, [2, face_q.npoints]);
 
-        let mut face_phi = DynArray::<T, 3>::from_shape(
-            legendre_shape(ReferenceCellType::Quadrilateral, &face_pts, degree - 1, 0)
-        );
+        let mut face_phi = DynArray::<T, 3>::from_shape(legendre_shape(
+            ReferenceCellType::Quadrilateral,
+            &face_pts,
+            degree - 1,
+            0,
+        ));
         tabulate_legendre_polynomials(
             ReferenceCellType::Quadrilateral,
             &face_pts,
@@ -375,14 +369,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
         );
 
         let mut pts = rlst_dynamic_array!(T::Real, [tdim, face_q.npoints]);
-        let mut mat = rlst_dynamic_array!(
-            T,
-            [
-                2 * pdim_edge_minus2 * pdim_edge_minus1,
-                tdim,
-                face_q.npoints
-            ]
-        );
+        let mut mat = rlst_dynamic_array!(T, [2 * pdim_edge_minus2 * pdim_edge_minus1, tdim, face_q.npoints]);
 
         for (w_i, wt) in face_q.weights.iter().enumerate() {
             for i in 0..tdim {
@@ -407,11 +394,15 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
             .iter()
             .map(|i| TReal::from(*i).unwrap())
             .collect::<Vec<_>>();
-        let interior_pts = SliceArray::<TReal, 2>::from_shape(&interior_pts_t, [3, interior_q.npoints]);
+        let interior_pts =
+            SliceArray::<TReal, 2>::from_shape(&interior_pts_t, [3, interior_q.npoints]);
 
-        let mut interior_phi = DynArray::<T, 3>::from_shape(
-            legendre_shape(ReferenceCellType::Hexahedron, &interior_pts, degree - 1, 0)
-        );
+        let mut interior_phi = DynArray::<T, 3>::from_shape(legendre_shape(
+            ReferenceCellType::Hexahedron,
+            &interior_pts,
+            degree - 1,
+            0,
+        ));
         tabulate_legendre_polynomials(
             ReferenceCellType::Hexahedron,
             &interior_pts,
@@ -421,14 +412,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
         );
 
         let mut pts = rlst_dynamic_array!(T::Real, [tdim, interior_q.npoints]);
-        let mut mat = rlst_dynamic_array!(
-            T,
-            [
-                3 * pdim_edge_minus1.pow(2) * pdim_edge_minus2,
-                tdim,
-                interior_q.npoints
-            ]
-        );
+        let mut mat = rlst_dynamic_array!(T, [3 * pdim_edge_minus1.pow(2) * pdim_edge_minus2, tdim, interior_q.npoints]);
 
         for (w_i, wt) in interior_q.weights.iter().enumerate() {
             for i in 0..tdim {
@@ -479,7 +463,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Matr
 }
 
 /// Create a Raviart-Thomas element
-pub fn create<T: RlstScalar + MatrixInverse>(
+pub fn create<T: RlstScalar + Getrf + Getri>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
@@ -496,13 +480,13 @@ pub fn create<T: RlstScalar + MatrixInverse>(
 }
 
 /// Raviart-Thomas element family
-pub struct RaviartThomasElementFamily<T: RlstScalar + MatrixInverse> {
+pub struct RaviartThomasElementFamily<T: RlstScalar + Getrf + Getri> {
     degree: usize,
     continuity: Continuity,
     _t: PhantomData<T>,
 }
 
-impl<T: RlstScalar + MatrixInverse> RaviartThomasElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri> RaviartThomasElementFamily<T> {
     /// Create new family
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
@@ -513,7 +497,7 @@ impl<T: RlstScalar + MatrixInverse> RaviartThomasElementFamily<T> {
     }
 }
 
-impl<T: RlstScalar + MatrixInverse> ElementFamily for RaviartThomasElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri> ElementFamily for RaviartThomasElementFamily<T> {
     type T = T;
     type CellType = ReferenceCellType;
     type FiniteElement = CiarletElement<T, ContravariantPiolaMap>;
