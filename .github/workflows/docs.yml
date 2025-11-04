@@ -37,10 +37,13 @@ jobs:
 
       - name: Install uv
         run: pip install uv
-      - name: Build Python docs
+      - name: Make virtual environment
         run: |
           uv venv .venv
           uv pip install pip
+      - name: Build Python docs
+        run: |
+          source .venv/bin/activate
           cd python/docs
           uv pip install -r requirements.txt
           make html

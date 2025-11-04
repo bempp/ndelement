@@ -27,6 +27,7 @@ packages = ["ndelement"]
 [project.urls]
 homepage = "https://github.com/bempp/ndelement"
 repository = "https://github.com/bempp/ndelement"
+documentation = "https://bempp.github.io/ndelement/python"
 
 [tool.maturin]
 python-source = "python"
