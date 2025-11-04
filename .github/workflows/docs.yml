@@ -28,6 +28,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Rust docs
         run: cargo +nightly doc --no-deps -Zunstable-options -Zrustdoc-scrape-examples --all-features
+      - name: Make index page
+        run: echo "<html><head><meta http-equiv='refresh' content='0; URL=ndelement'></head></html>" > target/doc/index.html
       - name: Set file permissions
         run: |
           rm target/doc/.lock
