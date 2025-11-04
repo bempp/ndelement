@@ -11,6 +11,12 @@ jobs:
     name: Build docs
     runs-on: ubuntu-latest
     steps:
+      - name: Install LAPACK, OpenBLAS
+        run: sudo apt-get install -y libopenblas-dev liblapack-dev
+      - name: Set up Python
+         uses: actions/setup-python@v4
+         with:
+           python-version: "3.14"
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -20,14 +26,31 @@ jobs:
         with:
           mpi: "mpich"
       - uses: actions/checkout@v4
-
-      - name: Build docs
+      - name: Build Rust docs
         run: cargo +nightly doc --no-deps -Zunstable-options -Zrustdoc-scrape-examples --all-features
-
       - name: Set file permissions
         run: |
           rm target/doc/.lock
           chmod -c -R +rX target/doc
+
+      - name: Install uv
+        run: pip install uv "maturin>=1.7"
+      - name: Make virtual environment
+        run: |
+          uv venv .venv
+          uv pip install pip pytest
+      - name: Build python docs
+        run: |
+          cd python/docs
+          make html
+
+      - name: Move docs
+        run: |
+          mkdir doc
+          mv target/doc doc/rust
+          mkdir python/docs/html/_build doc/python
+      - name: Make index page
+        run: echo "<html><head><title>ndelement docs</title></head><body><center><a href='rust'>Rust docs</a><br /><a href='python'>Python docs</a></center></body></html>" > doc/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
@@ -35,7 +58,7 @@ jobs:
       - name: Upload artifact for docs
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'target/doc'
+          path: 'doc'
         if: github.ref == 'refs/heads/main'
 
   deploy-docs:
