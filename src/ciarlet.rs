@@ -730,29 +730,28 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
         let block_size = data.len() / self.dim;
         let tdim = reference_cell::dim(self.cell_type);
         let mut n = 0;
-        if tdim > 1 {
-            if let Some(perm) = match self
+        if tdim > 1
+            && let Some(perm) = match self
                 .dof_transformations
                 .get(&(ReferenceCellType::Interval, Transformation::Reflection))
             {
                 Some(DofTransformation::Permutation(p)) => Some(p),
                 Some(DofTransformation::Transformation(_, p)) => Some(p),
                 _ => None,
-            } {
-                for dofs in &self.entity_dofs[1] {
-                    #[cfg(debug_assertions)]
-                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
-                        assert_eq!(i + 1, *j);
-                    }
-                    if (cell_orientation >> n) & 1 == 1 {
-                        math::apply_permutation(
-                            perm,
-                            &mut data
-                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
-                    }
-                    n += 1
+            }
+        {
+            for dofs in &self.entity_dofs[1] {
+                #[cfg(debug_assertions)]
+                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                    assert_eq!(i + 1, *j);
                 }
+                if (cell_orientation >> n) & 1 == 1 {
+                    math::apply_permutation(
+                        perm,
+                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                    )
+                }
+                n += 1
             }
         }
         if tdim > 2 {
@@ -788,14 +787,12 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
                     Some(DofTransformation::Permutation(p)) => Some(p),
                     Some(DofTransformation::Transformation(_, p)) => Some(p),
                     _ => None,
-                } {
-                    if (cell_orientation >> n) & 1 == 1 {
-                        math::apply_permutation(
-                            perm,
-                            &mut data
-                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
-                    }
+                } && (cell_orientation >> n) & 1 == 1
+                {
+                    math::apply_permutation(
+                        perm,
+                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                    )
                 }
                 n += 1;
             }
@@ -807,28 +804,27 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
         let block_size = data.len() / self.dim;
         let tdim = reference_cell::dim(self.cell_type);
         let mut n = 0;
-        if tdim > 1 {
-            if let Some(mat) = match self
+        if tdim > 1
+            && let Some(mat) = match self
                 .dof_transformations
                 .get(&(ReferenceCellType::Interval, Transformation::Reflection))
             {
                 Some(DofTransformation::Transformation(m, _)) => Some(m),
                 _ => None,
-            } {
-                for dofs in &self.entity_dofs[1] {
-                    #[cfg(debug_assertions)]
-                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
-                        assert_eq!(i + 1, *j);
-                    }
-                    if (cell_orientation >> n) & 1 == 1 {
-                        math::apply_matrix(
-                            mat,
-                            &mut data
-                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
-                    }
-                    n += 1
+            }
+        {
+            for dofs in &self.entity_dofs[1] {
+                #[cfg(debug_assertions)]
+                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                    assert_eq!(i + 1, *j);
                 }
+                if (cell_orientation >> n) & 1 == 1 {
+                    math::apply_matrix(
+                        mat,
+                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                    )
+                }
+                n += 1
             }
         }
         if tdim > 2 {
@@ -862,14 +858,12 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
                 {
                     Some(DofTransformation::Transformation(m, _)) => Some(m),
                     _ => None,
-                } {
-                    if (cell_orientation >> n) & 1 == 1 {
-                        math::apply_matrix(
-                            mat,
-                            &mut data
-                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
-                    }
+                } && (cell_orientation >> n) & 1 == 1
+                {
+                    math::apply_matrix(
+                        mat,
+                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                    )
                 }
                 n += 1;
             }
