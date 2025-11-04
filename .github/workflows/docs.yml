@@ -50,7 +50,7 @@ jobs:
           mv target/doc doc/rust
           mkdir python/docs/html/_build doc/python
       - name: Make index page
-        run: echo "<html><head><title>ndelement docs</title></head><body><center><a href='rust'>Rust docs</a><br /><a href='python'>Python docs</a></center></body></html>" > doc/index.html
+        run: echo "<html><head><title>ndelement docs</title></head><body><center><a href='rust/ndelement'>Rust docs</a><br /><a href='python'>Python docs</a></center></body></html>" > doc/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
