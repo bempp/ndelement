@@ -82,9 +82,11 @@ unsafe fn entry_swap<
     mindex0: [usize; N],
     mindex1: [usize; N],
 ) {
-    let value = *mat.get_unchecked(mindex0);
-    *mat.get_unchecked_mut(mindex0) = *mat.get_unchecked(mindex1);
-    *mat.get_unchecked_mut(mindex1) = value;
+    unsafe {
+        let value = *mat.get_unchecked(mindex0);
+        *mat.get_unchecked_mut(mindex0) = *mat.get_unchecked(mindex1);
+        *mat.get_unchecked_mut(mindex1) = value;
+    }
 }
 
 /// Compute the LU decomposition of the transpose of a square matrix

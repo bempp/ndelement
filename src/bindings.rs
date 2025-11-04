@@ -7,11 +7,11 @@ pub mod reference_cell {
     use rlst::RlstScalar;
     use std::slice::from_raw_parts;
 
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn dim(cell: ReferenceCellType) -> usize {
         reference_cell::dim(cell)
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn is_simplex(cell: ReferenceCellType) -> bool {
         reference_cell::is_simplex(cell)
     }
@@ -19,79 +19,101 @@ pub mod reference_cell {
         let mut i = 0;
         for v in reference_cell::vertices::<T>(cell) {
             for c in v {
-                *vs.add(i) = c;
+                unsafe {
+                    *vs.add(i) = c;
+                }
                 i += 1;
             }
         }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn vertices_f32(cell: ReferenceCellType, vs: *mut f32) {
-        vertices(cell, vs);
+        unsafe {
+            vertices(cell, vs);
+        }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn vertices_f64(cell: ReferenceCellType, vs: *mut f64) {
-        vertices(cell, vs);
+        unsafe {
+            vertices(cell, vs);
+        }
     }
     unsafe fn midpoint<T: RlstScalar<Real = T>>(cell: ReferenceCellType, pt: *mut T) {
         for (i, c) in reference_cell::midpoint(cell).iter().enumerate() {
-            *pt.add(i) = *c;
+            unsafe {
+                *pt.add(i) = *c;
+            }
         }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn midpoint_f32(cell: ReferenceCellType, pt: *mut f32) {
-        midpoint(cell, pt);
+        unsafe {
+            midpoint(cell, pt);
+        }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn midpoint_f64(cell: ReferenceCellType, pt: *mut f64) {
-        midpoint(cell, pt);
+        unsafe {
+            midpoint(cell, pt);
+        }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn edges(cell: ReferenceCellType, es: *mut usize) {
         let mut i = 0;
         for e in reference_cell::edges(cell) {
             for v in e {
-                *es.add(i) = v;
+                unsafe {
+                    *es.add(i) = v;
+                }
                 i += 1
             }
         }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn faces(cell: ReferenceCellType, es: *mut usize) {
         let mut i = 0;
         for e in reference_cell::faces(cell) {
             for v in e {
-                *es.add(i) = v;
+                unsafe {
+                    *es.add(i) = v;
+                }
                 i += 1
             }
         }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn volumes(cell: ReferenceCellType, es: *mut usize) {
         let mut i = 0;
         for e in reference_cell::volumes(cell) {
             for v in e {
-                *es.add(i) = v;
+                unsafe {
+                    *es.add(i) = v;
+                }
                 i += 1
             }
         }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn entity_types(cell: ReferenceCellType, et: *mut u8) {
         let mut i = 0;
         for es in reference_cell::entity_types(cell) {
             for e in es {
-                *et.add(i) = e as u8;
+                unsafe {
+                    *et.add(i) = e as u8;
+                }
                 i += 1
             }
         }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn entity_counts(cell: ReferenceCellType, ec: *mut usize) {
         for (i, e) in reference_cell::entity_counts(cell).iter().enumerate() {
-            *ec.add(i) = *e;
+            unsafe {
+                *ec.add(i) = *e;
+            }
         }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn connectivity_size(
         cell: ReferenceCellType,
         dim0: usize,
@@ -100,7 +122,7 @@ pub mod reference_cell {
     ) -> usize {
         reference_cell::connectivity(cell)[dim0][index0][dim1].len()
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn connectivity(
         cell: ReferenceCellType,
         dim0: usize,
@@ -112,15 +134,17 @@ pub mod reference_cell {
             .iter()
             .enumerate()
         {
-            *c.add(i) = *j;
+            unsafe {
+                *c.add(i) = *j;
+            }
         }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn compute_orientation(
         cell: ReferenceCellType,
         vertices: *const usize,
     ) -> i32 {
-        let vertices = from_raw_parts(vertices, reference_cell::entity_counts(cell)[0]);
+        let vertices = unsafe { from_raw_parts(vertices, reference_cell::entity_counts(cell)[0]) };
         orientation::compute_orientation(cell, vertices)
     }
 }
@@ -128,14 +152,14 @@ pub mod reference_cell {
 pub mod quadrature {
     use crate::{quadrature, types::ReferenceCellType};
 
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn gauss_jacobi_quadrature_npoints(
         cell: ReferenceCellType,
         m: usize,
     ) -> usize {
         quadrature::gauss_jacobi_npoints(cell, m)
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn make_gauss_jacobi_quadrature(
         cell: ReferenceCellType,
         m: usize,
@@ -144,10 +168,14 @@ pub mod quadrature {
     ) {
         let rule = quadrature::gauss_jacobi_rule(cell, m).unwrap();
         for (i, p) in rule.points.iter().enumerate() {
-            *pts.add(i) = *p;
+            unsafe {
+                *pts.add(i) = *p;
+            }
         }
         for (i, w) in rule.weights.iter().enumerate() {
-            *wts.add(i) = *w;
+            unsafe {
+                *wts.add(i) = *w;
+            }
         }
     }
 }
@@ -157,7 +185,7 @@ pub mod polynomials {
     use rlst::{RlstScalar, SliceArray, SliceArrayMut};
     use std::slice::{from_raw_parts, from_raw_parts_mut};
 
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn legendre_polynomials_shape(
         cell: ReferenceCellType,
         npts: usize,
@@ -165,9 +193,11 @@ pub mod polynomials {
         derivatives: usize,
         shape: *mut usize,
     ) {
-        *shape.add(0) = polynomials::derivative_count(cell, derivatives);
-        *shape.add(1) = polynomials::polynomial_count(cell, degree);
-        *shape.add(2) = npts;
+        unsafe {
+            *shape.add(0) = polynomials::derivative_count(cell, derivatives);
+            *shape.add(1) = polynomials::polynomial_count(cell, degree);
+            *shape.add(2) = npts;
+        }
     }
     unsafe fn tabulate_legendre_polynomials<T: RlstScalar>(
         cell: ReferenceCellType,
@@ -178,17 +208,19 @@ pub mod polynomials {
         data: *mut T,
     ) {
         let tdim = reference_cell::dim(cell);
-        let points =
-            SliceArray::<T::Real, 2>::from_shape(from_raw_parts(points, npts * tdim), [tdim, npts]);
+        let points = SliceArray::<T::Real, 2>::from_shape(
+            unsafe { from_raw_parts(points, npts * tdim) },
+            [tdim, npts],
+        );
         let npoly = polynomials::polynomial_count(cell, degree);
         let nderiv = polynomials::derivative_count(cell, derivatives);
         let mut data = SliceArrayMut::<T, 3>::from_shape(
-            from_raw_parts_mut(data, npts * npoly * nderiv),
+            unsafe { from_raw_parts_mut(data, npts * npoly * nderiv) },
             [nderiv, npoly, npts],
         );
         polynomials::tabulate_legendre_polynomials(cell, &points, degree, derivatives, &mut data);
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn tabulate_legendre_polynomials_f32(
         cell: ReferenceCellType,
         points: *const f32,
@@ -197,9 +229,11 @@ pub mod polynomials {
         derivatives: usize,
         data: *mut f32,
     ) {
-        tabulate_legendre_polynomials(cell, points, npts, degree, derivatives, data);
+        unsafe {
+            tabulate_legendre_polynomials(cell, points, npts, degree, derivatives, data);
+        }
     }
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe extern "C" fn tabulate_legendre_polynomials_f64(
         cell: ReferenceCellType,
         points: *const f64,
@@ -208,7 +242,9 @@ pub mod polynomials {
         derivatives: usize,
         data: *mut f64,
     ) {
-        tabulate_legendre_polynomials(cell, points, npts, degree, derivatives, data);
+        unsafe {
+            tabulate_legendre_polynomials(cell, points, npts, degree, derivatives, data);
+        }
     }
 }
 
@@ -221,9 +257,9 @@ pub mod ciarlet {
         traits::{ElementFamily, FiniteElement, Map},
         types::{Continuity, ReferenceCellType},
     };
-    use c_api_tools::{cfuncs, concretise_types, DType, DTypeIdentifier};
+    use c_api_tools::{DType, DTypeIdentifier, cfuncs, concretise_types};
     use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
-    use rlst::{c32, c64, RlstScalar, SliceArray, SliceArrayMut};
+    use rlst::{RlstScalar, SliceArray, SliceArrayMut, c32, c64};
     use std::ffi::c_void;
     use std::slice::{from_raw_parts, from_raw_parts_mut};
 
@@ -250,7 +286,7 @@ pub mod ciarlet {
         element.value_size()
     }
 
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub extern "C" fn create_lagrange_family(
         degree: usize,
         continuity: Continuity,
@@ -278,7 +314,7 @@ pub mod ciarlet {
         family
     }
 
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub extern "C" fn create_raviart_thomas_family(
         degree: usize,
         continuity: Continuity,
@@ -306,7 +342,7 @@ pub mod ciarlet {
         family
     }
 
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub extern "C" fn create_nedelec_family(
         degree: usize,
         continuity: Continuity,
@@ -857,7 +893,9 @@ pub mod ciarlet {
         data_size: usize,
         orientation: i32,
     ) {
-        element.apply_dof_permutations(from_raw_parts_mut(data, data_size), orientation);
+        unsafe {
+            element.apply_dof_permutations(from_raw_parts_mut(data, data_size), orientation);
+        }
     }
 
     #[concretise_types(
@@ -874,7 +912,10 @@ pub mod ciarlet {
         data_size: usize,
         orientation: i32,
     ) {
-        element.apply_dof_permutations(from_raw_parts_mut(data as *mut T, data_size), orientation);
+        unsafe {
+            element
+                .apply_dof_permutations(from_raw_parts_mut(data as *mut T, data_size), orientation);
+        }
     }
 
     #[concretise_types(
@@ -891,8 +932,12 @@ pub mod ciarlet {
         data_size: usize,
         orientation: i32,
     ) {
-        element
-            .apply_dof_transformations(from_raw_parts_mut(data as *mut T, data_size), orientation);
+        unsafe {
+            element.apply_dof_transformations(
+                from_raw_parts_mut(data as *mut T, data_size),
+                orientation,
+            );
+        }
     }
 
     #[concretise_types(
@@ -909,9 +954,11 @@ pub mod ciarlet {
         data_size: usize,
         orientation: i32,
     ) {
-        element.apply_dof_permutations_and_transformations(
-            from_raw_parts_mut(data as *mut T, data_size),
-            orientation,
-        );
+        unsafe {
+            element.apply_dof_permutations_and_transformations(
+                from_raw_parts_mut(data as *mut T, data_size),
+                orientation,
+            );
+        }
     }
 }

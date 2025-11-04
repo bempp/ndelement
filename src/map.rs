@@ -255,7 +255,7 @@ impl Map for ContravariantPiolaMap {
 mod test {
     use super::*;
     use approx::*;
-    use rlst::{rlst_dynamic_array, Array, RandomAccessMut};
+    use rlst::{Array, RandomAccessMut, rlst_dynamic_array};
 
     fn set_to_zero<T: RlstScalar, Array4: RandomAccessMut<4, Item = T> + Shape<4>>(
         data: &mut Array<Array4, 4>,

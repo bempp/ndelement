@@ -10,9 +10,10 @@ use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformat
 use itertools::izip;
 use num::{One, Zero};
 use rlst::{
+    Array, DynArray, Inverse, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape,
+    UnsafeRandomAccessByRef, UnsafeRandomAccessMut,
     dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri},
-    rlst_dynamic_array, Array, DynArray, Inverse, RandomAccessByRef, RandomAccessMut, RlstScalar,
-    Shape, UnsafeRandomAccessByRef, UnsafeRandomAccessMut,
+    rlst_dynamic_array,
 };
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -729,29 +730,28 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
         let block_size = data.len() / self.dim;
         let tdim = reference_cell::dim(self.cell_type);
         let mut n = 0;
-        if tdim > 1 {
-            if let Some(perm) = match self
+        if tdim > 1
+            && let Some(perm) = match self
                 .dof_transformations
                 .get(&(ReferenceCellType::Interval, Transformation::Reflection))
             {
                 Some(DofTransformation::Permutation(p)) => Some(p),
                 Some(DofTransformation::Transformation(_, p)) => Some(p),
                 _ => None,
-            } {
-                for dofs in &self.entity_dofs[1] {
-                    #[cfg(debug_assertions)]
-                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
-                        assert_eq!(i + 1, *j);
-                    }
-                    if (cell_orientation >> n) & 1 == 1 {
-                        math::apply_permutation(
-                            perm,
-                            &mut data
-                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
-                    }
-                    n += 1
+            }
+        {
+            for dofs in &self.entity_dofs[1] {
+                #[cfg(debug_assertions)]
+                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                    assert_eq!(i + 1, *j);
                 }
+                if (cell_orientation >> n) & 1 == 1 {
+                    math::apply_permutation(
+                        perm,
+                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                    )
+                }
+                n += 1
             }
         }
         if tdim > 2 {
@@ -787,14 +787,12 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
                     Some(DofTransformation::Permutation(p)) => Some(p),
                     Some(DofTransformation::Transformation(_, p)) => Some(p),
                     _ => None,
-                } {
-                    if (cell_orientation >> n) & 1 == 1 {
-                        math::apply_permutation(
-                            perm,
-                            &mut data
-                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
-                    }
+                } && (cell_orientation >> n) & 1 == 1
+                {
+                    math::apply_permutation(
+                        perm,
+                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                    )
                 }
                 n += 1;
             }
@@ -806,28 +804,27 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
         let block_size = data.len() / self.dim;
         let tdim = reference_cell::dim(self.cell_type);
         let mut n = 0;
-        if tdim > 1 {
-            if let Some(mat) = match self
+        if tdim > 1
+            && let Some(mat) = match self
                 .dof_transformations
                 .get(&(ReferenceCellType::Interval, Transformation::Reflection))
             {
                 Some(DofTransformation::Transformation(m, _)) => Some(m),
                 _ => None,
-            } {
-                for dofs in &self.entity_dofs[1] {
-                    #[cfg(debug_assertions)]
-                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
-                        assert_eq!(i + 1, *j);
-                    }
-                    if (cell_orientation >> n) & 1 == 1 {
-                        math::apply_matrix(
-                            mat,
-                            &mut data
-                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
-                    }
-                    n += 1
+            }
+        {
+            for dofs in &self.entity_dofs[1] {
+                #[cfg(debug_assertions)]
+                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                    assert_eq!(i + 1, *j);
                 }
+                if (cell_orientation >> n) & 1 == 1 {
+                    math::apply_matrix(
+                        mat,
+                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                    )
+                }
+                n += 1
             }
         }
         if tdim > 2 {
@@ -861,14 +858,12 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
                 {
                     Some(DofTransformation::Transformation(m, _)) => Some(m),
                     _ => None,
-                } {
-                    if (cell_orientation >> n) & 1 == 1 {
-                        math::apply_matrix(
-                            mat,
-                            &mut data
-                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
-                    }
+                } && (cell_orientation >> n) & 1 == 1
+                {
+                    math::apply_matrix(
+                        mat,
+                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                    )
                 }
                 n += 1;
             }
@@ -2124,7 +2119,9 @@ mod test {
         e.apply_dof_permutations(&mut n, 7);
         for (i, j) in izip!(
             &n,
-            [0, 1, 2, 3, 4, 5, 8, 9, 6, 7, 12, 13, 10, 11, 16, 17, 14, 15, 18, 19]
+            [
+                0, 1, 2, 3, 4, 5, 8, 9, 6, 7, 12, 13, 10, 11, 16, 17, 14, 15, 18, 19
+            ]
         ) {
             assert_eq!(*i, j);
         }
@@ -2138,7 +2135,9 @@ mod test {
         e.apply_dof_permutations(&mut n, 63);
         for (i, j) in izip!(
             &n,
-            [0, 1, 2, 3, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 16, 17, 18, 19]
+            [
+                0, 1, 2, 3, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 16, 17, 18, 19
+            ]
         ) {
             assert_eq!(*i, j);
         }
