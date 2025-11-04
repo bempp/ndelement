@@ -3,7 +3,7 @@ use ndelement::{
     traits::FiniteElement,
     types::{Continuity, ReferenceCellType},
 };
-use rlst::{rlst_dynamic_array, DynArray};
+use rlst::{DynArray, rlst_dynamic_array};
 
 fn main() {
     // Create a P2 element on a triangle

@@ -10,7 +10,7 @@ use crate::traits::ElementFamily;
 use crate::types::{Continuity, ReferenceCellType};
 use itertools::izip;
 use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
-use rlst::{rlst_dynamic_array, DynArray, RlstScalar, SliceArray};
+use rlst::{DynArray, RlstScalar, SliceArray, rlst_dynamic_array};
 use std::marker::PhantomData;
 
 fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getrf + Getri>(

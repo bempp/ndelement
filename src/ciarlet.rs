@@ -10,9 +10,10 @@ use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformat
 use itertools::izip;
 use num::{One, Zero};
 use rlst::{
+    Array, DynArray, Inverse, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape,
+    UnsafeRandomAccessByRef, UnsafeRandomAccessMut,
     dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri},
-    rlst_dynamic_array, Array, DynArray, Inverse, RandomAccessByRef, RandomAccessMut, RlstScalar,
-    Shape, UnsafeRandomAccessByRef, UnsafeRandomAccessMut,
+    rlst_dynamic_array,
 };
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -2124,7 +2125,9 @@ mod test {
         e.apply_dof_permutations(&mut n, 7);
         for (i, j) in izip!(
             &n,
-            [0, 1, 2, 3, 4, 5, 8, 9, 6, 7, 12, 13, 10, 11, 16, 17, 14, 15, 18, 19]
+            [
+                0, 1, 2, 3, 4, 5, 8, 9, 6, 7, 12, 13, 10, 11, 16, 17, 14, 15, 18, 19
+            ]
         ) {
             assert_eq!(*i, j);
         }
@@ -2138,7 +2141,9 @@ mod test {
         e.apply_dof_permutations(&mut n, 63);
         for (i, j) in izip!(
             &n,
-            [0, 1, 2, 3, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 16, 17, 18, 19]
+            [
+                0, 1, 2, 3, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 16, 17, 18, 19
+            ]
         ) {
             assert_eq!(*i, j);
         }

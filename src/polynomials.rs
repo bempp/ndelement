@@ -37,7 +37,7 @@ mod test {
     use crate::types::ReferenceCellType;
     use approx::*;
     use paste::paste;
-    use rlst::{rlst_dynamic_array, DynArray, SliceArray};
+    use rlst::{DynArray, SliceArray, rlst_dynamic_array};
 
     macro_rules! test_orthogonal {
         ($cell:ident, $degree:expr) => {

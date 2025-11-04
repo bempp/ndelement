@@ -7,7 +7,7 @@ use crate::reference_cell;
 use crate::traits::ElementFamily;
 use crate::types::{Continuity, ReferenceCellType};
 use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
-use rlst::{rlst_dynamic_array, RlstScalar};
+use rlst::{RlstScalar, rlst_dynamic_array};
 use std::marker::PhantomData;
 
 /// Create a Lagrange element
