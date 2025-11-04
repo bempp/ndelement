@@ -24,7 +24,7 @@ project = "ndelement"
 copyright = "2022-, Matthew Scroggs"
 author = "Matthew Scroggs"
 
-with open("../../pyproject.toml") as f:
+with open("../../pyproject.toml", "rb") as f:
     version = tomllib.load(f)["project"]["version"]
 
 
