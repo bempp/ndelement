@@ -1,8 +1,9 @@
 # ndelement
 
 [![DefElement verification](https://defelement.org/badges/ndelement.svg)](https://defelement.org/verification/ndelement.html)
-[![crates.io](https://img.shields.io/crates/v/ndelement)](https://crates.io/crates/ndelement)
+[![crates.io](https://img.shields.io/crates/v/ndelement?color=blue)](https://crates.io/crates/ndelement)
 [![docs.rs](https://img.shields.io/docsrs/ndelement?label=docs.rs)](https://docs.rs/ndelement/latest/ndelement/)
+[![PyPI](https://img.shields.io/pypi/v/ndelement?color=blue&label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/ndelement/)
 
 ndelement is an open-source library written in Rust that can be used to create n-dimensional finite elements.
 
