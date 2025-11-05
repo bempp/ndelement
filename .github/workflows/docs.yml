@@ -52,7 +52,7 @@ jobs:
         run: |
           mkdir doc
           mv target/doc doc/rust
-          mkdir python/docs/html/_build doc/python
+          mv python/docs/html/_build doc/python
       - name: Make index page
         run: echo "<html><head><title>ndelement docs</title></head><body><center><a href='rust/ndelement'>Rust docs</a><br /><a href='python'>Python docs</a></center></body></html>" > doc/index.html
 
