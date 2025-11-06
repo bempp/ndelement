@@ -1,15 +1,9 @@
 //! Mathematical functions
-use rlst::{
-    Array, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
-    UnsafeRandomAccessMut, ValueArrayImpl,
-};
+use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 
 /// Orthogonalise the rows of a matrix, starting with the row numbered `start`
-pub fn orthogonalise<
-    T: RlstScalar,
-    Array2Mut: RandomAccessByRef<2, Item = T> + RandomAccessMut<2, Item = T> + Shape<2>,
->(
-    mat: &mut Array<Array2Mut, 2>,
+pub fn orthogonalise<T: RlstScalar, Array2MutImpl: MutableArrayImpl<T, 2>>(
+    mat: &mut Array<Array2MutImpl, 2>,
     start: usize,
 ) {
     for row in start..mat.shape()[0] {
@@ -33,11 +27,8 @@ pub fn orthogonalise<
 }
 
 /// Orthogonalise the rows of a matrix, starting with the row numbered `start`
-pub fn orthogonalise_3<
-    T: RlstScalar,
-    Array3Mut: RandomAccessByRef<3, Item = T> + RandomAccessMut<3, Item = T> + Shape<3>,
->(
-    mat: &mut Array<Array3Mut, 3>,
+pub fn orthogonalise_3<T: RlstScalar, Array3MutImpl: MutableArrayImpl<T, 3>>(
+    mat: &mut Array<Array3MutImpl, 3>,
     start: usize,
 ) {
     for row in start..mat.shape()[0] {
@@ -73,11 +64,7 @@ pub fn orthogonalise_3<
 }
 
 /// Swap two entries in a matrix
-unsafe fn entry_swap<
-    const N: usize,
-    T: RlstScalar,
-    ArrayMut: UnsafeRandomAccessMut<N, Item = T> + UnsafeRandomAccessByRef<N, Item = T> + Shape<N>,
->(
+unsafe fn entry_swap<const N: usize, T: RlstScalar, ArrayMut: MutableArrayImpl<T, N>>(
     mat: &mut Array<ArrayMut, N>,
     mindex0: [usize; N],
     mindex1: [usize; N],
@@ -90,11 +77,8 @@ unsafe fn entry_swap<
 }
 
 /// Compute the LU decomposition of the transpose of a square matrix
-pub fn lu_transpose<
-    T: RlstScalar,
-    Array2Mut: UnsafeRandomAccessMut<2, Item = T> + UnsafeRandomAccessByRef<2, Item = T> + Shape<2>,
->(
-    mat: &mut Array<Array2Mut, 2>,
+pub fn lu_transpose<T: RlstScalar, Array2MutImpl: MutableArrayImpl<T, 2>>(
+    mat: &mut Array<Array2MutImpl, 2>,
 ) -> Vec<usize> {
     let dim = mat.shape()[0];
     assert_eq!(mat.shape()[1], dim);
@@ -155,10 +139,7 @@ pub fn apply_permutation<T>(perm: &[usize], data: &mut [T]) {
 }
 
 /// Convert a linear transformation info the format expected by `apply_matrix` and return the premutation to pass into `apply_matrix`
-pub fn prepare_matrix<
-    T: RlstScalar,
-    Array2Mut: UnsafeRandomAccessMut<2, Item = T> + UnsafeRandomAccessByRef<2, Item = T> + Shape<2>,
->(
+pub fn prepare_matrix<T: RlstScalar, Array2Mut: MutableArrayImpl<T, 2>>(
     mat: &mut Array<Array2Mut, 2>,
 ) -> Vec<usize> {
     let mut perm = lu_transpose(mat);
