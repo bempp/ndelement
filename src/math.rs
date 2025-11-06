@@ -1,7 +1,7 @@
 //! Mathematical functions
 use rlst::{
     Array, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape, UnsafeRandomAccessByRef,
-    UnsafeRandomAccessMut,
+    UnsafeRandomAccessMut, ValueArrayImpl,
 };
 
 /// Orthogonalise the rows of a matrix, starting with the row numbered `start`
@@ -167,8 +167,8 @@ pub fn prepare_matrix<
 }
 
 /// Apply a permutation and a matrix to some data
-pub fn apply_perm_and_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
-    mat: &Array<Array2, 2>,
+pub fn apply_perm_and_matrix<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>>(
+    mat: &Array<Array2Impl, 2>,
     perm: &[usize],
     data: &mut [T],
 ) {
@@ -177,7 +177,7 @@ pub fn apply_perm_and_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = 
 }
 
 /// Apply a matrix to some data
-pub fn apply_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
+pub fn apply_matrix<T: RlstScalar, Array2: ValueArrayImpl<T, 2>>(
     mat: &Array<Array2, 2>,
     data: &mut [T],
 ) {
@@ -187,18 +187,19 @@ pub fn apply_matrix<T: RlstScalar, Array2: RandomAccessByRef<2, Item = T> + Shap
     for i in 0..dim {
         for j in i + 1..dim {
             for k in 0..block_size {
-                data[i * block_size + k] += *mat.get([i, j]).unwrap() * data[j * block_size + k];
+                data[i * block_size + k] +=
+                    mat.get_value([i, j]).unwrap() * data[j * block_size + k];
             }
         }
     }
     for i in 1..=dim {
         for k in 0..block_size {
-            data[(dim - i) * block_size + k] *= *mat.get([dim - i, dim - i]).unwrap();
+            data[(dim - i) * block_size + k] *= mat.get_value([dim - i, dim - i]).unwrap();
         }
         for j in 0..dim - i {
             for k in 0..block_size {
                 data[(dim - i) * block_size + k] +=
-                    *mat.get([dim - i, j]).unwrap() * data[j * block_size + k];
+                    mat.get_value([dim - i, j]).unwrap() * data[j * block_size + k];
             }
         }
     }
