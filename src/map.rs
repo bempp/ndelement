@@ -231,14 +231,10 @@ impl Map for ContravariantPiolaMap {
 mod test {
     use super::*;
     use approx::*;
-    use rlst::{Array, RandomAccessMut, rlst_dynamic_array};
+    use rlst::{Array, rlst_dynamic_array};
 
-    fn fill_jacobians<
-        T: RlstScalar<Real = T>,
-        Array3Impl: ValueArrayImpl<3, Item = T>,
-        Array3MutImpl: MutableArrayImpl<3, Item = T>,
-    >(
-        j: &mut Array<Array3Impl, 3>,
+    fn fill_jacobians<T: RlstScalar<Real = T>, Array3MutImpl: MutableArrayImpl<T, 3>>(
+        j: &mut Array<Array3MutImpl, 3>,
         jdet: &mut [T],
         jinv: &mut Array<Array3MutImpl, 3>,
     ) {
