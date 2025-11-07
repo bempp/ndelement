@@ -4,7 +4,7 @@
 //! <https://github.com/FEniCS/basix/blob/main/cpp/basix/polyset.cpp>
 use super::{derivative_count, polynomial_count};
 use crate::types::ReferenceCellType;
-use rlst::{Array, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape};
+use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 
 fn tri_index(i: usize, j: usize) -> usize {
     (i + j + 1) * (i + j) / 2 + j
@@ -37,13 +37,13 @@ fn jrc<T: RlstScalar>(a: usize, n: usize) -> (T, T, T) {
 /// Tabulate orthonormal polynomials on an interval
 fn tabulate_interval<
     T: RlstScalar,
-    Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
-    Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
+    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
-    points: &Array<Array2, 2>,
+    points: &Array<Array2Impl, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array<Array3Mut, 3>,
+    data: &mut Array<Array3MutImpl, 3>,
 ) {
     debug_assert!(data.shape()[0] == derivatives + 1);
     debug_assert!(data.shape()[1] == degree + 1);
@@ -69,7 +69,7 @@ fn tabulate_interval<
             for i in 0..data.shape()[2] {
                 let d = *data.get([k, p - 1, i]).unwrap();
                 *data.get_mut([k, p, i]).unwrap() =
-                    (T::from(*points.get([0, i]).unwrap()).unwrap() * T::from(2.0).unwrap()
+                    (T::from(points.get_value([0, i]).unwrap()).unwrap() * T::from(2.0).unwrap()
                         - T::from(1.0).unwrap())
                         * d
                         * b;
@@ -98,13 +98,13 @@ fn tabulate_interval<
 /// Tabulate orthonormal polynomials on a quadrilateral
 fn tabulate_quadrilateral<
     T: RlstScalar,
-    Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
-    Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
+    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
-    points: &Array<Array2, 2>,
+    points: &Array<Array2Impl, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array<Array3Mut, 3>,
+    data: &mut Array<Array3MutImpl, 3>,
 ) {
     debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) / 2);
     debug_assert!(data.shape()[1] == (degree + 1) * (degree + 1));
@@ -139,7 +139,7 @@ fn tabulate_quadrilateral<
                     .unwrap();
                 *data
                     .get_mut([tri_index(k, 0), quad_index(p, 0, degree), i])
-                    .unwrap() = (T::from(*points.get([0, i]).unwrap()).unwrap()
+                    .unwrap() = (T::from(points.get_value([0, i]).unwrap()).unwrap()
                     * T::from(2.0).unwrap()
                     - T::from(1.0).unwrap())
                     * d
@@ -194,7 +194,7 @@ fn tabulate_quadrilateral<
                     .unwrap();
                 *data
                     .get_mut([tri_index(0, k), quad_index(0, p, degree), i])
-                    .unwrap() = (T::from(*points.get([1, i]).unwrap()).unwrap()
+                    .unwrap() = (T::from(points.get_value([1, i]).unwrap()).unwrap()
                     * T::from(2.0).unwrap()
                     - T::from(1.0).unwrap())
                     * d
@@ -251,13 +251,13 @@ fn tabulate_quadrilateral<
 /// Tabulate orthonormal polynomials on a triangle
 fn tabulate_triangle<
     T: RlstScalar,
-    Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
-    Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
+    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
-    points: &Array<Array2, 2>,
+    points: &Array<Array2Impl, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array<Array3Mut, 3>,
+    data: &mut Array<Array3MutImpl, 3>,
 ) {
     debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) / 2);
     debug_assert!(data.shape()[1] == (degree + 1) * (degree + 2) / 2);
@@ -290,9 +290,9 @@ fn tabulate_triangle<
                         .unwrap();
                     *data
                         .get_mut([tri_index(kx, ky), tri_index(0, p), i])
-                        .unwrap() = (T::from(*points.get([0, i]).unwrap()).unwrap()
+                        .unwrap() = (T::from(points.get_value([0, i]).unwrap()).unwrap()
                         * T::from(2.0).unwrap()
-                        + T::from(*points.get([1, i]).unwrap()).unwrap()
+                        + T::from(points.get_value([1, i]).unwrap()).unwrap()
                         - T::from(1.0).unwrap())
                         * d
                         * a
@@ -329,8 +329,8 @@ fn tabulate_triangle<
                     );
 
                     for i in 0..data.shape()[2] {
-                        let b =
-                            T::from(1.0).unwrap() - T::from(*points.get([1, i]).unwrap()).unwrap();
+                        let b = T::from(1.0).unwrap()
+                            - T::from(points.get_value([1, i]).unwrap()).unwrap();
                         let d = *data
                             .get([tri_index(kx, ky), tri_index(0, p - 2), i])
                             .unwrap();
@@ -347,7 +347,7 @@ fn tabulate_triangle<
                                 .get_mut([tri_index(kx, ky), tri_index(0, p), i])
                                 .unwrap() -= T::from(2.0).unwrap()
                                 * T::from(ky).unwrap()
-                                * (T::from(*points.get([1, i]).unwrap()).unwrap()
+                                * (T::from(points.get_value([1, i]).unwrap()).unwrap()
                                     - T::from(1.0).unwrap())
                                 * d
                                 * scale2
@@ -380,7 +380,7 @@ fn tabulate_triangle<
                         .get_mut([tri_index(kx, ky), tri_index(1, p), i])
                         .unwrap() = *data.get([tri_index(kx, ky), tri_index(0, p), i]).unwrap()
                         * scale3
-                        * ((T::from(*points.get([1, i]).unwrap()).unwrap()
+                        * ((T::from(points.get_value([1, i]).unwrap()).unwrap()
                             * T::from(2.0).unwrap()
                             - T::from(1.0).unwrap())
                             * (T::from(1.5).unwrap() + T::from(p).unwrap())
@@ -418,7 +418,7 @@ fn tabulate_triangle<
                             .get_mut([tri_index(kx, ky), tri_index(q + 1, p), i])
                             .unwrap() = d
                             * scale4
-                            * ((T::from(*points.get([1, i]).unwrap()).unwrap()
+                            * ((T::from(points.get_value([1, i]).unwrap()).unwrap()
                                 * T::from(T::from(2.0).unwrap()).unwrap()
                                 - T::from(T::from(1.0).unwrap()).unwrap())
                                 * a1
@@ -452,13 +452,13 @@ fn tabulate_triangle<
 /// Tabulate orthonormal polynomials on a tetrahedron
 fn tabulate_tetrahedron<
     T: RlstScalar,
-    Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
-    Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
+    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
-    points: &Array<Array2, 2>,
+    points: &Array<Array2Impl, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array<Array3Mut, 3>,
+    data: &mut Array<Array3MutImpl, 3>,
 ) {
     debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) * (derivatives + 3) / 6);
     debug_assert!(data.shape()[1] == (degree + 1) * (degree + 2) * (degree + 3) / 6);
@@ -488,10 +488,10 @@ fn tabulate_tetrahedron<
                             .unwrap();
                         *data
                             .get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i])
-                            .unwrap() = (T::from(*points.get([0, i]).unwrap()).unwrap()
+                            .unwrap() = (T::from(points.get_value([0, i]).unwrap()).unwrap()
                             * T::from(2.0).unwrap()
-                            + T::from(*points.get([1, i]).unwrap()).unwrap()
-                            + T::from(*points.get([2, i]).unwrap()).unwrap()
+                            + T::from(points.get_value([1, i]).unwrap()).unwrap()
+                            + T::from(points.get_value([2, i]).unwrap()).unwrap()
                             - T::from(1.0).unwrap())
                             * a
                             * d;
@@ -534,7 +534,8 @@ fn tabulate_tetrahedron<
                             *data
                                 .get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i])
                                 .unwrap() -= (T::from(
-                                *points.get([1, i]).unwrap() + *points.get([2, i]).unwrap(),
+                                points.get_value([1, i]).unwrap()
+                                    + points.get_value([2, i]).unwrap(),
                             )
                             .unwrap()
                                 - T::from(1.0).unwrap())
@@ -551,7 +552,8 @@ fn tabulate_tetrahedron<
                                     .get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i])
                                     .unwrap() -= T::from(ky * 2).unwrap()
                                     * (T::from(
-                                        *points.get([1, i]).unwrap() + *points.get([2, i]).unwrap(),
+                                        points.get_value([1, i]).unwrap()
+                                            + points.get_value([2, i]).unwrap(),
                                     )
                                     .unwrap()
                                         - T::from(1.0).unwrap())
@@ -580,7 +582,8 @@ fn tabulate_tetrahedron<
                                     .get_mut([tet_index(kx, ky, kz), tet_index(0, 0, p), i])
                                     .unwrap() -= T::from(kz * 2).unwrap()
                                     * (T::from(
-                                        *points.get([1, i]).unwrap() + *points.get([2, i]).unwrap(),
+                                        points.get_value([1, i]).unwrap()
+                                            + points.get_value([2, i]).unwrap(),
                                     )
                                     .unwrap()
                                         - T::from(1.0).unwrap())
@@ -621,9 +624,9 @@ fn tabulate_tetrahedron<
                         *data
                             .get_mut([tet_index(kx, ky, kz), tet_index(0, 1, p), i])
                             .unwrap() = d
-                            * (T::from(*points.get([1, i]).unwrap()).unwrap()
+                            * (T::from(points.get_value([1, i]).unwrap()).unwrap()
                                 * T::from(2 * p + 3).unwrap()
-                                + T::from(*points.get([2, i]).unwrap()).unwrap()
+                                + T::from(points.get_value([2, i]).unwrap()).unwrap()
                                 - T::from(1).unwrap());
                     }
                     if ky > 0 {
@@ -663,15 +666,15 @@ fn tabulate_tetrahedron<
                                 .get_mut([tet_index(kx, ky, kz), tet_index(0, q + 1, p), i])
                                 .unwrap() = d
                                 * (aq
-                                    * (T::from(*points.get([1, i]).unwrap()).unwrap()
+                                    * (T::from(points.get_value([1, i]).unwrap()).unwrap()
                                         * T::from(2.0).unwrap()
                                         - T::from(1.0).unwrap()
-                                        + T::from(*points.get([2, i]).unwrap()).unwrap())
+                                        + T::from(points.get_value([2, i]).unwrap()).unwrap())
                                     + bq * (T::from(1.0).unwrap()
-                                        - T::from(*points.get([2, i]).unwrap()).unwrap()))
+                                        - T::from(points.get_value([2, i]).unwrap()).unwrap()))
                                 - d2 * cq
                                     * (T::from(1.0).unwrap()
-                                        - T::from(*points.get([2, i]).unwrap()).unwrap())
+                                        - T::from(points.get_value([2, i]).unwrap()).unwrap())
                                     .powi(2);
                         }
 
@@ -698,7 +701,7 @@ fn tabulate_tetrahedron<
                                     .unwrap() += T::from(kz).unwrap() * d * (aq - bq)
                                     + T::from(2 * kz).unwrap()
                                         * (T::from(1.0).unwrap()
-                                            - T::from(*points.get([2, i]).unwrap()).unwrap())
+                                            - T::from(points.get_value([2, i]).unwrap()).unwrap())
                                         * d2
                                         * cq;
                             }
@@ -725,7 +728,7 @@ fn tabulate_tetrahedron<
                             *data
                                 .get_mut([tet_index(kx, ky, kz), tet_index(1, q, p), i])
                                 .unwrap() = d
-                                * (T::from(*points.get([2, i]).unwrap()).unwrap()
+                                * (T::from(points.get_value([2, i]).unwrap()).unwrap()
                                     * T::from(2 + p + q).unwrap()
                                     * T::from(2.0).unwrap()
                                     - T::from(1.0).unwrap());
@@ -761,7 +764,8 @@ fn tabulate_tetrahedron<
                                         .unwrap() = d
                                         * (ar
                                             * (T::from(2.0).unwrap()
-                                                * T::from(*points.get([2, i]).unwrap()).unwrap()
+                                                * T::from(points.get_value([2, i]).unwrap())
+                                                    .unwrap()
                                                 - T::from(1.0).unwrap())
                                             + br)
                                         - d2 * cr;
@@ -811,13 +815,13 @@ fn tabulate_tetrahedron<
 /// Tabulate orthonormal polynomials on a hexahedron
 fn tabulate_hexahedron<
     T: RlstScalar,
-    Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
-    Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
+    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
-    points: &Array<Array2, 2>,
+    points: &Array<Array2Impl, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array<Array3Mut, 3>,
+    data: &mut Array<Array3MutImpl, 3>,
 ) {
     debug_assert!(data.shape()[0] == (derivatives + 1) * (derivatives + 2) * (derivatives + 3) / 6);
     debug_assert!(data.shape()[1] == (degree + 1) * (degree + 1) * (degree + 1));
@@ -852,7 +856,7 @@ fn tabulate_hexahedron<
                     .unwrap();
                 *data
                     .get_mut([tet_index(k, 0, 0), hex_index(p, 0, 0, degree), i])
-                    .unwrap() = (T::from(*points.get([0, i]).unwrap()).unwrap()
+                    .unwrap() = (T::from(points.get_value([0, i]).unwrap()).unwrap()
                     * T::from(2.0).unwrap()
                     - T::from(1.0).unwrap())
                     * d
@@ -907,7 +911,7 @@ fn tabulate_hexahedron<
                     .unwrap();
                 *data
                     .get_mut([tet_index(0, k, 0), hex_index(0, p, 0, degree), i])
-                    .unwrap() = (T::from(*points.get([1, i]).unwrap()).unwrap()
+                    .unwrap() = (T::from(points.get_value([1, i]).unwrap()).unwrap()
                     * T::from(2.0).unwrap()
                     - T::from(1.0).unwrap())
                     * d
@@ -962,7 +966,7 @@ fn tabulate_hexahedron<
                     .unwrap();
                 *data
                     .get_mut([tet_index(0, 0, k), hex_index(0, 0, p, degree), i])
-                    .unwrap() = (T::from(*points.get([2, i]).unwrap()).unwrap()
+                    .unwrap() = (T::from(points.get_value([2, i]).unwrap()).unwrap()
                     * T::from(2.0).unwrap()
                     - T::from(1.0).unwrap())
                     * d
@@ -1029,9 +1033,9 @@ fn tabulate_hexahedron<
 }
 
 /// The shape of a table containing the values of Legendre polynomials
-pub fn shape<T, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
+pub fn shape<T, Array2Impl: ValueArrayImpl<T, 2>>(
     cell_type: ReferenceCellType,
-    points: &Array<Array2, 2>,
+    points: &Array<Array2Impl, 2>,
     degree: usize,
     derivatives: usize,
 ) -> [usize; 3] {
@@ -1045,14 +1049,14 @@ pub fn shape<T, Array2: RandomAccessByRef<2, Item = T> + Shape<2>>(
 /// Tabulate orthonormal polynomials
 pub fn tabulate<
     T: RlstScalar,
-    Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
-    Array3Mut: RandomAccessMut<3, Item = T> + RandomAccessByRef<3, Item = T> + Shape<3>,
+    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
     cell_type: ReferenceCellType,
-    points: &Array<Array2, 2>,
+    points: &Array<Array2Impl, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array<Array3Mut, 3>,
+    data: &mut Array<Array3MutImpl, 3>,
 ) {
     match cell_type {
         ReferenceCellType::Interval => tabulate_interval(points, degree, derivatives, data),

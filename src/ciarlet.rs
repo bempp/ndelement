@@ -1,5 +1,6 @@
 //! Finite element definitions
 
+extern crate blas_src;
 extern crate lapack_src;
 
 use crate::math;
@@ -9,12 +10,8 @@ use crate::traits::{FiniteElement, Map};
 use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformation};
 use itertools::izip;
 use num::{One, Zero};
-use rlst::{
-    Array, DynArray, Inverse, RandomAccessByRef, RandomAccessMut, RlstScalar, Shape,
-    UnsafeRandomAccessByRef, UnsafeRandomAccessMut,
-    dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri},
-    rlst_dynamic_array,
-};
+use rlst::RlstScalar;
+use rlst::{Array, DynArray, Inverse, MutableArrayImpl, ValueArrayImpl, rlst_dynamic_array};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
@@ -71,7 +68,10 @@ impl<T: RlstScalar, M: Map> Debug for CiarletElement<T, M> {
     }
 }
 
-impl<T: RlstScalar + Getrf + Getri, M: Map> CiarletElement<T, M> {
+impl<T: RlstScalar, M: Map> CiarletElement<T, M>
+where
+    DynArray<T, 2>: Inverse<Output = DynArray<T, 2>>,
+{
     /// Create a Ciarlet element
     #[allow(clippy::too_many_arguments)]
     pub fn create(
@@ -610,13 +610,13 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
         self.dim
     }
     fn tabulate<
-        Array2: RandomAccessByRef<2, Item = T::Real> + Shape<2>,
-        Array4Mut: UnsafeRandomAccessMut<4, Item = T> + RandomAccessMut<4, Item = T>,
+        Array2Impl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 2>,
+        Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
         &self,
-        points: &Array<Array2, 2>,
+        points: &Array<Array2Impl, 2>,
         nderivs: usize,
-        data: &mut Array<Array4Mut, 4>,
+        data: &mut Array<Array4MutImpl, 4>,
     ) {
         let mut table = DynArray::<T, 3>::from_shape(legendre_shape(
             self.cell_type,
@@ -671,17 +671,17 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
         [deriv_count, point_count, basis_count, value_size]
     }
     fn push_forward<
-        Array3Real: UnsafeRandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: UnsafeRandomAccessByRef<4, Item = Self::T> + Shape<4>,
-        Array4Mut: UnsafeRandomAccessMut<4, Item = Self::T> + Shape<4>,
+        Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
+        Array4Impl: ValueArrayImpl<Self::T, 4>,
+        Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
         &self,
-        reference_values: &Array<Array4, 4>,
+        reference_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3Real, 3>,
+        jacobians: &Array<Array3RealImpl, 3>,
         jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array<Array3Real, 3>,
-        physical_values: &mut Array<Array4Mut, 4>,
+        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        physical_values: &mut Array<Array4MutImpl, 4>,
     ) {
         self.map.push_forward(
             reference_values,
@@ -693,17 +693,17 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
         )
     }
     fn pull_back<
-        Array3Real: UnsafeRandomAccessByRef<3, Item = <Self::T as RlstScalar>::Real> + Shape<3>,
-        Array4: UnsafeRandomAccessByRef<4, Item = Self::T> + Shape<4>,
-        Array4Mut: UnsafeRandomAccessMut<4, Item = Self::T> + Shape<4>,
+        Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
+        Array4Impl: ValueArrayImpl<Self::T, 4>,
+        Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
         &self,
-        physical_values: &Array<Array4, 4>,
+        physical_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3Real, 3>,
+        jacobians: &Array<Array3RealImpl, 3>,
         jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array<Array3Real, 3>,
-        reference_values: &mut Array<Array4Mut, 4>,
+        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        reference_values: &mut Array<Array4MutImpl, 4>,
     ) {
         self.map.pull_back(
             physical_values,
@@ -1875,9 +1875,9 @@ mod test {
     test_dof_transformations!(Hexahedron, raviart_thomas, 1);
     test_dof_transformations!(Hexahedron, raviart_thomas, 2);
 
-    fn assert_dof_transformation_equal<Array2: RandomAccessByRef<2, Item = f64> + Shape<2>>(
+    fn assert_dof_transformation_equal<Array2Impl: ValueArrayImpl<f64, 2>>(
         p: &[usize],
-        m: &Array<Array2, 2>,
+        m: &Array<Array2Impl, 2>,
         expected: Vec<Vec<f64>>,
     ) {
         let ndofs = p.len();
