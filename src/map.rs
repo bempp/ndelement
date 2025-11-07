@@ -235,12 +235,12 @@ mod test {
 
     fn fill_jacobians<
         T: RlstScalar<Real = T>,
-        Array3: RandomAccessMut<3, Item = T>,
-        Array3Mut: RandomAccessMut<3, Item = T>,
+        Array3Impl: ValueArrayImpl<3, Item = T>,
+        Array3MutImpl: MutableArrayImpl<3, Item = T>,
     >(
-        j: &mut Array<Array3, 3>,
+        j: &mut Array<Array3Impl, 3>,
         jdet: &mut [T],
-        jinv: &mut Array<Array3Mut, 3>,
+        jinv: &mut Array<Array3MutImpl, 3>,
     ) {
         *j.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
         *j.get_mut([0, 0, 1]).unwrap() = T::from(1.0).unwrap();

@@ -158,8 +158,8 @@ pub fn apply_perm_and_matrix<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>>(
 }
 
 /// Apply a matrix to some data
-pub fn apply_matrix<T: RlstScalar, Array2: ValueArrayImpl<T, 2>>(
-    mat: &Array<Array2, 2>,
+pub fn apply_matrix<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>>(
+    mat: &Array<Array2Impl, 2>,
     data: &mut [T],
 ) {
     let dim = mat.shape()[0];

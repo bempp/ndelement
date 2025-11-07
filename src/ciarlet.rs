@@ -1,5 +1,6 @@
 //! Finite element definitions
 
+extern crate blas_src;
 extern crate lapack_src;
 
 use crate::math;
@@ -609,13 +610,13 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
         self.dim
     }
     fn tabulate<
-        Array2: ValueArrayImpl<<Self::T as RlstScalar>::Real, 2>,
-        Array4Mut: MutableArrayImpl<Self::T, 4>,
+        Array2Impl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 2>,
+        Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
         &self,
-        points: &Array<Array2, 2>,
+        points: &Array<Array2Impl, 2>,
         nderivs: usize,
-        data: &mut Array<Array4Mut, 4>,
+        data: &mut Array<Array4MutImpl, 4>,
     ) {
         let mut table = DynArray::<T, 3>::from_shape(legendre_shape(
             self.cell_type,

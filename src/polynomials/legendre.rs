@@ -1049,14 +1049,14 @@ pub fn shape<T, Array2Impl: ValueArrayImpl<T, 2>>(
 /// Tabulate orthonormal polynomials
 pub fn tabulate<
     T: RlstScalar,
-    Array2: ValueArrayImpl<T::Real, 2>,
-    Array3Mut: MutableArrayImpl<T, 3>,
+    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
     cell_type: ReferenceCellType,
-    points: &Array<Array2, 2>,
+    points: &Array<Array2Impl, 2>,
     degree: usize,
     derivatives: usize,
-    data: &mut Array<Array3Mut, 3>,
+    data: &mut Array<Array3MutImpl, 3>,
 ) {
     match cell_type {
         ReferenceCellType::Interval => tabulate_interval(points, degree, derivatives, data),
