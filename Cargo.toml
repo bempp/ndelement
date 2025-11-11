@@ -24,7 +24,7 @@ crate-type = ["lib", "cdylib"]
 [dependencies]
 bempp-quadrature = { version = "0.1.0" }
 itertools = "0.14.*"
-mpi = { version = "0.8.*", optional = true }
+mpi = { git = "https://github.com/rsmpi/rsmpi.git", optional = true }
 num = "0.4"
 rlst = { git = "https://github.com/linalg-rs/rlst.git" }
 serde = { version = "1", features = ["derive"], optional = true }
