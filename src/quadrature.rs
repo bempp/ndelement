@@ -50,7 +50,7 @@ pub fn available_simplex_rules(cell: ReferenceCellType) -> Vec<usize> {
     }
 }
 
-/// Get the points and weights for a Gauss-Jacobi quadrature rule
+/// Get the points and weights for a Gauss-Jacobi quadrature rule of order `m` on the given cell type.
 pub fn gauss_jacobi_rule(
     celltype: ReferenceCellType,
     m: usize,
@@ -66,7 +66,7 @@ pub fn gauss_jacobi_rule(
     }
 }
 
-/// Get the number of quadrature points for a Gauss-Jacobi rule
+/// Get the number of quadrature points for a Gauss-Jacobi rule of order `m` on a given cell type.
 pub fn gauss_jacobi_npoints(celltype: ReferenceCellType, m: usize) -> usize {
     let np = (m + 2) / 2;
     match celltype {

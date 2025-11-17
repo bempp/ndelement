@@ -640,6 +640,8 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
 }
 
 /// Nedelec (first kind) element family
+///
+/// A factory structure to create new Nedelec elements.
 pub struct NedelecFirstKindElementFamily<T: RlstScalar + Getrf + Getri> {
     degree: usize,
     continuity: Continuity,
@@ -647,7 +649,7 @@ pub struct NedelecFirstKindElementFamily<T: RlstScalar + Getrf + Getri> {
 }
 
 impl<T: RlstScalar + Getrf + Getri> NedelecFirstKindElementFamily<T> {
-    /// Create new family
+    /// Create new family with given `degree` and `continuity`.
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
             degree,

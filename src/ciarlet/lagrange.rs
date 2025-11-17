@@ -10,7 +10,7 @@ use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
 use rlst::{RlstScalar, rlst_dynamic_array};
 use std::marker::PhantomData;
 
-/// Create a Lagrange element
+/// Create a Lagrange element.
 pub fn create<T: RlstScalar + Getrf + Getri>(
     cell_type: ReferenceCellType,
     degree: usize,
@@ -268,7 +268,9 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
     )
 }
 
-/// Lagrange element family
+/// Lagrange element family.
+///
+/// A factory structure to create new Lagrange elements.
 pub struct LagrangeElementFamily<T: RlstScalar + Getrf + Getri> {
     degree: usize,
     continuity: Continuity,
@@ -276,7 +278,7 @@ pub struct LagrangeElementFamily<T: RlstScalar + Getrf + Getri> {
 }
 
 impl<T: RlstScalar + Getrf + Getri> LagrangeElementFamily<T> {
-    /// Create new family
+    /// Create new family with given `degree` and `continuity`.
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
             degree,

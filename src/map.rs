@@ -3,6 +3,9 @@ use crate::traits::Map;
 use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 
 /// Identity map
+///
+/// An identity  map pushes values from the reference to the physical
+/// cell without modifying them.
 pub struct IdentityMap {}
 
 impl Map for IdentityMap {
@@ -51,7 +54,17 @@ impl Map for IdentityMap {
     }
 }
 
-/// CovariantPiola map
+/// Covariant Piola map.
+///
+/// Let $F$ be the map from the reference cell to the physical cell
+/// and let $J$ be its Jacobian. Let $\Phi$ be the function values
+/// on the reference cell.  The covariant Piola map is defined by
+/// $$
+/// J^{-T}\Phi\circ F^{-1}
+/// $$
+/// The coviariant Piola map preserves tangential continuity. If $J$
+/// is a rectangular matrix then the pseudo-inverse is used instead of
+/// the inverse.
 pub struct CovariantPiolaMap {}
 
 impl Map for CovariantPiolaMap {
@@ -138,7 +151,15 @@ impl Map for CovariantPiolaMap {
     }
 }
 
-/// ContravariantPiola map
+/// Contravariant Piola map.
+///
+/// Let $F$ be the map from the reference cell to the physical cell
+/// and let $J$ be its Jacobian. Let $\Phi$ be the function values
+/// on the reference cell.  The contravariant Piola map is defined by
+/// $$
+/// \frac{1}{\sqrt{\det{J^TJ}}}J\Phi\circ F^{-1}
+/// $$
+/// The contravariant Piola map preserves normal continuity.
 pub struct ContravariantPiolaMap {}
 
 impl Map for ContravariantPiolaMap {

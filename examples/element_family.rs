@@ -11,7 +11,7 @@ fn main() {
     let element = family.element(ReferenceCellType::Triangle);
     println!("Cell: {:?}", element.cell_type());
 
-    // Get the element in the family on a triangle
+    // Get the element in the family on a quadrilateral
     let element = family.element(ReferenceCellType::Quadrilateral);
     println!("Cell: {:?}", element.cell_type());
 }

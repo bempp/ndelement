@@ -4,31 +4,87 @@ use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 use std::fmt::Debug;
 use std::hash::Hash;
 
+/// This trait provides the definition of a finite element.
+///
+/// A finite element in the Ciarlet definition can be described as a triplet
+/// $(\mathcal{R}, \mathcal{V}, \mathcal{L})$. Here, $\mathcal{R}\in\mathbb{R}^d$ is the reference cell,
+/// $\mathcal{V}$ is a finite dimensional function space on $\mathcal{R}$ of dimension $n$, usually polynomials,
+/// $\mathcal{L} = \{\ell_0,\dots, \ell_{n-1}\}$ is a basis of the dual space $\mathcal{V}^* = \set{f:\mathcal{V} -> \mathbb{R}: f\text{ is linear}}$.
+/// The basis functions $\phi_0,\dots, \phi_{n-1}$ of the finite element space are defined by
+/// $$\ell_i(\phi_j) = \begin{cases}1 &\text{if }~i = j \newline
+/// 0 &\text{otherwise}\end{cases}.
+/// $$
+///
+/// ## Example
+///
+/// The order 1 [Lagrange space](https://defelement.org/elements/lagrange.html) on a triangle is
+/// defined by:
+/// - $\mathcal{R}$ is a triangle with vertices $(0, 0)$, $(1, 0)$, $(0, 1)$.
+/// - $\mathcal{V} = \text{span}\set{1, x, y}$.
+/// - $\mathcal{L} = \set{\ell_0, \ell_0, \ell_1}$ with $\ell_j$ the pointwise evaluation at vertex $v_j$.
+///
+/// This gives the basis functions $\phi_0(x, y) = 1 - x - y$, $\phi_1(x, y) = x$, $\phi_2(x, y) = y$.
+///
+/// ## References
+///
+/// - [https://defelement.org/ciarlet.html](https://defelement.org/ciarlet.html)
 pub trait FiniteElement {
-    //! A finite element defined on a reference cell
     /// The scalar type
     type T: RlstScalar;
+
     /// Cell type
+    ///
+    /// The cell type is typically defined through [ReferenceCellType](crate::types::ReferenceCellType).
     type CellType: Debug + PartialEq + Eq + Clone + Copy + Hash;
+
     /// Transformation type
+    ///
+    /// The Transformation type specifies possible transformations of the dofs on the reference element.
+    /// In most cases these will be rotations and reflections as defined in [Transformation](crate::types::Transformation).
     type TransformationType: Debug + PartialEq + Eq + Clone + Copy + Hash;
 
-    /// The reference cell type
+    /// The reference cell type, e.g. one of `Point`, `Interval`, `Triangle`, etc.
     fn cell_type(&self) -> Self::CellType;
 
-    /// The highest degree polynomial in the element's polynomial set
-    fn embedded_superdegree(&self) -> usize;
+    /// The smallest degree Lagrange space that contains all possible polynomials of the finite element's polynomial space.
+    ///
+    /// Details on the definition of the degree of Lagrange spaces of finite elements are
+    /// given [here](https://defelement.org/ciarlet.html#The+degree+of+a+finite+element).
+    fn lagrange_superdegree(&self) -> usize;
 
-    /// The number of basis functions
+    /// The number of basis functions.
     fn dim(&self) -> usize;
 
-    /// The value shape
+    /// The shape of the values returned by functions in $\mathcal{V}$.
     fn value_shape(&self) -> &[usize];
 
-    /// The value size
+    /// The number of values returned.
+    ///
+    /// If e.g. `value_shape = [3, 4]` then `value_size = 3 x 4 = 12`.
     fn value_size(&self) -> usize;
 
     /// Tabulate the values of the basis functions and their derivatives at a set of points
+    ///
+    /// - `points` is a two-dimensional array where each column contains the coordinates of one point.
+    /// - `nderivs` is the desired number of derivatives (0 for no derivatives, 1 for all first order derivatives, etc.).
+    /// - `data` is the 4-dimensional output array. The first dimension is the number of derivatives,
+    ///   the second dimension is the number of evaluation points, the third dimension is the number `n` of
+    ///   basis functions on the element and the last dimension is the value size of the basis function output.
+    ///   For example, `data[3, 2, 1, 0]` returns the 0th value of the third derivative on the point with index 2 for the
+    ///   basis function with index 1.
+    ///
+    /// ## Remark
+    ///
+    /// Let $d^{i + k} = dx^{i}dy^{j}$ be a derivative with respect to $x$, $y$ in two dimensions and    
+    /// $d^{i + k + j} = dx^{i}dy^{j}dz^{k}$ be a derivative with respect to $x$, $y$, and $z$ in three dimensions.
+    /// Then the corresponding index $\ell$ in the first dimension of the `data` array is computed as follows.
+    /// - Triangle: $\ell = (i + j + 1) * (i + j) / 2 + j$
+    /// - Quadrilateral: $\ell = i * (n + 1) + j$
+    /// - Tetrahedron: $\ell = (i + j + k) * (i + j + k + 1) * (i + j + k + 2) / 6 + (j + k) * (j + k + 1) / 2 + k$
+    /// - Hexahedron $\ell = i * (n + 1) * (n + 1) + j * (n + 1) + k$.
+    ///
+    /// For the quadrilateral and hexahedron the parameter $n$ denotes the degree of the Lagrange space.
+    ///
     fn tabulate<
         Array2Impl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 2>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
@@ -39,16 +95,49 @@ pub trait FiniteElement {
         data: &mut Array<Array4MutImpl, 4>,
     );
 
-    /// The DOFs that are associated with a subentity of the reference cell
+    /// Return the dof indices that are associated with the subentity with index `entity_number` and dimension `entity_dim`.
+    ///
+    /// - For `entity_dim = 0` this returns the dof associated with the corresponding point.
+    /// - For `entity_dim = 1` this returns the dofs associated with the corresponding edge.
+    /// - For `entity_dim = 2` this returns the dofs associated with the corresponding face.
+    ///
+    /// Note that this does not return dofs on the boundary of an entity, that means e.g.
+    /// for an edge the dofs associated with the two vertices at the boundary of the edge are not returned.
+    /// To return also the boundary dofs use [FiniteElement::entity_closure_dofs].
     fn entity_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
 
-    /// The DOFs that are associated with a closure of a subentity of the reference cell
+    /// The DOFs that are associated with a closure of a subentity of the reference cell.
+    ///
+    /// This method is similar to [FiniteElement::entity_dofs]. But it returns additionally the dofs
+    /// associated with the boundary of an entity, e.g. for an edge it returns also the dofs associated
+    /// with the boundary vertices of they exist.
     fn entity_closure_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
 
-    /// Get the required shape for a tabulation array
+    /// Get the required shape for a tabulation array.
     fn tabulate_array_shape(&self, nderivs: usize, npoints: usize) -> [usize; 4];
 
-    /// Push function values forward to a physical cell
+    /// Push function values forward to a physical cell.
+    ///
+    /// Usually this is just an identity map. But for certain element types function values
+    /// on the reference cell differ from those on the physical cell, e.g. in the case of a
+    /// Piola transform. This method implements the corresponding transformation or an identity
+    /// map if no transformation is required.
+    ///
+    /// - `reference_values`: The values on the reference cell.
+    /// - `nderivs`: The number (degree) of derivatives.
+    /// - `jacobians:` A three-dimensional array of jacobians of the map from reference to physical cell.
+    ///   The first dimension is the reference point. The second dimension is the geometric dimension of the physical space and
+    ///   the third dimension is the topological dimension of the reference element, e.g.
+    ///   for the map of 5 points from the reference triangle to a physical surface triangle embedded in 3d space the dimension
+    ///   of `jacobians` is `[5, 3, 2]`.
+    /// - `jacobian_determinants`: Let $J$ be the Jacobian from the map of the reference to the physical element at a given point.
+    ///   The corresponding Jacobian determinant is given as $d = \sqrt{\det(J^TJ)}$. `jacobian_determinants[j]` stores the Jacobian
+    ///   determinant at position `j`.
+    /// - `inverse_jacobians`: A three dimensional array that stores the inverse Jacobian for the point with index j at position
+    ///   `inverse_jacobians[j, :, :]`. The first dimension of `inverse_jacobians` is the point index. The second dimension
+    ///   is the topological dimension, and the third dimension is the geometric dimension. If the Jacobian is rectangular then the
+    ///   inverse Jacobian is the pseudo-inverse of the Jacobian such that $J^\dagger J = I$.
+    /// - `physical_values`: The output array of the push operation. Its required shape can be queried with [FiniteElement::physical_value_shape].
     fn push_forward<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
@@ -63,7 +152,9 @@ pub trait FiniteElement {
         physical_values: &mut Array<Array4MutImpl, 4>,
     );
 
-    /// Pull function values back to the reference cell
+    /// Pull function values back to the reference cell.
+    ///
+    /// This is the inverse operation to [FiniteElement::push_forward].
     fn pull_back<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
@@ -90,20 +181,20 @@ pub trait FiniteElement {
         vs
     }
 
-    /// The DOF transformation for a sub-entity
+    /// The DOF transformation for a sub-entity.
     fn dof_transformation(
         &self,
         entity: Self::CellType,
         transformation: Self::TransformationType,
     ) -> Option<&DofTransformation<Self::T>>;
 
-    /// Apply permutation parts of DOF transformations
+    /// Apply permutation parts of DOF transformations.
     fn apply_dof_permutations<T>(&self, data: &mut [T], cell_orientation: i32);
 
-    /// Apply non-permutation parts of DOF transformations
+    /// Apply non-permutation parts of DOF transformations.
     fn apply_dof_transformations(&self, data: &mut [Self::T], cell_orientation: i32);
 
-    /// Apply DOF transformations
+    /// Apply DOF transformations.
     fn apply_dof_permutations_and_transformations(
         &self,
         data: &mut [Self::T],
@@ -114,8 +205,8 @@ pub trait FiniteElement {
     }
 }
 
+/// A factory that can create elements belonging to a given element family.
 pub trait ElementFamily {
-    //! A family of finite elements
     /// The scalar type
     type T: RlstScalar;
     /// Cell type
@@ -123,28 +214,13 @@ pub trait ElementFamily {
     /// The finite element type
     type FiniteElement: FiniteElement<T = Self::T, CellType = Self::CellType> + 'static;
 
-    /// Get an elenent for a cell type
+    /// Create an element for the given cell type.
     fn element(&self, cell_type: Self::CellType) -> Self::FiniteElement;
 }
 
-pub trait QuadratureRule {
-    //! A quadrature rule
-    /// The scalar type
-    type T: RlstScalar;
-    /// Quadrature points
-    fn points(&self) -> &[Self::T];
-    /// Quadrature weights
-    fn weights(&self) -> &[Self::T];
-    /// Number of quadrature points
-    fn npoints(&self) -> usize;
-    /// Topological dimension of cell (ie number of components of each point)
-    fn dim(&self) -> usize;
-}
-
+/// A map from the reference cell to physical cells.
 pub trait Map {
-    //! A map from the reference cell to physical cells
-
-    /// Push function values forward to a physical cell
+    /// Push values from the reference cell to physical cells.
     fn push_forward<
         T: RlstScalar,
         Array3RealImpl: ValueArrayImpl<T::Real, 3>,
@@ -160,7 +236,7 @@ pub trait Map {
         physical_values: &mut Array<Array4MutImpl, 4>,
     );
 
-    /// Pull function values back to the reference cell
+    /// Pull values back to the reference cell.
     fn pull_back<
         T: RlstScalar,
         Array3RealImpl: ValueArrayImpl<T::Real, 3>,
@@ -176,6 +252,6 @@ pub trait Map {
         reference_values: &mut Array<Array4MutImpl, 4>,
     );
 
-    /// The value shape on a physical cell
+    /// The value shape on a physical cell.
     fn physical_value_shape(&self, gdim: usize) -> Vec<usize>;
 }
