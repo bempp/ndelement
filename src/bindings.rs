@@ -686,7 +686,7 @@ pub mod ciarlet {
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
     pub fn ciarlet_element_embedded_superdegree<E: FiniteElement>(element: &E) -> usize {
-        element.embedded_superdegree()
+        element.lagrange_superdegree()
     }
 
     #[concretise_types(

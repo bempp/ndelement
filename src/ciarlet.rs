@@ -72,7 +72,13 @@ impl<T: RlstScalar, M: Map> CiarletElement<T, M>
 where
     DynArray<T, 2>: Inverse<Output = DynArray<T, 2>>,
 {
-    /// Create a Ciarlet element
+    /// Create a Ciarlet element.
+    ///
+    /// This should not be used directly. Instead users should call the `create`
+    /// function for one of the following special cases of a general Ciarlet element.
+    /// - [crate::ciarlet::lagrange::create]: Create a new Lagrange element.
+    /// - [crate::ciarlet::nedelec::create]: Create a new Nedelec element.
+    /// - [crate::ciarlet::raviart_thomas::create]: Create a Raviart-Thomas element.
     #[allow(clippy::too_many_arguments)]
     pub fn create(
         family_name: String,
@@ -603,7 +609,7 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
     fn cell_type(&self) -> ReferenceCellType {
         self.cell_type
     }
-    fn embedded_superdegree(&self) -> usize {
+    fn lagrange_superdegree(&self) -> usize {
         self.embedded_superdegree
     }
     fn dim(&self) -> usize {

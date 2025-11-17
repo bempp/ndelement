@@ -5,7 +5,7 @@ pub use legendre::{shape as legendre_shape, tabulate as tabulate_legendre_polyno
 use crate::reference_cell;
 use crate::types::ReferenceCellType;
 
-/// The number of polynomials
+/// Return the number of polynomial terms of the form $x^iy^jz^k$ for a Lagrange type element.
 pub fn polynomial_count(cell_type: ReferenceCellType, degree: usize) -> usize {
     match cell_type {
         ReferenceCellType::Interval => degree + 1,
@@ -19,12 +19,12 @@ pub fn polynomial_count(cell_type: ReferenceCellType, degree: usize) -> usize {
     }
 }
 
-/// The total number of partial derivatives up to a give degree
-pub fn derivative_count(cell_type: ReferenceCellType, derivatives: usize) -> usize {
+/// Return the total number of partial derivatives up to a given degree.
+pub fn derivative_count(cell_type: ReferenceCellType, degree: usize) -> usize {
     let mut num = 1;
     let mut denom = 1;
     for i in 0..reference_cell::dim(cell_type) {
-        num *= derivatives + i + 1;
+        num *= degree + i + 1;
         denom *= i + 1;
     }
     num / denom

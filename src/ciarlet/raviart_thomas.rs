@@ -483,6 +483,8 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
 }
 
 /// Raviart-Thomas element family
+///
+/// A factory structure to create new Raviart-Thomas elements.
 pub struct RaviartThomasElementFamily<T: RlstScalar + Getrf + Getri> {
     degree: usize,
     continuity: Continuity,
@@ -490,7 +492,7 @@ pub struct RaviartThomasElementFamily<T: RlstScalar + Getrf + Getri> {
 }
 
 impl<T: RlstScalar + Getrf + Getri> RaviartThomasElementFamily<T> {
-    /// Create new family
+    /// Create new family with given `degree` and `continuity`.
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
             degree,

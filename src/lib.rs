@@ -1,4 +1,8 @@
-//! n-dimensional grid
+//! A library for the definition and tabulation of finite elements in Rust.
+//!
+//! `ndelement` provides definition of many frequently used low and high order finite elements
+//! and provides routines for the tabulation of their values.
+//!
 #![cfg_attr(feature = "strict", deny(warnings), deny(unused_crate_dependencies))]
 #![warn(missing_docs)]
 
