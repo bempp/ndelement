@@ -161,31 +161,6 @@ pub fn apply_matrix<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>>(
     }
 }
 
-// /// Orthogonalise the rows of a matrix, starting with the row numbered `start`
-// pub(crate) fn orthogonalise<T: RlstScalar, Array2MutImpl: MutableArrayImpl<T, 2>>(
-//     mat: &mut Array<Array2MutImpl, 2>,
-//     start: usize,
-// ) {
-//     for row in start..mat.shape()[0] {
-//         let norm = (0..mat.shape()[1])
-//             .map(|i| mat.get([row, i]).unwrap().powi(2))
-//             .sum::<T>()
-//             .sqrt();
-//         for i in 0..mat.shape()[1] {
-//             *mat.get_mut([row, i]).unwrap() /= norm;
-//         }
-//         for r in row + 1..mat.shape()[0] {
-//             let dot = (0..mat.shape()[1])
-//                 .map(|i| *mat.get([row, i]).unwrap() * *mat.get([r, i]).unwrap())
-//                 .sum::<T>();
-//             for i in 0..mat.shape()[1] {
-//                 let sub = dot * *mat.get([row, i]).unwrap();
-//                 *mat.get_mut([r, i]).unwrap() -= sub;
-//             }
-//         }
-//     }
-// }
-
 #[cfg(test)]
 mod test {
     use super::*;
