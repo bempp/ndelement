@@ -1,4 +1,30 @@
-//! Finite element definitions
+//! Ciarlet finite elements.
+//!
+//! In the Ciarlet definition, a finite element is defined to be a triple
+//! $(\mathcal{R}, \mathcal{V}, \mathcal{L})$, where:
+//!
+//! - $\mathcal{R}\subset\mathbb{R}^d$ is the reference cell,
+//! - $\mathcal{V}$ is a finite dimensional function space on $\mathcal{R}$ of dimension $n$, usually polynomials,
+//! - $\mathcal{L} = \{\ell_0,\dots, \ell_{n-1}\}$ is a basis of the dual space $\mathcal{V}^* = \set{f:\mathcal{V} -> \mathbb{R}: f\text{ is linear}}$, with
+//    each functional associated with a subentity of the reference cell $\mathcal{R}$.
+//!
+//! The basis functions $\phi_0,\dots, \phi_{n-1}$ of the finite element space are defined by
+//! $$\ell_i(\phi_j) = \begin{cases}1 &\text{if }~i = j \newline
+//! 0 &\text{otherwise}\end{cases}.
+//! $$
+//!
+//! ## Example
+//! The order 1 [Lagrange space](https://defelement.org/elements/lagrange.html) on a triangle is
+//! defined by:
+//!
+//! - $\mathcal{R}$ is a triangle with vertices $(0, 0)$, $(1, 0)$, $(0, 1)$.
+//! - $\mathcal{V} = \text{span}\set{1, x, y}$.
+//! - $\mathcal{L} = \set{\ell_0, \ell_0, \ell_1}$ with $\ell_j$ the pointwise evaluation at vertex $v_j$, and each functional associated with the relevant vertex.
+//!
+//! This gives the basis functions $\phi_0(x, y) = 1 - x - y$, $\phi_1(x, y) = x$, $\phi_2(x, y) = y$.
+//!
+//! ## References
+//! - [https://defelement.org/ciarlet.html](https://defelement.org/ciarlet.html)
 
 extern crate blas_src;
 extern crate lapack_src;
@@ -74,8 +100,8 @@ where
 {
     /// Create a Ciarlet element.
     ///
-    /// This should not be used directly. Instead users should call the `create`
-    /// function for one of the following special cases of a general Ciarlet element.
+    /// The majority of users will not wish to use this directly, and should insteal call
+    /// the `create`function for one of the following special cases of a general Ciarlet element:
     /// - [crate::ciarlet::lagrange::create]: Create a new Lagrange element.
     /// - [crate::ciarlet::nedelec::create]: Create a new Nedelec element.
     /// - [crate::ciarlet::raviart_thomas::create]: Create a Raviart-Thomas element.

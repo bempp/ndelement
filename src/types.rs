@@ -1,4 +1,4 @@
-//! Types
+//! Types.
 #[cfg(feature = "mpi")]
 use mpi::traits::Equivalence;
 use rlst::{DynArray, RlstScalar};

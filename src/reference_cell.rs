@@ -1,4 +1,13 @@
-//! Cell definitions
+//! Cell definitions.
+//!
+//! The reference cells used by ndelement are defined by:
+//! - The reference interval is \(\left\{x\,\middle|\,0\leqslant x\leqslant 1\right\}\).
+//! - The reference triangle is \(\left\{(x,y)\,\middle|\,0\leqslant x,\,0\leqslant y,\,x+y\leqslant1\right\}\).
+//! - The reference quadrilateral is \(\left\{(x,y)\,\middle|\,0\leqslant x\leqslant1,\,0\leqslant y\leqslant1\right\}\).
+//! - The reference tetrahedron is \(\left\{(x,y,z)\,\middle|\,0\leqslant x,\,0\leqslant y,\,0\leqslant z,\,x+y+z\leqslant1\right\}\).
+//! - The reference hexahedron is \(\left\{(x,y,z)\,\middle|\,0\leqslant x\leqslant1,\,0\leqslant y\leqslant1,\,0\leqslant z\leqslant1\right\}\).
+//! - The reference prism is \(\left\{(x,y,z)\,\middle|\,0\leqslant x,\,0\leqslant y,\,x+y\leqslant1,\,0\leqslant z\leqslant1\right\}\).
+//! - The reference pyramid is \(\left\{(x,y,z)\,\middle|\,0\leqslant x,\,0\leqslant y,\,0\leqslant z\leqslant1,\,x+z\leqslant1,\,y+z\leqslant1\right\}\).
 
 use crate::types::ReferenceCellType;
 use rlst::RlstScalar;

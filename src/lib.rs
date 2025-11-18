@@ -33,7 +33,7 @@
 //!    element.tabulate(&points, 0, &mut basis_values);
 //!    println!(
 //!        "The values of the basis functions at the point (1/2, 1/2) are: {:?}",
-//!    basis_values.data()
+//!        basis_values.data()
 //!    );
 //! ```
 #![cfg_attr(feature = "strict", deny(warnings), deny(unused_crate_dependencies))]

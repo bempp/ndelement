@@ -1,4 +1,4 @@
-//! Nedelec elements
+//! Nedelec elements.
 
 use super::CiarletElement;
 use crate::map::CovariantPiolaMap;
@@ -641,7 +641,8 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
 
 /// Nedelec (first kind) element family
 ///
-/// A factory structure to create new Nedelec elements.
+/// A family of Nedelec elements on multiple cell types with appropriate
+/// continuity across different cell types.
 pub struct NedelecFirstKindElementFamily<T: RlstScalar + Getrf + Getri> {
     degree: usize,
     continuity: Continuity,
