@@ -56,11 +56,14 @@ pub trait FiniteElement {
     fn dim(&self) -> usize;
 
     /// The shape of the values returned by functions in $\mathcal{V}$.
+    ///
+    /// If the values are scalar an empty slice is returned.
     fn value_shape(&self) -> &[usize];
 
     /// The number of values returned.
     ///
-    /// If e.g. `value_shape = [3, 4]` then `value_size = 3 x 4 = 12`.
+    /// This is the product of the elements of `value_shape`, e.g. if `value_shape = [3, 4]` then `value_size = 3 x 4 = 12`.
+    /// If `value_shape` returns an empty array (i.e. the shape functions are scalar) the convention is used that the product of the elements of an empty array is `1`.
     fn value_size(&self) -> usize;
 
     /// Tabulate the values of the basis functions and their derivatives at a set of points
