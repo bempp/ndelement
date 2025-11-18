@@ -1,11 +1,27 @@
 //! Orthonormal polynomials
+//!
+//! The orthonormal polynomials in ndelement span the degree $k$ natural polynomial (or rationomial
+//! for a pyramid) space on a cell. As given at https://defelement.org/ciarlet.html#The+degree+of+a+finite+element,
+//! these natural spaces are defined for an interval, triangle, quadrilateral, tetrahedron,
+//| hexahedron, triangular prism and square-based pyramid by
+//! - $\mathbb{P}^{\text{interval}}_k=\operatorname{span}\left\{x^{p_0}\,\middle|\,p_0\in\mathbb{N},\,p_0\leqslant k\right\},$
+//! - $\mathbb{P}^{\text{triangle}}_k=\operatorname{span}\left\{x^{p_0}y^{p_1}\,\middle|\,p_0,p_1\in\mathbb{N}_0,\,p_0+p_1\leqslant k\right\},$
+//! - $\mathbb{P}^{\text{quadrilateral}}_k=\operatorname{span}\left\{x^{p_0}y^{p_1}\,\middle|\,p_0,p_1\in\mathbb{N}_0,\,p_0\leqslant k,\,p_1\leqslant k\right\},$
+//! - $\mathbb{P}^{\text{tetrahedron}}_k=\operatorname{span}\left\{x^{p_0}y^{p_1}z^{p_2}\,\middle|\,p_0,p_1,p_2\in\mathbb{N}_0,\,p_0+p_1+p_2\leqslant k\right\},$
+//! - $\mathbb{P}^{\text{hexahedron}}_k=\operatorname{span}\left\{x^{p_0}y^{p_1}z^{p_2}\,\middle|\,p_0,p_1,p_2\in\mathbb{N}_0,\,p_0\leqslant k,\,p_1\leqslant k,\,p_2\leqslant k\right\},$
+//! - $\mathbb{P}^{\text{prism}}_k=\operatorname{span}\left\{x^{p_0}y^{p_1}z^{p_2}\,\middle|\,p_0,p_1,p_2\in\mathbb{N}_0,\,p_0+p_1\leqslant k,\,p_2\leqslant k\right\},$
+//! - $\mathbb{P}^{\text{pyramid}}_k=\operatorname{span}\left\{\frac{x^{p_0}y^{p_1}z^{p_2}}{(1-z)^{p_0+p_1}}\,\middle|\,p_0,p_1,p_2\in\mathbb{N}_0,\,p_0\leqslant k,\,p_1\leqslant k,\,p_2\leqslant k\right\}.$
+//! Not that for non-pyramid cells, these coincide with the polynomial space for the degree $k$
+//! Lagrange element on the cell.
+
+
 mod legendre;
 pub use legendre::{shape as legendre_shape, tabulate as tabulate_legendre_polynomials};
 
 use crate::reference_cell;
 use crate::types::ReferenceCellType;
 
-/// Return the number of polynomial terms of the form $x^iy^jz^k$ for a Lagrange type element.
+/// Return the number of polynomials in the natural polynomial set for a given cell type and degree.
 pub fn polynomial_count(cell_type: ReferenceCellType, degree: usize) -> usize {
     match cell_type {
         ReferenceCellType::Interval => degree + 1,
