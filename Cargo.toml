@@ -44,9 +44,6 @@ blas-src = { version = "0.14", features = ["blis"]}
 paste = "1.*"
 approx = "0.5"
 
-[build]
-rustdocflags = [ "--html-in-header", "katex-header.html" ]
-
 [build-dependencies]
 cbindgen = "0.29.*"
 
