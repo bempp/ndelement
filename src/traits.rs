@@ -96,7 +96,8 @@ pub trait FiniteElement {
     /// on the reference cell differ from those on the physical cell: for example Nedlec elements use a covariant
     /// Piola transform. This method implements the appropriate transformation for the element.
     ///
-    /// - `reference_values`: The values on the reference cell.
+    /// - `reference_values`: The values on the reference cell. The shape of this input is the same as the `data` input to the function
+    ///    [[FiniteElement::tabulate].
     /// - `nderivs`: The number of derivatives.
     /// - `jacobians:` A three-dimensional array of jacobians of the map from reference to physical cell.
     ///   The first dimension is the reference point, the second dimension is the geometric dimension of the physical space, and
@@ -109,7 +110,8 @@ pub trait FiniteElement {
     ///   `inverse_jacobians[j, :, :]`. The first dimension of `inverse_jacobians` is the point index, the second dimension
     ///   is the topological dimension, and the third dimension is the geometric dimension. If the Jacobian is rectangular then the
     ///   inverse Jacobian is the pseudo-inverse of the Jacobian, ie the matrix $J^\dagger$ such that $J^\dagger J = I$.
-    /// - `physical_values`: The output array of the push operation. Its required shape can be queried with [FiniteElement::physical_value_shape].
+    /// - `physical_values`: The output array of the push operation. This shape of this array is the same as the `reference_values`
+    ///   input, with the [FiniteElement::physical_value_size] used instead of the reference value size.
     fn push_forward<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
