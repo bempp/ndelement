@@ -92,25 +92,23 @@ pub trait FiniteElement {
 
     /// Push function values forward to a physical cell.
     ///
-    /// Usually this is just an identity map. But for certain element types function values
-    /// on the reference cell differ from those on the physical cell, eg in the case of a
-    /// Piola transform. This method implements the corresponding transformation or an identity
-    /// map if no transformation is required.
+    /// For Lagrange elements, this is an identity map. For many other element types, the function values
+    /// on the reference cell differ from those on the physical cell: for example Nedlec elements use a covariant
+    /// Piola transform. This method implements the appropriate transformation for the element.
     ///
     /// - `reference_values`: The values on the reference cell.
-    /// - `nderivs`: The number (degree) of derivatives.
+    /// - `nderivs`: The number of derivatives.
     /// - `jacobians:` A three-dimensional array of jacobians of the map from reference to physical cell.
-    ///   The first dimension is the reference point. The second dimension is the geometric dimension of the physical space and
-    ///   the third dimension is the topological dimension of the reference element, eg
+    ///   The first dimension is the reference point, the second dimension is the geometric dimension of the physical space, and
+    ///   the third dimension is the topological dimension of the reference element. For example,
     ///   for the map of 5 points from the reference triangle to a physical surface triangle embedded in 3d space the dimension
     ///   of `jacobians` is `[5, 3, 2]`.
-    /// - `jacobian_determinants`: Let $J$ be the Jacobian from the map of the reference to the physical element at a given point.
-    ///   The corresponding Jacobian determinant is given as $d = \sqrt{\det(J^TJ)}$. `jacobian_determinants[j]` stores the Jacobian
-    ///   determinant at position `j`.
-    /// - `inverse_jacobians`: A three dimensional array that stores the inverse Jacobian for the point with index j at position
-    ///   `inverse_jacobians[j, :, :]`. The first dimension of `inverse_jacobians` is the point index. The second dimension
+    /// - `jacobian_determinants`: The determinant of the jacobian at each point. If the jacobian $J$ is not square, then the
+    ///   determinant is computed using $d=\sqrt{\det(J^TJ)}$.
+    /// - `inverse_jacobians`: A three dimensional array that stores the inverse jacobian for the point with index j at position
+    ///   `inverse_jacobians[j, :, :]`. The first dimension of `inverse_jacobians` is the point index, the second dimension
     ///   is the topological dimension, and the third dimension is the geometric dimension. If the Jacobian is rectangular then the
-    ///   inverse Jacobian is the pseudo-inverse of the Jacobian such that $J^\dagger J = I$.
+    ///   inverse Jacobian is the pseudo-inverse of the Jacobian, ie the matrix $J^\dagger$ such that $J^\dagger J = I$.
     /// - `physical_values`: The output array of the push operation. Its required shape can be queried with [FiniteElement::physical_value_shape].
     fn push_forward<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
