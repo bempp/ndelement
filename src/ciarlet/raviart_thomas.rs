@@ -484,7 +484,8 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
 
 /// Raviart-Thomas element family
 ///
-/// A factory structure to create new Raviart-Thomas elements.
+/// A family of Raviart-Thomas elements on multiple cell types with appropriate
+/// continuity across different cell types.
 pub struct RaviartThomasElementFamily<T: RlstScalar + Getrf + Getri> {
     degree: usize,
     continuity: Continuity,

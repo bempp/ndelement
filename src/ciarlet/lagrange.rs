@@ -270,7 +270,8 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
 
 /// Lagrange element family.
 ///
-/// A factory structure to create new Lagrange elements.
+/// A family of Lagrange elements on multiple cell types with appropriate
+/// continuity across different cell types.
 pub struct LagrangeElementFamily<T: RlstScalar + Getrf + Getri> {
     degree: usize,
     continuity: Continuity,
