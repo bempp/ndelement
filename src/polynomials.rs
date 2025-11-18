@@ -1,7 +1,7 @@
 //! Orthonormal polynomials
 //!
 //! The orthonormal polynomials in ndelement span the degree $k$ natural polynomial (or rationomial
-//! for a pyramid) space on a cell. As given at https://defelement.org/ciarlet.html#The+degree+of+a+finite+element,
+//! for a pyramid) space on a cell. As given at <https://defelement.org/ciarlet.html#The+degree+of+a+finite+element>,
 //! these natural spaces are defined for an interval, triangle, quadrilateral, tetrahedron,
 //| hexahedron, triangular prism and square-based pyramid by
 //! - $\mathbb{P}^{\text{interval}}_k=\operatorname{span}\left\{x^{p_0}\,\middle|\,p_0\in\mathbb{N},\,p_0\leqslant k\right\},$

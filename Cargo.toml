@@ -47,7 +47,6 @@ approx = "0.5"
 [build]
 rustdocflags = [ "--html-in-header", "katex-header.html" ]
 
-
 [build-dependencies]
 cbindgen = "0.29.*"
 
