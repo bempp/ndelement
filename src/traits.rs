@@ -54,10 +54,12 @@ pub trait FiniteElement {
     /// Let $d^{i + k} = dx^{i}dy^{j}$ be a derivative with respect to $x$, $y$ in two dimensions and    
     /// $d^{i + k + j} = dx^{i}dy^{j}dz^{k}$ be a derivative with respect to $x$, $y$, and $z$ in three dimensions.
     /// Then the corresponding index $\ell$ in the first dimension of the `data` array is computed as follows.
+    ///
     /// - Triangle: $l = (i + j + 1) * (i + j) / 2 + j$
     /// - Quadrilateral: $l = i * (n + 1) + j$
     /// - Tetrahedron: $l = (i + j + k) * (i + j + k + 1) * (i + j + k + 2) / 6 + (j + k) * (j + k + 1) / 2 + k$
     /// - Hexahedron $l = i * (n + 1) * (n + 1) + j * (n + 1) + k$.
+    ///
     /// For the quadrilaterals and hexahedra, the parameter $n$ denotes the Lagrange superdegree.
     fn tabulate<
         Array2Impl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 2>,
@@ -97,7 +99,7 @@ pub trait FiniteElement {
     /// Piola transform. This method implements the appropriate transformation for the element.
     ///
     /// - `reference_values`: The values on the reference cell. The shape of this input is the same as the `data` input to the function
-    ///    [[FiniteElement::tabulate].
+    ///   [[FiniteElement::tabulate].
     /// - `nderivs`: The number of derivatives.
     /// - `jacobians:` A three-dimensional array of jacobians of the map from reference to physical cell.
     ///   The first dimension is the reference point, the second dimension is the geometric dimension of the physical space, and

@@ -3,7 +3,8 @@
 //! The orthonormal polynomials in ndelement span the degree $k$ natural polynomial (or rationomial
 //! for a pyramid) space on a cell. As given at <https://defelement.org/ciarlet.html#The+degree+of+a+finite+element>,
 //! these natural spaces are defined for an interval, triangle, quadrilateral, tetrahedron,
-//| hexahedron, triangular prism and square-based pyramid by
+//! hexahedron, triangular prism and square-based pyramid by
+//!
 //! - $\mathbb{P}^{\text{interval}}_k=\operatorname{span}\left\{x^{p_0}\,\middle|\,p_0\in\mathbb{N},\,p_0\leqslant k\right\},$
 //! - $\mathbb{P}^{\text{triangle}}_k=\operatorname{span}\left\{x^{p_0}y^{p_1}\,\middle|\,p_0,p_1\in\mathbb{N}_0,\,p_0+p_1\leqslant k\right\},$
 //! - $\mathbb{P}^{\text{quadrilateral}}_k=\operatorname{span}\left\{x^{p_0}y^{p_1}\,\middle|\,p_0,p_1\in\mathbb{N}_0,\,p_0\leqslant k,\,p_1\leqslant k\right\},$
@@ -11,7 +12,8 @@
 //! - $\mathbb{P}^{\text{hexahedron}}_k=\operatorname{span}\left\{x^{p_0}y^{p_1}z^{p_2}\,\middle|\,p_0,p_1,p_2\in\mathbb{N}_0,\,p_0\leqslant k,\,p_1\leqslant k,\,p_2\leqslant k\right\},$
 //! - $\mathbb{P}^{\text{prism}}_k=\operatorname{span}\left\{x^{p_0}y^{p_1}z^{p_2}\,\middle|\,p_0,p_1,p_2\in\mathbb{N}_0,\,p_0+p_1\leqslant k,\,p_2\leqslant k\right\},$
 //! - $\mathbb{P}^{\text{pyramid}}_k=\operatorname{span}\left\{\frac{x^{p_0}y^{p_1}z^{p_2}}{(1-z)^{p_0+p_1}}\,\middle|\,p_0,p_1,p_2\in\mathbb{N}_0,\,p_0\leqslant k,\,p_1\leqslant k,\,p_2\leqslant k\right\}.$
-//! Not that for non-pyramid cells, these coincide with the polynomial space for the degree $k$
+//!
+//! Note that for non-pyramid cells, these coincide with the polynomial space for the degree $k$
 //! Lagrange element on the cell.
 
 mod legendre;
