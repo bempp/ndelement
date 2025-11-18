@@ -5,29 +5,6 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 /// This trait provides the definition of a finite element.
-///
-/// A finite element in the Ciarlet definition can be described as a triplet
-/// $(\mathcal{R}, \mathcal{V}, \mathcal{L})$. Here, $\mathcal{R}\in\mathbb{R}^d$ is the reference cell,
-/// $\mathcal{V}$ is a finite dimensional function space on $\mathcal{R}$ of dimension $n$, usually polynomials,
-/// $\mathcal{L} = \{\ell_0,\dots, \ell_{n-1}\}$ is a basis of the dual space $\mathcal{V}^* = \set{f:\mathcal{V} -> \mathbb{R}: f\text{ is linear}}$.
-/// The basis functions $\phi_0,\dots, \phi_{n-1}$ of the finite element space are defined by
-/// $$\ell_i(\phi_j) = \begin{cases}1 &\text{if }~i = j \newline
-/// 0 &\text{otherwise}\end{cases}.
-/// $$
-///
-/// ## Example
-///
-/// The order 1 [Lagrange space](https://defelement.org/elements/lagrange.html) on a triangle is
-/// defined by:
-/// - $\mathcal{R}$ is a triangle with vertices $(0, 0)$, $(1, 0)$, $(0, 1)$.
-/// - $\mathcal{V} = \text{span}\set{1, x, y}$.
-/// - $\mathcal{L} = \set{\ell_0, \ell_0, \ell_1}$ with $\ell_j$ the pointwise evaluation at vertex $v_j$.
-///
-/// This gives the basis functions $\phi_0(x, y) = 1 - x - y$, $\phi_1(x, y) = x$, $\phi_2(x, y) = y$.
-///
-/// ## References
-///
-/// - [https://defelement.org/ciarlet.html](https://defelement.org/ciarlet.html)
 pub trait FiniteElement {
     /// The scalar type
     type T: RlstScalar;
@@ -43,7 +20,7 @@ pub trait FiniteElement {
     /// In most cases these will be rotations and reflections as defined in [Transformation](crate::types::Transformation).
     type TransformationType: Debug + PartialEq + Eq + Clone + Copy + Hash;
 
-    /// The reference cell type, e.g. one of `Point`, `Interval`, `Triangle`, etc.
+    /// The reference cell type, eg one of `Point`, `Interval`, `Triangle`, etc.
     fn cell_type(&self) -> Self::CellType;
 
     /// The smallest degree Lagrange space that contains all possible polynomials of the finite element's polynomial space.
@@ -60,7 +37,7 @@ pub trait FiniteElement {
 
     /// The number of values returned.
     ///
-    /// If e.g. `value_shape = [3, 4]` then `value_size = 3 x 4 = 12`.
+    /// If eg `value_shape = [3, 4]` then `value_size = 3 x 4 = 12`.
     fn value_size(&self) -> usize;
 
     /// Tabulate the values of the basis functions and their derivatives at a set of points
@@ -101,7 +78,7 @@ pub trait FiniteElement {
     /// - For `entity_dim = 1` this returns the dofs associated with the corresponding edge.
     /// - For `entity_dim = 2` this returns the dofs associated with the corresponding face.
     ///
-    /// Note that this does not return dofs on the boundary of an entity, that means e.g.
+    /// Note that this does not return dofs on the boundary of an entity, that means eg
     /// for an edge the dofs associated with the two vertices at the boundary of the edge are not returned.
     /// To return also the boundary dofs use [FiniteElement::entity_closure_dofs].
     fn entity_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
@@ -109,7 +86,7 @@ pub trait FiniteElement {
     /// The DOFs that are associated with a closure of a subentity of the reference cell.
     ///
     /// This method is similar to [FiniteElement::entity_dofs]. But it returns additionally the dofs
-    /// associated with the boundary of an entity, e.g. for an edge it returns also the dofs associated
+    /// associated with the boundary of an entity, eg for an edge it returns also the dofs associated
     /// with the boundary vertices of they exist.
     fn entity_closure_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
 
@@ -119,7 +96,7 @@ pub trait FiniteElement {
     /// Push function values forward to a physical cell.
     ///
     /// Usually this is just an identity map. But for certain element types function values
-    /// on the reference cell differ from those on the physical cell, e.g. in the case of a
+    /// on the reference cell differ from those on the physical cell, eg in the case of a
     /// Piola transform. This method implements the corresponding transformation or an identity
     /// map if no transformation is required.
     ///
@@ -127,7 +104,7 @@ pub trait FiniteElement {
     /// - `nderivs`: The number (degree) of derivatives.
     /// - `jacobians:` A three-dimensional array of jacobians of the map from reference to physical cell.
     ///   The first dimension is the reference point. The second dimension is the geometric dimension of the physical space and
-    ///   the third dimension is the topological dimension of the reference element, e.g.
+    ///   the third dimension is the topological dimension of the reference element, eg
     ///   for the map of 5 points from the reference triangle to a physical surface triangle embedded in 3d space the dimension
     ///   of `jacobians` is `[5, 3, 2]`.
     /// - `jacobian_determinants`: Let $J$ be the Jacobian from the map of the reference to the physical element at a given point.
