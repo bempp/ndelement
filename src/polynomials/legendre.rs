@@ -1,4 +1,4 @@
-//! Orthonormal polynomials
+//! Orthonormal polynomials.
 //!
 //! Adapted from the C++ code by Chris Richardson and Matthew Scroggs
 //! <https://github.com/FEniCS/basix/blob/main/cpp/basix/polyset.cpp>

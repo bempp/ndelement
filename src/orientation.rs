@@ -1,4 +1,4 @@
-//! Cell orientation
+//! Cell orientation.
 
 use crate::{reference_cell, types::ReferenceCellType};
 use itertools::izip;

@@ -1,4 +1,4 @@
-//! Quadrature
+//! Quadrature.
 use crate::types::ReferenceCellType;
 use bempp_quadrature::{
     gauss_jacobi, simplex_rules,

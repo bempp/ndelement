@@ -1,4 +1,4 @@
-//! Maps from the reference cell to/from physical cells
+//! Maps from the reference cell to/from physical cells.
 use crate::traits::Map;
 use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 

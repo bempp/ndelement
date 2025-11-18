@@ -1,4 +1,4 @@
-//! Raviart-Thomas elements
+//! Raviart-Thomas elements.
 
 use super::CiarletElement;
 use crate::map::ContravariantPiolaMap;

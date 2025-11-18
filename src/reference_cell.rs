@@ -1,4 +1,4 @@
-//! Cell definitions
+//! Cell definitions.
 //!
 //! The reference cells used by ndelement are defined by:
 //! - The reference interval is \(\left\{x\,\middle|\,0\leqslant x\leqslant 1\right\}\).

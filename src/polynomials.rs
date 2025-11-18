@@ -1,4 +1,4 @@
-//! Orthonormal polynomials
+//! Orthonormal polynomials.
 //!
 //! The orthonormal polynomials in ndelement span the degree $k$ natural polynomial (or rationomial
 //! for a pyramid) space on a cell. As given at <https://defelement.org/ciarlet.html#The+degree+of+a+finite+element>,

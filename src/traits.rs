@@ -1,4 +1,4 @@
-//! Traits
+//! Traits.
 use crate::types::DofTransformation;
 use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 use std::fmt::Debug;

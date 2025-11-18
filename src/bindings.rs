@@ -1,4 +1,4 @@
-//! Binding for C
+//! Bindings for C.
 #![allow(missing_docs)]
 #![allow(clippy::missing_safety_doc)]
 

@@ -1,4 +1,4 @@
-//! Mathematical functions
+//! Mathematical functions.
 use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 
 /// Orthogonalise the rows of a matrix, starting with the row numbered `start`

@@ -1,4 +1,4 @@
-//! Lagrange elements
+//! Lagrange elements.
 
 use super::CiarletElement;
 use crate::map::IdentityMap;

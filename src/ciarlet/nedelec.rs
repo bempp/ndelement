@@ -1,4 +1,4 @@
-//! Nedelec elements
+//! Nedelec elements.
 
 use super::CiarletElement;
 use crate::map::CovariantPiolaMap;
