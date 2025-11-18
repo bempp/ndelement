@@ -62,7 +62,7 @@ impl Map for IdentityMap {
 /// $$
 /// J^{-T}\Phi\circ F^{-1}
 /// $$
-/// The coviariant Piola map preserves tangential continuity. If $J$
+/// The covariant Piola map preserves tangential continuity. If $J$
 /// is a rectangular matrix then the pseudo-inverse is used instead of
 /// the inverse.
 pub struct CovariantPiolaMap {}
@@ -157,9 +157,11 @@ impl Map for CovariantPiolaMap {
 /// and let $J$ be its Jacobian. Let $\Phi$ be the function values
 /// on the reference cell.  The contravariant Piola map is defined by
 /// $$
-/// \frac{1}{\sqrt{\det{J^TJ}}}J\Phi\circ F^{-1}
+/// \frac{1}{\det{J}}J\Phi\circ F^{-1}
 /// $$
-/// The contravariant Piola map preserves normal continuity.
+/// The contravariant Piola map preserves normal continuity. If $J$
+/// is a rectangular matrix then $\sqrt{\det{J^TJ}}$ is used instead
+/// of $\det{J}$.
 pub struct ContravariantPiolaMap {}
 
 impl Map for ContravariantPiolaMap {
