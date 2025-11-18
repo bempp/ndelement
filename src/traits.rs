@@ -37,31 +37,28 @@ pub trait FiniteElement {
 
     /// The number of values returned.
     ///
-    /// If eg `value_shape = [3, 4]` then `value_size = 3 x 4 = 12`.
+    /// If (for example) `value_shape` is `[3, 4]` then `value_size` is $3\times4 = 12$.
     fn value_size(&self) -> usize;
 
     /// Tabulate the values of the basis functions and their derivatives at a set of points
     ///
     /// - `points` is a two-dimensional array where each column contains the coordinates of one point.
     /// - `nderivs` is the desired number of derivatives (0 for no derivatives, 1 for all first order derivatives, etc.).
-    /// - `data` is the 4-dimensional output array. The first dimension is the number of derivatives,
-    ///   the second dimension is the number of evaluation points, the third dimension is the number `n` of
-    ///   basis functions on the element and the last dimension is the value size of the basis function output.
-    ///   For example, `data[3, 2, 1, 0]` returns the 0th value of the third derivative on the point with index 2 for the
+    /// - `data` is the 4-dimensional output array. The first dimension is the total number of partial derivatives,
+    ///   the second dimension is the number of evaluation points, the third dimension is the number of
+    ///   basis functions of the element, and the fourth dimension is the value size of the basis function output.
+    ///   For example, `data[3, 2, 1, 0]` returns the 0th value of the third partial derivative on the point with index 2 for the
     ///   basis function with index 1.
     ///
     /// ## Remark
-    ///
     /// Let $d^{i + k} = dx^{i}dy^{j}$ be a derivative with respect to $x$, $y$ in two dimensions and    
     /// $d^{i + k + j} = dx^{i}dy^{j}dz^{k}$ be a derivative with respect to $x$, $y$, and $z$ in three dimensions.
     /// Then the corresponding index $\ell$ in the first dimension of the `data` array is computed as follows.
-    /// - Triangle: $\ell = (i + j + 1) * (i + j) / 2 + j$
-    /// - Quadrilateral: $\ell = i * (n + 1) + j$
-    /// - Tetrahedron: $\ell = (i + j + k) * (i + j + k + 1) * (i + j + k + 2) / 6 + (j + k) * (j + k + 1) / 2 + k$
-    /// - Hexahedron $\ell = i * (n + 1) * (n + 1) + j * (n + 1) + k$.
-    ///
-    /// For the quadrilateral and hexahedron the parameter $n$ denotes the degree of the Lagrange space.
-    ///
+    /// - Triangle: $l = (i + j + 1) * (i + j) / 2 + j$
+    /// - Quadrilateral: $l = i * (n + 1) + j$
+    /// - Tetrahedron: $l = (i + j + k) * (i + j + k + 1) * (i + j + k + 2) / 6 + (j + k) * (j + k + 1) / 2 + k$
+    /// - Hexahedron $l = i * (n + 1) * (n + 1) + j * (n + 1) + k$.
+    /// For the quadrilaterals and hexahedra, the parameter $n$ denotes the Lagrange superdegree.
     fn tabulate<
         Array2Impl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 2>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
@@ -74,20 +71,20 @@ pub trait FiniteElement {
 
     /// Return the dof indices that are associated with the subentity with index `entity_number` and dimension `entity_dim`.
     ///
-    /// - For `entity_dim = 0` this returns the dof associated with the corresponding point.
+    /// - For `entity_dim = 0` this returns the degrees of freedom (dofs) associated with the corresponding point.
     /// - For `entity_dim = 1` this returns the dofs associated with the corresponding edge.
     /// - For `entity_dim = 2` this returns the dofs associated with the corresponding face.
     ///
-    /// Note that this does not return dofs on the boundary of an entity, that means eg
+    /// Note that this does not return dofs on the boundary of an entity, that means that (for example)
     /// for an edge the dofs associated with the two vertices at the boundary of the edge are not returned.
     /// To return also the boundary dofs use [FiniteElement::entity_closure_dofs].
     fn entity_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
 
     /// The DOFs that are associated with a closure of a subentity of the reference cell.
     ///
-    /// This method is similar to [FiniteElement::entity_dofs]. But it returns additionally the dofs
-    /// associated with the boundary of an entity, eg for an edge it returns also the dofs associated
-    /// with the boundary vertices of they exist.
+    /// This method is similar to [FiniteElement::entity_dofs], but it includes the dofs
+    /// associated with the boundary of an entity. For an edge (for example) it returns the dofs associated
+    /// with the vertices at the boundary of the edge (as well as the dofs associated with the edge itself).
     fn entity_closure_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
 
     /// Get the required shape for a tabulation array.
