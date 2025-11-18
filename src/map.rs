@@ -4,7 +4,7 @@ use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 
 /// Identity map
 ///
-/// An identity  map pushes values from the reference to the physical
+/// An identity map pushes values from the reference to the physical
 /// cell without modifying them.
 pub struct IdentityMap {}
 
