@@ -14,7 +14,6 @@
 //! Not that for non-pyramid cells, these coincide with the polynomial space for the degree $k$
 //! Lagrange element on the cell.
 
-
 mod legendre;
 pub use legendre::{shape as legendre_shape, tabulate as tabulate_legendre_polynomials};
 
