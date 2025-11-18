@@ -74,8 +74,8 @@ where
 {
     /// Create a Ciarlet element.
     ///
-    /// This should not be used directly. Instead users should call the `create`
-    /// function for one of the following special cases of a general Ciarlet element.
+    /// The majority of users will not wish to use this directly, and should insteal call
+    /// the `create`function for one of the following special cases of a general Ciarlet element:
     /// - [crate::ciarlet::lagrange::create]: Create a new Lagrange element.
     /// - [crate::ciarlet::nedelec::create]: Create a new Nedelec element.
     /// - [crate::ciarlet::raviart_thomas::create]: Create a Raviart-Thomas element.
