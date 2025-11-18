@@ -179,7 +179,8 @@ pub trait FiniteElement {
     }
 }
 
-/// A factory that can create elements belonging to a given element family.
+/// A family of finite elements defined on various cell types, with appropriate continuity
+/// between different cell types.
 pub trait ElementFamily {
     /// The scalar type
     type T: RlstScalar;
