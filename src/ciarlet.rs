@@ -446,7 +446,7 @@ where
             let mut pts = DynArray::<T::Real, 2>::from_shape(ref_pts.shape());
             for p in 0..npts {
                 for (i, c) in finv(
-                    &ref_pts.data()[ref_pts.shape()[0] * p..ref_pts.shape()[0] * (p + 1)],
+                    &ref_pts.data().unwrap()[ref_pts.shape()[0] * p..ref_pts.shape()[0] * (p + 1)],
                     f,
                 )
                 .iter()

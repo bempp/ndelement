@@ -844,6 +844,7 @@ pub mod ciarlet {
         let points = points as *mut T::Real;
         for (i, j) in element.interpolation_points()[entity_dim][entity_index]
             .data()
+            .unwrap()
             .iter()
             .enumerate()
         {
@@ -870,6 +871,7 @@ pub mod ciarlet {
         let weights = weights as *mut T;
         for (i, j) in element.interpolation_weights()[entity_dim][entity_index]
             .data()
+            .unwrap()
             .iter()
             .enumerate()
         {
