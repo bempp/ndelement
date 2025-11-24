@@ -254,7 +254,7 @@ pub mod ciarlet {
         ciarlet::CiarletElement,
         map::{ContravariantPiolaMap, CovariantPiolaMap, IdentityMap},
         reference_cell,
-        traits::{ElementFamily, FiniteElement, Map},
+        traits::{ElementFamily, FiniteElement, Map, MappedFiniteElement},
         types::{Continuity, ReferenceCellType},
     };
     use c_api_tools::{DType, DTypeIdentifier, cfuncs, concretise_types};
@@ -495,7 +495,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_physical_value_size<E: FiniteElement>(
+    pub fn ciarlet_element_physical_value_size<E: MappedFiniteElement>(
         element: &E,
         gdim: usize,
     ) -> usize {
@@ -507,7 +507,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_physical_value_rank<E: FiniteElement>(
+    pub fn ciarlet_element_physical_value_rank<E: MappedFiniteElement>(
         element: &E,
         gdim: usize,
     ) -> usize {
@@ -519,7 +519,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_physical_value_shape<E: FiniteElement>(
+    pub fn ciarlet_element_physical_value_shape<E: MappedFiniteElement>(
         element: &E,
         gdim: usize,
         shape: *mut usize,
@@ -537,7 +537,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_push_forward<E: FiniteElement<CellType = ReferenceCellType>>(
+    pub fn ciarlet_element_push_forward<E: MappedFiniteElement<CellType = ReferenceCellType>>(
         element: &E,
         npoints: usize,
         nfunctions: usize,
@@ -606,7 +606,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_pull_back<E: FiniteElement<CellType = ReferenceCellType>>(
+    pub fn ciarlet_element_pull_back<E: MappedFiniteElement<CellType = ReferenceCellType>>(
         element: &E,
         npoints: usize,
         nfunctions: usize,
@@ -685,7 +685,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_embedded_superdegree<E: FiniteElement>(element: &E) -> usize {
+    pub fn ciarlet_element_embedded_superdegree<E: MappedFiniteElement>(element: &E) -> usize {
         element.lagrange_superdegree()
     }
 
