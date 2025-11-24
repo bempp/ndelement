@@ -26,15 +26,15 @@
 //! // Create an array to store the basis function values
 //! let mut basis_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, 1));
 //! // Create array containing the point [1/2, 1/2]
-//!    let mut points = DynArray::<f64, 2>::from_shape([2, 1]);
-//!    points[[0, 0]] = 1.0 / 2.0;
-//!    points[[1, 0]] = 1.0 / 2.0;
-//!    // Tabulate the element's basis functions at the point
-//!    element.tabulate(&points, 0, &mut basis_values);
-//!    println!(
-//!        "The values of the basis functions at the point (1/2, 1/2) are: {:?}",
-//!        basis_values.data()
-//!    );
+//! let mut points = DynArray::<f64, 2>::from_shape([2, 1]);
+//! points[[0, 0]] = 1.0 / 2.0;
+//! points[[1, 0]] = 1.0 / 2.0;
+//! // Tabulate the element's basis functions at the point
+//! element.tabulate(&points, 0, &mut basis_values);
+//! println!(
+//!     "The values of the basis functions at the point (1/2, 1/2) are: {:?}",
+//!     basis_values.data()
+//! );
 //! ```
 #![cfg_attr(feature = "strict", deny(warnings), deny(unused_crate_dependencies))]
 #![warn(missing_docs)]
