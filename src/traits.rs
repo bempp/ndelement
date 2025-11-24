@@ -120,7 +120,7 @@ pub trait MappedFiniteElement: FiniteElement {
     ///   is the topological dimension, and the third dimension is the geometric dimension. If the Jacobian is rectangular then the
     ///   inverse Jacobian is the pseudo-inverse of the Jacobian, ie the matrix $J^\dagger$ such that $J^\dagger J = I$.
     /// - `physical_values`: The output array of the push operation. This shape of this array is the same as the `reference_values`
-    ///   input, with the [FiniteElement::physical_value_size] used instead of the reference value size.
+    ///   input, with the [MappedFiniteElement::physical_value_size] used instead of the reference value size.
     fn push_forward<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
@@ -137,7 +137,7 @@ pub trait MappedFiniteElement: FiniteElement {
 
     /// Pull function values back to the reference cell.
     ///
-    /// This is the inverse operation to [FiniteElement::push_forward].
+    /// This is the inverse operation to [MappedFiniteElement::push_forward].
     fn pull_back<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
