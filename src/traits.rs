@@ -4,7 +4,7 @@ use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 use std::fmt::Debug;
 use std::hash::Hash;
 
-/// This trait provides the definition of a finite element.
+/// A finite element.
 pub trait FiniteElement {
     /// The scalar type
     type T: RlstScalar;
@@ -14,20 +14,8 @@ pub trait FiniteElement {
     /// The cell type is typically defined through [ReferenceCellType](crate::types::ReferenceCellType).
     type CellType: Debug + PartialEq + Eq + Clone + Copy + Hash;
 
-    /// Transformation type
-    ///
-    /// The Transformation type specifies possible transformations of the dofs on the reference element.
-    /// In most cases these will be rotations and reflections as defined in [Transformation](crate::types::Transformation).
-    type TransformationType: Debug + PartialEq + Eq + Clone + Copy + Hash;
-
     /// The reference cell type, eg one of `Point`, `Interval`, `Triangle`, etc.
     fn cell_type(&self) -> Self::CellType;
-
-    /// The smallest degree Lagrange space that contains all possible polynomials of the finite element's polynomial space.
-    ///
-    /// Details on the definition of the degree of Lagrange spaces of finite elements are
-    /// given [here](https://defelement.org/ciarlet.html#The+degree+of+a+finite+element).
-    fn lagrange_superdegree(&self) -> usize;
 
     /// The number of basis functions.
     fn dim(&self) -> usize;
@@ -75,6 +63,9 @@ pub trait FiniteElement {
         data: &mut Array<Array4MutImpl, 4>,
     );
 
+    /// Get the required shape for a tabulation array.
+    fn tabulate_array_shape(&self, nderivs: usize, npoints: usize) -> [usize; 4];
+
     /// Return the dof indices that are associated with the subentity with index `entity_number` and dimension `entity_dim`.
     ///
     /// - For `entity_dim = 0` this returns the degrees of freedom (dofs) associated with the corresponding point.
@@ -92,9 +83,21 @@ pub trait FiniteElement {
     /// associated with the boundary of an entity. For an edge (for example) it returns the dofs associated
     /// with the vertices at the boundary of the edge (as well as the dofs associated with the edge itself).
     fn entity_closure_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
+}
 
-    /// Get the required shape for a tabulation array.
-    fn tabulate_array_shape(&self, nderivs: usize, npoints: usize) -> [usize; 4];
+/// A finite element that is mapped from a reference cell.
+pub trait MappedFiniteElement: FiniteElement {
+    /// Transformation type
+    ///
+    /// The Transformation type specifies possible transformations of the dofs on the reference element.
+    /// In most cases these will be rotations and reflections as defined in [Transformation](crate::types::Transformation).
+    type TransformationType: Debug + PartialEq + Eq + Clone + Copy + Hash;
+
+    /// The smallest degree Lagrange space that contains all possible polynomials of the finite element's polynomial space.
+    ///
+    /// Details on the definition of the degree of Lagrange spaces of finite elements are
+    /// given [here](https://defelement.org/ciarlet.html#The+degree+of+a+finite+element).
+    fn lagrange_superdegree(&self) -> usize;
 
     /// Push function values forward to a physical cell.
     ///
@@ -117,7 +120,7 @@ pub trait FiniteElement {
     ///   is the topological dimension, and the third dimension is the geometric dimension. If the Jacobian is rectangular then the
     ///   inverse Jacobian is the pseudo-inverse of the Jacobian, ie the matrix $J^\dagger$ such that $J^\dagger J = I$.
     /// - `physical_values`: The output array of the push operation. This shape of this array is the same as the `reference_values`
-    ///   input, with the [FiniteElement::physical_value_size] used instead of the reference value size.
+    ///   input, with the [MappedFiniteElement::physical_value_size] used instead of the reference value size.
     fn push_forward<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
@@ -134,7 +137,7 @@ pub trait FiniteElement {
 
     /// Pull function values back to the reference cell.
     ///
-    /// This is the inverse operation to [FiniteElement::push_forward].
+    /// This is the inverse operation to [MappedFiniteElement::push_forward].
     fn pull_back<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,

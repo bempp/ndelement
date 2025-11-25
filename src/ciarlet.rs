@@ -32,7 +32,7 @@ extern crate lapack_src;
 use crate::math;
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::reference_cell;
-use crate::traits::{FiniteElement, Map};
+use crate::traits::{FiniteElement, Map, MappedFiniteElement};
 use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformation};
 use itertools::izip;
 use num::{One, Zero};
@@ -621,13 +621,15 @@ where
         &self.interpolation_weights
     }
 }
+
 impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
     type CellType = ReferenceCellType;
-    type TransformationType = Transformation;
     type T = T;
+
     fn value_shape(&self) -> &[usize] {
         &self.value_shape
     }
+
     fn value_size(&self) -> usize {
         self.value_size
     }
@@ -635,12 +637,11 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
     fn cell_type(&self) -> ReferenceCellType {
         self.cell_type
     }
-    fn lagrange_superdegree(&self) -> usize {
-        self.embedded_superdegree
-    }
+
     fn dim(&self) -> usize {
         self.dim
     }
+
     fn tabulate<
         Array2Impl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 2>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
@@ -681,20 +682,7 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
             }
         }
     }
-    fn entity_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]> {
-        if entity_dim < 4 && entity_number < self.entity_dofs[entity_dim].len() {
-            Some(&self.entity_dofs[entity_dim][entity_number])
-        } else {
-            None
-        }
-    }
-    fn entity_closure_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]> {
-        if entity_dim < 4 && entity_number < self.entity_closure_dofs[entity_dim].len() {
-            Some(&self.entity_closure_dofs[entity_dim][entity_number])
-        } else {
-            None
-        }
-    }
+
     fn tabulate_array_shape(&self, nderivs: usize, npoints: usize) -> [usize; 4] {
         let deriv_count = compute_derivative_count(nderivs, self.cell_type());
         let point_count = npoints;
@@ -702,6 +690,31 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
         let value_size = self.value_size();
         [deriv_count, point_count, basis_count, value_size]
     }
+
+    fn entity_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]> {
+        if entity_dim < 4 && entity_number < self.entity_dofs[entity_dim].len() {
+            Some(&self.entity_dofs[entity_dim][entity_number])
+        } else {
+            None
+        }
+    }
+
+    fn entity_closure_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]> {
+        if entity_dim < 4 && entity_number < self.entity_closure_dofs[entity_dim].len() {
+            Some(&self.entity_closure_dofs[entity_dim][entity_number])
+        } else {
+            None
+        }
+    }
+}
+
+impl<T: RlstScalar, M: Map> MappedFiniteElement for CiarletElement<T, M> {
+    type TransformationType = Transformation;
+
+    fn lagrange_superdegree(&self) -> usize {
+        self.embedded_superdegree
+    }
+
     fn push_forward<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
@@ -724,6 +737,7 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
             physical_values,
         )
     }
+
     fn pull_back<
         Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
@@ -746,9 +760,11 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
             reference_values,
         )
     }
+
     fn physical_value_shape(&self, gdim: usize) -> Vec<usize> {
         self.map.physical_value_shape(gdim)
     }
+
     fn dof_transformation(
         &self,
         entity: ReferenceCellType,
