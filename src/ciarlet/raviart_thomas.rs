@@ -486,7 +486,7 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
 ///
 /// A family of Raviart-Thomas elements on multiple cell types with appropriate
 /// continuity across different cell types.
-pub struct RaviartThomasElementFamily<T: RlstScalar + Getrf + Getri> {
+pub struct RaviartThomasElementFamily<T: RlstScalar + Getrf + Getri = f64> {
     degree: usize,
     continuity: Continuity,
     _t: PhantomData<T>,
