@@ -262,7 +262,7 @@ mod test {
     use approx::*;
     use rlst::{Array, rlst_dynamic_array};
 
-    fn fill_jacobians<T: RlstScalar<Real = T>, Array3MutImpl: MutableArrayImpl<T, 3>>(
+    fn fill_jacobians<T: RlstScalar, Array3MutImpl: MutableArrayImpl<T, 3>>(
         j: &mut Array<Array3MutImpl, 3>,
         jdet: &mut [T],
         jinv: &mut Array<Array3MutImpl, 3>,
