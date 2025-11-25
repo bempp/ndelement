@@ -15,7 +15,7 @@ pub mod reference_cell {
     pub unsafe extern "C" fn is_simplex(cell: ReferenceCellType) -> bool {
         reference_cell::is_simplex(cell)
     }
-    unsafe fn vertices<T: RlstScalar<Real = T>>(cell: ReferenceCellType, vs: *mut T) {
+    unsafe fn vertices<T: RlstScalar>(cell: ReferenceCellType, vs: *mut T) {
         let mut i = 0;
         for v in reference_cell::vertices::<T>(cell) {
             for c in v {
@@ -38,7 +38,7 @@ pub mod reference_cell {
             vertices(cell, vs);
         }
     }
-    unsafe fn midpoint<T: RlstScalar<Real = T>>(cell: ReferenceCellType, pt: *mut T) {
+    unsafe fn midpoint<T: RlstScalar>(cell: ReferenceCellType, pt: *mut T) {
         for (i, c) in reference_cell::midpoint(cell).iter().enumerate() {
             unsafe {
                 *pt.add(i) = *c;
@@ -199,16 +199,16 @@ pub mod polynomials {
             *shape.add(2) = npts;
         }
     }
-    unsafe fn tabulate_legendre_polynomials<T: RlstScalar>(
+    unsafe fn tabulate_legendre_polynomials<T: RlstScalar, TGeo: RlstScalar>(
         cell: ReferenceCellType,
-        points: *const T::Real,
+        points: *const TGeo,
         npts: usize,
         degree: usize,
         derivatives: usize,
         data: *mut T,
     ) {
         let tdim = reference_cell::dim(cell);
-        let points = SliceArray::<T::Real, 2>::from_shape(
+        let points = SliceArray::<TGeo, 2>::from_shape(
             unsafe { from_raw_parts(points, npts * tdim) },
             [tdim, npts],
         );
@@ -432,22 +432,19 @@ pub mod ciarlet {
         }
     }
 
-    #[concretise_types(
-        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
-    )]
-    pub fn ciarlet_element_tabulate<E: FiniteElement<CellType = ReferenceCellType>>(
+    pub fn ciarlet_element_tabulate<
+        E: FiniteElement<CellType = ReferenceCellType>,
+        TGeo: RlstScalar,
+    >(
         element: &E,
-        points: *const c_void,
+        points: *const TGeo,
         npoints: usize,
         nderivs: usize,
         data: *mut c_void,
     ) {
         let tdim = reference_cell::dim(element.cell_type());
-        let points = points as *mut <E::T as RlstScalar>::Real;
         let data = data as *mut E::T;
-        let points = SliceArray::<<E::T as RlstScalar>::Real, 2>::from_shape(
+        let points = SliceArray::<TGeo, 2>::from_shape(
             unsafe { from_raw_parts(points, npoints * tdim) },
             [tdim, npoints],
         );
@@ -457,6 +454,36 @@ pub mod ciarlet {
             shape,
         );
         element.tabulate(&points, nderivs, &mut data);
+    }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"]),
+    )]
+    pub fn ciarlet_element_tabulate_f32<E: FiniteElement<CellType = ReferenceCellType>>(
+        element: &E,
+        points: *const f32,
+        npoints: usize,
+        nderivs: usize,
+        data: *mut c_void,
+    ) {
+        ciarlet_element_tabulate(element, points, npoints, nderivs, data);
+    }
+
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"]),
+    )]
+    pub fn ciarlet_element_tabulate_f64<E: FiniteElement<CellType = ReferenceCellType>>(
+        element: &E,
+        points: *const f64,
+        npoints: usize,
+        nderivs: usize,
+        data: *mut c_void,
+    ) {
+        ciarlet_element_tabulate(element, points, npoints, nderivs, data);
     }
 
     #[concretise_types(
@@ -531,22 +558,19 @@ pub mod ciarlet {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
-    #[concretise_types(
-        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
-        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
-    )]
-    pub fn ciarlet_element_push_forward<E: MappedFiniteElement<CellType = ReferenceCellType>>(
+    pub fn ciarlet_element_push_forward<
+        E: MappedFiniteElement<CellType = ReferenceCellType>,
+        TGeo: RlstScalar,
+    >(
         element: &E,
         npoints: usize,
         nfunctions: usize,
         gdim: usize,
-        reference_values: *const c_void,
+        reference_values: *const TGeo,
         nderivs: usize,
-        j: *const c_void,
-        jdet: *const c_void,
-        jinv: *const c_void,
+        j: *const TGeo,
+        jdet: *const TGeo,
+        jinv: *const TGeo,
         physical_values: *mut c_void,
     ) {
         let tdim = reference_cell::dim(element.cell_type());
@@ -562,23 +586,13 @@ pub mod ciarlet {
             },
             [deriv_size, npoints, nfunctions, vs],
         );
-        let j = SliceArray::<<E::T as RlstScalar>::Real, 3>::from_shape(
-            unsafe {
-                from_raw_parts(
-                    j as *const <E::T as RlstScalar>::Real,
-                    npoints * gdim * tdim,
-                )
-            },
+        let j = SliceArray::<TGeo, 3>::from_shape(
+            unsafe { from_raw_parts(j, npoints * gdim * tdim) },
             [npoints, gdim, tdim],
         );
-        let jdet = unsafe { from_raw_parts(jdet as *const <E::T as RlstScalar>::Real, npoints) };
-        let jinv = SliceArray::<<E::T as RlstScalar>::Real, 3>::from_shape(
-            unsafe {
-                from_raw_parts(
-                    jinv as *const <E::T as RlstScalar>::Real,
-                    npoints * tdim * gdim,
-                )
-            },
+        let jdet = unsafe { from_raw_parts(jdet, npoints) };
+        let jinv = SliceArray::<TGeo, 3>::from_shape(
+            unsafe { from_raw_parts(jinv, npoints * tdim * gdim) },
             [npoints, tdim, gdim],
         );
         let mut physical_values = SliceArrayMut::<E::T, 4>::from_shape(
@@ -606,16 +620,81 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_pull_back<E: MappedFiniteElement<CellType = ReferenceCellType>>(
+    pub fn ciarlet_element_push_forward_f32<
+        E: MappedFiniteElement<CellType = ReferenceCellType>,
+    >(
         element: &E,
         npoints: usize,
         nfunctions: usize,
         gdim: usize,
-        physical_values: *const c_void,
+        reference_values: *const f32,
         nderivs: usize,
-        j: *const c_void,
-        jdet: *const c_void,
-        jinv: *const c_void,
+        j: *const f32,
+        jdet: *const f32,
+        jinv: *const f32,
+        physical_values: *mut c_void,
+    ) {
+        ciarlet_element_push_forward(
+            element,
+            npoints,
+            nfunctions,
+            gdim,
+            reference_values,
+            nderivs,
+            j,
+            jdet,
+            jinv,
+            physical_values,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub fn ciarlet_element_push_forward_f64<
+        E: MappedFiniteElement<CellType = ReferenceCellType>,
+    >(
+        element: &E,
+        npoints: usize,
+        nfunctions: usize,
+        gdim: usize,
+        reference_values: *const f64,
+        nderivs: usize,
+        j: *const f64,
+        jdet: *const f64,
+        jinv: *const f64,
+        physical_values: *mut c_void,
+    ) {
+        ciarlet_element_push_forward(
+            element,
+            npoints,
+            nfunctions,
+            gdim,
+            reference_values,
+            nderivs,
+            j,
+            jdet,
+            jinv,
+            physical_values,
+        );
+    }
+
+    pub fn ciarlet_element_pull_back<
+        E: MappedFiniteElement<CellType = ReferenceCellType>,
+        TGeo: RlstScalar,
+    >(
+        element: &E,
+        npoints: usize,
+        nfunctions: usize,
+        gdim: usize,
+        physical_values: *const TGeo,
+        nderivs: usize,
+        j: *const TGeo,
+        jdet: *const TGeo,
+        jinv: *const TGeo,
         reference_values: *mut c_void,
     ) {
         let tdim = reference_cell::dim(element.cell_type());
@@ -631,23 +710,13 @@ pub mod ciarlet {
             },
             [deriv_size, npoints, nfunctions, pvs],
         );
-        let j = SliceArray::<<E::T as RlstScalar>::Real, 3>::from_shape(
-            unsafe {
-                from_raw_parts(
-                    j as *const <E::T as RlstScalar>::Real,
-                    npoints * gdim * tdim,
-                )
-            },
+        let j = SliceArray::<TGeo, 3>::from_shape(
+            unsafe { from_raw_parts(j, npoints * gdim * tdim) },
             [npoints, gdim, tdim],
         );
-        let jdet = unsafe { from_raw_parts(jdet as *const <E::T as RlstScalar>::Real, npoints) };
-        let jinv = SliceArray::<<E::T as RlstScalar>::Real, 3>::from_shape(
-            unsafe {
-                from_raw_parts(
-                    jinv as *const <E::T as RlstScalar>::Real,
-                    npoints * tdim * gdim,
-                )
-            },
+        let jdet = unsafe { from_raw_parts(jdet, npoints) };
+        let jinv = SliceArray::<TGeo, 3>::from_shape(
+            unsafe { from_raw_parts(jinv, npoints * tdim * gdim) },
             [npoints, tdim, gdim],
         );
         let mut reference_values = SliceArrayMut::<E::T, 4>::from_shape(
@@ -666,6 +735,70 @@ pub mod ciarlet {
             jdet,
             &jinv,
             &mut reference_values,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub fn ciarlet_element_pull_back_f32<E: MappedFiniteElement<CellType = ReferenceCellType>>(
+        element: &E,
+        npoints: usize,
+        nfunctions: usize,
+        gdim: usize,
+        physical_values: *const f32,
+        nderivs: usize,
+        j: *const f32,
+        jdet: *const f32,
+        jinv: *const f32,
+        reference_values: *mut c_void,
+    ) {
+        ciarlet_element_pull_back(
+            element,
+            npoints,
+            nfunctions,
+            gdim,
+            physical_values,
+            nderivs,
+            j,
+            jdet,
+            jinv,
+            reference_values,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[concretise_types(
+        gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+    )]
+    pub fn ciarlet_element_pull_back_f64<E: MappedFiniteElement<CellType = ReferenceCellType>>(
+        element: &E,
+        npoints: usize,
+        nfunctions: usize,
+        gdim: usize,
+        physical_values: *const f64,
+        nderivs: usize,
+        j: *const f64,
+        jdet: *const f64,
+        jinv: *const f64,
+        reference_values: *mut c_void,
+    ) {
+        ciarlet_element_pull_back(
+            element,
+            npoints,
+            nfunctions,
+            gdim,
+            physical_values,
+            nderivs,
+            j,
+            jdet,
+            jinv,
+            reference_values,
         );
     }
 
@@ -829,19 +962,21 @@ pub mod ciarlet {
 
     #[concretise_types(
         gen_type(name = "dtype", replace_with = ["f32", "f64", "c32", "c64"]),
+        gen_type(name = "geo_dtype", replace_with = ["f32", "f64"]),
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
-        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
+        field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}, {{geo_dtype}}>"])
     )]
     pub fn ciarlet_element_interpolation_points<
         T: RlstScalar + DTypeIdentifier + Getrf + Getri,
+        TGeo: RlstScalar + DTypeIdentifier + Getrf + Getri,
         M: Map,
     >(
-        element: &CiarletElement<T, M>,
+        element: &CiarletElement<T, M, TGeo>,
         entity_dim: usize,
         entity_index: usize,
         points: *mut c_void,
     ) {
-        let points = points as *mut T::Real;
+        let points = points as *mut TGeo;
         for (i, j) in element.interpolation_points()[entity_dim][entity_index]
             .data()
             .unwrap()

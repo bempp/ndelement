@@ -361,8 +361,7 @@ where
                     ReferenceCellType::Triangle,
                     0,
                     Transformation::Rotation,
-                    (|x| vec![x[1], TGeo::one() - x[1] - x[0], x[2]])
-                        as fn(&[TGeo]) -> Vec<TGeo>,
+                    (|x| vec![x[1], TGeo::one() - x[1] - x[0], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
@@ -394,8 +393,7 @@ where
                     ReferenceCellType::Triangle,
                     1,
                     Transformation::Rotation,
-                    (|x| vec![x[2], x[1], TGeo::one() - x[2] - x[0]])
-                        as fn(&[TGeo]) -> Vec<TGeo>,
+                    (|x| vec![x[2], x[1], TGeo::one() - x[2] - x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
@@ -427,16 +425,13 @@ where
                 }
                 Transformation::Rotation => match entity {
                     ReferenceCellType::Interval => {
-                        (|x, f| f(x))
-                            as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
+                        (|x, f| f(x)) as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
                     }
                     ReferenceCellType::Triangle => {
-                        (|x, f| f(&f(x)))
-                            as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
+                        (|x, f| f(&f(x))) as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
                     }
                     ReferenceCellType::Quadrilateral => {
-                        (|x, f| f(&f(&f(x))))
-                            as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
+                        (|x, f| f(&f(&f(x)))) as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
                     }
                     _ => panic!("Unsupported entity: {entity:?}"),
                 },
@@ -621,7 +616,9 @@ where
     }
 }
 
-impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> FiniteElement for CiarletElement<T, M, TGeoInternal> {
+impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> FiniteElement
+    for CiarletElement<T, M, TGeoInternal>
+{
     type CellType = ReferenceCellType;
     type T = T;
 
@@ -708,7 +705,9 @@ impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> FiniteElement for CiarletE
     }
 }
 
-impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> MappedFiniteElement for CiarletElement<T, M, TGeoInternal> {
+impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> MappedFiniteElement
+    for CiarletElement<T, M, TGeoInternal>
+{
     type TransformationType = Transformation;
 
     fn lagrange_superdegree(&self) -> usize {

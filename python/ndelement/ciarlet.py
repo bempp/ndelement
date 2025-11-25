@@ -159,13 +159,26 @@ class CiarletElement(object):
             self._rs_element, nderivs, points.shape[0], _ffi.cast("uintptr_t*", shape.ctypes.data)
         )
         data = np.empty(shape[::-1], dtype=self.dtype)
-        _lib.ciarlet_element_tabulate(
-            self._rs_element,
-            _ffi.cast("void*", points.ctypes.data),
-            points.shape[0],
-            nderivs,
-            _ffi.cast("void*", data.ctypes.data),
-        )
+
+        if points.dtype == np.float64:
+            _lib.ciarlet_element_tabulate_f64(
+                self._rs_element,
+                _ffi.cast("void*", points.ctypes.data),
+                points.shape[0],
+                nderivs,
+                _ffi.cast("void*", data.ctypes.data),
+            )
+        elif points.dtype == np.float32:
+            _lib.ciarlet_element_tabulate_f32(
+                self._rs_element,
+                points.ctypes.data,
+                points.shape[0],
+                nderivs,
+                _ffi.cast("void*", data.ctypes.data),
+            )
+        else:
+            raise TypeError(f"Unsupported dtype: {points.dtype}")
+
         return data
 
     def physical_value_size(self, gdim: int) -> int:
@@ -205,18 +218,36 @@ class CiarletElement(object):
 
         shape = (pvs,) + reference_values.shape[1:]
         data = np.empty(shape, dtype=self.dtype)
-        _lib.ciarlet_element_push_forward(
-            self._rs_element,
-            npts,
-            nfuncs,
-            gdim,
-            _ffi.cast("void*", reference_values.ctypes.data),
-            nderivs,
-            _ffi.cast("void*", jacobians.ctypes.data),
-            _ffi.cast("void*", jacobian_determinants.ctypes.data),
-            _ffi.cast("void*", inverse_jacobians.ctypes.data),
-            _ffi.cast("void*", data.ctypes.data),
-        )
+
+        if reference_values.dtype == np.float64:
+            _lib.ciarlet_element_push_forward_f64(
+                self._rs_element,
+                npts,
+                nfuncs,
+                gdim,
+                reference_values.ctypes.data,
+                nderivs,
+                jacobians.ctypes.data,
+                jacobian_determinants.ctypes.data,
+                inverse_jacobians.ctypes.data,
+                _ffi.cast("void*", data.ctypes.data),
+            )
+        elif reference_values.dtype == np.float32:
+            _lib.ciarlet_element_push_forward_f32(
+                self._rs_element,
+                npts,
+                nfuncs,
+                gdim,
+                reference_values.ctypes.data,
+                nderivs,
+                jacobians.ctypes.data,
+                jacobian_determinants.ctypes.data,
+                inverse_jacobians.ctypes.data,
+                _ffi.cast("void*", data.ctypes.data),
+            )
+        else:
+            raise TypeError(f"Unsupported dtype: {reference_values.dtype}")
+
         return data
 
     def pull_back(
@@ -244,18 +275,35 @@ class CiarletElement(object):
 
         shape = (vs,) + physical_values.shape[1:]
         data = np.empty(shape, dtype=self.dtype)
-        _lib.ciarlet_element_pull_back(
-            self._rs_element,
-            npts,
-            nfuncs,
-            gdim,
-            _ffi.cast("void*", physical_values.ctypes.data),
-            nderivs,
-            _ffi.cast("void*", jacobians.ctypes.data),
-            _ffi.cast("void*", jacobian_determinants.ctypes.data),
-            _ffi.cast("void*", inverse_jacobians.ctypes.data),
-            _ffi.cast("void*", data.ctypes.data),
-        )
+
+        if physical_values.dtype == np.float64:
+            _lib.ciarlet_element_push_forward_f64(
+                self._rs_element,
+                npts,
+                nfuncs,
+                gdim,
+                physical_values.ctypes.data,
+                nderivs,
+                jacobians.ctypes.data,
+                jacobian_determinants.ctypes.data,
+                inverse_jacobians.ctypes.data,
+                _ffi.cast("void*", data.ctypes.data),
+            )
+        elif physical_values.dtype == np.float32:
+            _lib.ciarlet_element_push_forward_f32(
+                self._rs_element,
+                npts,
+                nfuncs,
+                gdim,
+                physical_values.ctypes.data,
+                nderivs,
+                jacobians.ctypes.data,
+                jacobian_determinants.ctypes.data,
+                inverse_jacobians.ctypes.data,
+                _ffi.cast("void*", data.ctypes.data),
+            )
+        else:
+            raise TypeError(f"Unsupported dtype: {physical_values.dtype}")
         return data
 
     def apply_dof_permutations(self, data: npt.NDArray, orientation: np.int32):
