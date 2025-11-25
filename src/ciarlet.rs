@@ -35,7 +35,6 @@ use crate::reference_cell;
 use crate::traits::{FiniteElement, Map, MappedFiniteElement};
 use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformation};
 use itertools::izip;
-use num::{One, Zero};
 use rlst::RlstScalar;
 use rlst::{Array, DynArray, Inverse, MutableArrayImpl, ValueArrayImpl, rlst_dynamic_array};
 use std::collections::HashMap;
@@ -66,7 +65,7 @@ fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usi
 }
 
 /// A Ciarlet element
-pub struct CiarletElement<T: RlstScalar, M: Map> {
+pub struct CiarletElement<T: RlstScalar, M: Map, TGeo: RlstScalar = <T as RlstScalar>::Real> {
     family_name: String,
     cell_type: ReferenceCellType,
     degree: usize,
@@ -78,13 +77,13 @@ pub struct CiarletElement<T: RlstScalar, M: Map> {
     coefficients: DynArray<T, 3>,
     entity_dofs: [Vec<Vec<usize>>; 4],
     entity_closure_dofs: [Vec<Vec<usize>>; 4],
-    interpolation_points: EntityPoints<T::Real>,
+    interpolation_points: EntityPoints<TGeo>,
     interpolation_weights: EntityWeights<T>,
     map: M,
     dof_transformations: HashMap<(ReferenceCellType, Transformation), DofTransformation<T>>,
 }
 
-impl<T: RlstScalar, M: Map> Debug for CiarletElement<T, M> {
+impl<T: RlstScalar, M: Map, TGeo: RlstScalar> Debug for CiarletElement<T, M, TGeo> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_tuple("CiarletElement")
             .field(&self.family_name)
@@ -94,7 +93,7 @@ impl<T: RlstScalar, M: Map> Debug for CiarletElement<T, M> {
     }
 }
 
-impl<T: RlstScalar, M: Map> CiarletElement<T, M>
+impl<T: RlstScalar, M: Map, TGeo: RlstScalar> CiarletElement<T, M, TGeo>
 where
     DynArray<T, 2>: Inverse<Output = DynArray<T, 2>>,
 {
@@ -112,7 +111,7 @@ where
         degree: usize,
         value_shape: Vec<usize>,
         polynomial_coeffs: DynArray<T, 3>,
-        interpolation_points: EntityPoints<T::Real>,
+        interpolation_points: EntityPoints<TGeo>,
         interpolation_weights: EntityWeights<T>,
         continuity: Continuity,
         embedded_superdegree: usize,
@@ -144,11 +143,11 @@ where
 
         // Format the interpolation points and weights
         let new_pts = if continuity == Continuity::Discontinuous {
-            let mut new_pts: EntityPoints<T::Real> = [vec![], vec![], vec![], vec![]];
-            let mut all_pts = rlst_dynamic_array!(T::Real, [tdim, npts]);
+            let mut new_pts: EntityPoints<TGeo> = [vec![], vec![], vec![], vec![]];
+            let mut all_pts = rlst_dynamic_array!(TGeo, [tdim, npts]);
             for (i, pts_i) in interpolation_points.iter().take(tdim).enumerate() {
                 for _pts in pts_i {
-                    new_pts[i].push(rlst_dynamic_array!(T::Real, [tdim, 0]));
+                    new_pts[i].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
                 }
             }
             let mut col = 0;
@@ -303,32 +302,32 @@ where
                 ReferenceCellType::Interval,
                 0,
                 Transformation::Reflection,
-                (|x| vec![x[1], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                (|x| vec![x[1], x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
             )],
             ReferenceCellType::Quadrilateral => vec![(
                 ReferenceCellType::Interval,
                 0,
                 Transformation::Reflection,
-                (|x| vec![T::Real::one() - x[0], x[1]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                (|x| vec![TGeo::one() - x[0], x[1]]) as fn(&[TGeo]) -> Vec<TGeo>,
             )],
             ReferenceCellType::Tetrahedron => vec![
                 (
                     ReferenceCellType::Interval,
                     0,
                     Transformation::Reflection,
-                    (|x| vec![x[0], x[2], x[1]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[0], x[2], x[1]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
                     0,
                     Transformation::Rotation,
-                    (|x| vec![x[1], x[2], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[1], x[2], x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
                     0,
                     Transformation::Reflection,
-                    (|x| vec![x[0], x[2], x[1]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[0], x[2], x[1]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
             ],
             ReferenceCellType::Hexahedron => vec![
@@ -336,19 +335,19 @@ where
                     ReferenceCellType::Interval,
                     0,
                     Transformation::Reflection,
-                    (|x| vec![T::Real::one() - x[0], x[1], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![TGeo::one() - x[0], x[1], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Quadrilateral,
                     0,
                     Transformation::Rotation,
-                    (|x| vec![x[1], T::Real::one() - x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[1], TGeo::one() - x[0], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Quadrilateral,
                     0,
                     Transformation::Reflection,
-                    (|x| vec![x[1], x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
             ],
             ReferenceCellType::Prism => vec![
@@ -356,32 +355,32 @@ where
                     ReferenceCellType::Interval,
                     0,
                     Transformation::Reflection,
-                    (|x| vec![T::Real::one() - x[0], x[1], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![TGeo::one() - x[0], x[1], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
                     0,
                     Transformation::Rotation,
-                    (|x| vec![x[1], T::Real::one() - x[1] - x[0], x[2]])
-                        as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[1], TGeo::one() - x[1] - x[0], x[2]])
+                        as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
                     0,
                     Transformation::Reflection,
-                    (|x| vec![x[1], x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Quadrilateral,
                     1,
                     Transformation::Rotation,
-                    (|x| vec![x[2], T::Real::one() - x[1], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[2], TGeo::one() - x[1], x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Quadrilateral,
                     1,
                     Transformation::Reflection,
-                    (|x| vec![x[2], x[1], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[2], x[1], x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
             ],
             ReferenceCellType::Pyramid => vec![
@@ -389,32 +388,32 @@ where
                     ReferenceCellType::Interval,
                     0,
                     Transformation::Reflection,
-                    (|x| vec![T::Real::one() - x[0], x[1], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![TGeo::one() - x[0], x[1], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
                     1,
                     Transformation::Rotation,
-                    (|x| vec![x[2], x[1], T::Real::one() - x[2] - x[0]])
-                        as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[2], x[1], TGeo::one() - x[2] - x[0]])
+                        as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
                     1,
                     Transformation::Reflection,
-                    (|x| vec![x[2], x[1], x[0]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[2], x[1], x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Quadrilateral,
                     0,
                     Transformation::Rotation,
-                    (|x| vec![x[1], T::Real::one() - x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[1], TGeo::one() - x[0], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Quadrilateral,
                     0,
                     Transformation::Reflection,
-                    (|x| vec![x[1], x[0], x[2]]) as fn(&[T::Real]) -> Vec<T::Real>,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
             ],
         } {
@@ -424,26 +423,26 @@ where
 
             let finv = match transform {
                 Transformation::Reflection => {
-                    (|x, f| f(x)) as fn(&[T::Real], fn(&[T::Real]) -> Vec<T::Real>) -> Vec<T::Real>
+                    (|x, f| f(x)) as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
                 }
                 Transformation::Rotation => match entity {
                     ReferenceCellType::Interval => {
                         (|x, f| f(x))
-                            as fn(&[T::Real], fn(&[T::Real]) -> Vec<T::Real>) -> Vec<T::Real>
+                            as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
                     }
                     ReferenceCellType::Triangle => {
                         (|x, f| f(&f(x)))
-                            as fn(&[T::Real], fn(&[T::Real]) -> Vec<T::Real>) -> Vec<T::Real>
+                            as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
                     }
                     ReferenceCellType::Quadrilateral => {
                         (|x, f| f(&f(&f(x))))
-                            as fn(&[T::Real], fn(&[T::Real]) -> Vec<T::Real>) -> Vec<T::Real>
+                            as fn(&[TGeo], fn(&[TGeo]) -> Vec<TGeo>) -> Vec<TGeo>
                     }
                     _ => panic!("Unsupported entity: {entity:?}"),
                 },
             };
 
-            let mut pts = DynArray::<T::Real, 2>::from_shape(ref_pts.shape());
+            let mut pts = DynArray::<TGeo, 2>::from_shape(ref_pts.shape());
             for p in 0..npts {
                 for (i, c) in finv(
                     &ref_pts.data().unwrap()[ref_pts.shape()[0] * p..ref_pts.shape()[0] * (p + 1)],
@@ -459,13 +458,13 @@ where
             let wts = &new_wts[edim][entity_id];
             let edofs = &entity_dofs[edim][entity_id];
             let endofs = edofs.len();
-            let mut j = rlst_dynamic_array![T::Real, [npts, tdim, tdim]];
+            let mut j = rlst_dynamic_array![TGeo, [npts, tdim, tdim]];
             for t_in in 0..tdim {
                 for (t_out, (a, b)) in izip!(
-                    f(&vec![T::Real::zero(); tdim]),
+                    f(&vec![TGeo::zero(); tdim]),
                     f(&{
-                        let mut axis = vec![T::Real::zero(); tdim];
-                        axis[t_in] = T::Real::one();
+                        let mut axis = vec![TGeo::zero(); tdim];
+                        axis[t_in] = TGeo::one();
                         axis
                     })
                 )
@@ -479,19 +478,19 @@ where
             // f is linear. Use this to compute determinants
             let jdet = vec![
                 match transform {
-                    Transformation::Reflection => -T::Real::one(),
-                    Transformation::Rotation => T::Real::one(),
+                    Transformation::Reflection => -TGeo::one(),
+                    Transformation::Rotation => TGeo::one(),
                 };
                 npts
             ];
-            let mut jinv = rlst_dynamic_array![T::Real, [npts, tdim, tdim]];
+            let mut jinv = rlst_dynamic_array![TGeo, [npts, tdim, tdim]];
             for t_in in 0..tdim {
                 for (t_out, (a, b)) in izip!(
-                    finv(&vec![T::Real::zero(); tdim], f),
+                    finv(&vec![TGeo::zero(); tdim], f),
                     finv(
                         &{
-                            let mut axis = vec![T::Real::zero(); tdim];
-                            axis[t_in] = T::Real::one();
+                            let mut axis = vec![TGeo::zero(); tdim];
+                            axis[t_in] = TGeo::one();
                             axis
                         },
                         f
@@ -500,7 +499,7 @@ where
                 .enumerate()
                 {
                     for p in 0..npts {
-                        *jinv.get_mut([p, t_out, t_in]).unwrap() = (b - a).re();
+                        *jinv.get_mut([p, t_out, t_in]).unwrap() = TGeo::from(b - a).unwrap();
                     }
                 }
             }
@@ -585,7 +584,7 @@ where
                 );
             }
         }
-        CiarletElement::<T, M> {
+        CiarletElement::<T, M, TGeo> {
             family_name,
             cell_type,
             degree,
@@ -613,7 +612,7 @@ where
         self.continuity
     }
     /// The interpolation points
-    pub fn interpolation_points(&self) -> &EntityPoints<T::Real> {
+    pub fn interpolation_points(&self) -> &EntityPoints<TGeo> {
         &self.interpolation_points
     }
     /// The interpolation weights
@@ -622,7 +621,7 @@ where
     }
 }
 
-impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
+impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> FiniteElement for CiarletElement<T, M, TGeoInternal> {
     type CellType = ReferenceCellType;
     type T = T;
 
@@ -643,8 +642,9 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
     }
 
     fn tabulate<
-        Array2Impl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 2>,
-        Array4MutImpl: MutableArrayImpl<Self::T, 4>,
+        TGeo: RlstScalar,
+        Array2Impl: ValueArrayImpl<TGeo, 2>,
+        Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         points: &Array<Array2Impl, 2>,
@@ -708,7 +708,7 @@ impl<T: RlstScalar, M: Map> FiniteElement for CiarletElement<T, M> {
     }
 }
 
-impl<T: RlstScalar, M: Map> MappedFiniteElement for CiarletElement<T, M> {
+impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> MappedFiniteElement for CiarletElement<T, M, TGeoInternal> {
     type TransformationType = Transformation;
 
     fn lagrange_superdegree(&self) -> usize {
@@ -716,16 +716,17 @@ impl<T: RlstScalar, M: Map> MappedFiniteElement for CiarletElement<T, M> {
     }
 
     fn push_forward<
-        Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
-        Array4Impl: ValueArrayImpl<Self::T, 4>,
-        Array4MutImpl: MutableArrayImpl<Self::T, 4>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
+        Array4Impl: ValueArrayImpl<T, 4>,
+        Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         reference_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3RealImpl, 3>,
-        jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        jacobians: &Array<Array3GeoImpl, 3>,
+        jacobian_determinants: &[TGeo],
+        inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     ) {
         self.map.push_forward(
@@ -739,16 +740,17 @@ impl<T: RlstScalar, M: Map> MappedFiniteElement for CiarletElement<T, M> {
     }
 
     fn pull_back<
-        Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
-        Array4Impl: ValueArrayImpl<Self::T, 4>,
-        Array4MutImpl: MutableArrayImpl<Self::T, 4>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
+        Array4Impl: ValueArrayImpl<T, 4>,
+        Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         physical_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3RealImpl, 3>,
-        jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        jacobians: &Array<Array3GeoImpl, 3>,
+        jacobian_determinants: &[TGeo],
+        inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     ) {
         self.map.pull_back(
@@ -847,7 +849,7 @@ impl<T: RlstScalar, M: Map> MappedFiniteElement for CiarletElement<T, M> {
         }
     }
 
-    fn apply_dof_transformations(&self, data: &mut [Self::T], cell_orientation: i32) {
+    fn apply_dof_transformations(&self, data: &mut [T], cell_orientation: i32) {
         debug_assert_eq!(data.len() % self.dim, 0);
         let block_size = data.len() / self.dim;
         let tdim = reference_cell::dim(self.cell_type);

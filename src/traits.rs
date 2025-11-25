@@ -54,7 +54,8 @@ pub trait FiniteElement {
     ///
     /// For the quadrilaterals and hexahedra, the parameter $n$ denotes the Lagrange superdegree.
     fn tabulate<
-        Array2Impl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 2>,
+        TGeo: RlstScalar,
+        Array2Impl: ValueArrayImpl<TGeo, 2>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
         &self,
@@ -122,16 +123,17 @@ pub trait MappedFiniteElement: FiniteElement {
     /// - `physical_values`: The output array of the push operation. This shape of this array is the same as the `reference_values`
     ///   input, with the [MappedFiniteElement::physical_value_size] used instead of the reference value size.
     fn push_forward<
-        Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
         &self,
         reference_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3RealImpl, 3>,
-        jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        jacobians: &Array<Array3GeoImpl, 3>,
+        jacobian_determinants: &[TGeo],
+        inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     );
 
@@ -139,16 +141,17 @@ pub trait MappedFiniteElement: FiniteElement {
     ///
     /// This is the inverse operation to [MappedFiniteElement::push_forward].
     fn pull_back<
-        Array3RealImpl: ValueArrayImpl<<Self::T as RlstScalar>::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
         &self,
         physical_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3RealImpl, 3>,
-        jacobian_determinants: &[<Self::T as RlstScalar>::Real],
-        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        jacobians: &Array<Array3GeoImpl, 3>,
+        jacobian_determinants: &[TGeo],
+        inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     );
 
@@ -207,32 +210,34 @@ pub trait Map {
     /// Push values from the reference cell to physical cells.
     fn push_forward<
         T: RlstScalar,
-        Array3RealImpl: ValueArrayImpl<T::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         reference_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3RealImpl, 3>,
-        jacobian_determinants: &[T::Real],
-        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        jacobians: &Array<Array3GeoImpl, 3>,
+        jacobian_determinants: &[TGeo],
+        inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     );
 
     /// Pull values back to the reference cell.
     fn pull_back<
         T: RlstScalar,
-        Array3RealImpl: ValueArrayImpl<T::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         physical_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3RealImpl, 3>,
-        jacobian_determinants: &[T::Real],
-        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        jacobians: &Array<Array3GeoImpl, 3>,
+        jacobian_determinants: &[TGeo],
+        inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     );
 

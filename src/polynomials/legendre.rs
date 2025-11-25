@@ -37,7 +37,8 @@ fn jrc<T: RlstScalar>(a: usize, n: usize) -> (T, T, T) {
 /// Tabulate orthonormal polynomials on an interval
 fn tabulate_interval<
     T: RlstScalar,
-    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    TGeo: RlstScalar,
+    Array2Impl: ValueArrayImpl<TGeo, 2>,
     Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
     points: &Array<Array2Impl, 2>,
@@ -98,7 +99,8 @@ fn tabulate_interval<
 /// Tabulate orthonormal polynomials on a quadrilateral
 fn tabulate_quadrilateral<
     T: RlstScalar,
-    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    TGeo: RlstScalar,
+    Array2Impl: ValueArrayImpl<TGeo, 2>,
     Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
     points: &Array<Array2Impl, 2>,
@@ -251,7 +253,8 @@ fn tabulate_quadrilateral<
 /// Tabulate orthonormal polynomials on a triangle
 fn tabulate_triangle<
     T: RlstScalar,
-    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    TGeo: RlstScalar,
+    Array2Impl: ValueArrayImpl<TGeo, 2>,
     Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
     points: &Array<Array2Impl, 2>,
@@ -452,7 +455,8 @@ fn tabulate_triangle<
 /// Tabulate orthonormal polynomials on a tetrahedron
 fn tabulate_tetrahedron<
     T: RlstScalar,
-    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    TGeo: RlstScalar,
+    Array2Impl: ValueArrayImpl<TGeo, 2>,
     Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
     points: &Array<Array2Impl, 2>,
@@ -815,7 +819,8 @@ fn tabulate_tetrahedron<
 /// Tabulate orthonormal polynomials on a hexahedron
 fn tabulate_hexahedron<
     T: RlstScalar,
-    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    TGeo: RlstScalar,
+    Array2Impl: ValueArrayImpl<TGeo, 2>,
     Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
     points: &Array<Array2Impl, 2>,
@@ -1049,7 +1054,8 @@ pub fn shape<T, Array2Impl: ValueArrayImpl<T, 2>>(
 /// Tabulate orthonormal polynomials
 pub fn tabulate<
     T: RlstScalar,
-    Array2Impl: ValueArrayImpl<T::Real, 2>,
+    TGeo: RlstScalar,
+    Array2Impl: ValueArrayImpl<TGeo, 2>,
     Array3MutImpl: MutableArrayImpl<T, 3>,
 >(
     cell_type: ReferenceCellType,
