@@ -432,7 +432,7 @@ pub mod ciarlet {
         }
     }
 
-    pub fn ciarlet_element_tabulate<
+    pub unsafe fn ciarlet_element_tabulate<
         E: FiniteElement<CellType = ReferenceCellType>,
         TGeo: RlstScalar,
     >(
@@ -461,14 +461,16 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"]),
     )]
-    pub fn ciarlet_element_tabulate_f32<E: FiniteElement<CellType = ReferenceCellType>>(
+    pub unsafe fn ciarlet_element_tabulate_f32<E: FiniteElement<CellType = ReferenceCellType>>(
         element: &E,
         points: *const f32,
         npoints: usize,
         nderivs: usize,
         data: *mut c_void,
     ) {
-        ciarlet_element_tabulate(element, points, npoints, nderivs, data);
+        unsafe {
+            ciarlet_element_tabulate(element, points, npoints, nderivs, data);
+        }
     }
 
     #[concretise_types(
@@ -476,14 +478,16 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"]),
     )]
-    pub fn ciarlet_element_tabulate_f64<E: FiniteElement<CellType = ReferenceCellType>>(
+    pub unsafe fn ciarlet_element_tabulate_f64<E: FiniteElement<CellType = ReferenceCellType>>(
         element: &E,
         points: *const f64,
         npoints: usize,
         nderivs: usize,
         data: *mut c_void,
     ) {
-        ciarlet_element_tabulate(element, points, npoints, nderivs, data);
+        unsafe {
+            ciarlet_element_tabulate(element, points, npoints, nderivs, data);
+        }
     }
 
     #[concretise_types(
@@ -558,7 +562,8 @@ pub mod ciarlet {
         }
     }
 
-    pub fn ciarlet_element_push_forward<
+    #[allow(clippy::too_many_arguments)]
+    pub unsafe fn ciarlet_element_push_forward<
         E: MappedFiniteElement<CellType = ReferenceCellType>,
         TGeo: RlstScalar,
     >(
@@ -620,7 +625,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_push_forward_f32<
+    pub unsafe fn ciarlet_element_push_forward_f32<
         E: MappedFiniteElement<CellType = ReferenceCellType>,
     >(
         element: &E,
@@ -634,18 +639,20 @@ pub mod ciarlet {
         jinv: *const f32,
         physical_values: *mut c_void,
     ) {
-        ciarlet_element_push_forward(
-            element,
-            npoints,
-            nfunctions,
-            gdim,
-            reference_values,
-            nderivs,
-            j,
-            jdet,
-            jinv,
-            physical_values,
-        );
+        unsafe {
+            ciarlet_element_push_forward(
+                element,
+                npoints,
+                nfunctions,
+                gdim,
+                reference_values,
+                nderivs,
+                j,
+                jdet,
+                jinv,
+                physical_values,
+            );
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -654,7 +661,7 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_push_forward_f64<
+    pub unsafe fn ciarlet_element_push_forward_f64<
         E: MappedFiniteElement<CellType = ReferenceCellType>,
     >(
         element: &E,
@@ -668,21 +675,24 @@ pub mod ciarlet {
         jinv: *const f64,
         physical_values: *mut c_void,
     ) {
-        ciarlet_element_push_forward(
-            element,
-            npoints,
-            nfunctions,
-            gdim,
-            reference_values,
-            nderivs,
-            j,
-            jdet,
-            jinv,
-            physical_values,
-        );
+        unsafe {
+            ciarlet_element_push_forward(
+                element,
+                npoints,
+                nfunctions,
+                gdim,
+                reference_values,
+                nderivs,
+                j,
+                jdet,
+                jinv,
+                physical_values,
+            );
+        }
     }
 
-    pub fn ciarlet_element_pull_back<
+    #[allow(clippy::too_many_arguments)]
+    pub unsafe fn ciarlet_element_pull_back<
         E: MappedFiniteElement<CellType = ReferenceCellType>,
         TGeo: RlstScalar,
     >(
@@ -744,7 +754,9 @@ pub mod ciarlet {
         gen_type(name = "maptype", replace_with = ["IdentityMap", "CovariantPiolaMap", "ContravariantPiolaMap"]),
         field(arg = 0, name = "element", wrapper = "CiarletElementT", replace_with = ["CiarletElement<{{dtype}}, {{maptype}}>"])
     )]
-    pub fn ciarlet_element_pull_back_f32<E: MappedFiniteElement<CellType = ReferenceCellType>>(
+    pub unsafe fn ciarlet_element_pull_back_f32<
+        E: MappedFiniteElement<CellType = ReferenceCellType>,
+    >(
         element: &E,
         npoints: usize,
         nfunctions: usize,
@@ -756,18 +768,20 @@ pub mod ciarlet {
         jinv: *const f32,
         reference_values: *mut c_void,
     ) {
-        ciarlet_element_pull_back(
-            element,
-            npoints,
-            nfunctions,
-            gdim,
-            physical_values,
-            nderivs,
-            j,
-            jdet,
-            jinv,
-            reference_values,
-        );
+        unsafe {
+            ciarlet_element_pull_back(
+                element,
+                npoints,
+                nfunctions,
+                gdim,
+                physical_values,
+                nderivs,
+                j,
+                jdet,
+                jinv,
+                reference_values,
+            );
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -788,18 +802,20 @@ pub mod ciarlet {
         jinv: *const f64,
         reference_values: *mut c_void,
     ) {
-        ciarlet_element_pull_back(
-            element,
-            npoints,
-            nfunctions,
-            gdim,
-            physical_values,
-            nderivs,
-            j,
-            jdet,
-            jinv,
-            reference_values,
-        );
+        unsafe {
+            ciarlet_element_pull_back(
+                element,
+                npoints,
+                nfunctions,
+                gdim,
+                physical_values,
+                nderivs,
+                j,
+                jdet,
+                jinv,
+                reference_values,
+            );
+        }
     }
 
     #[concretise_types(
