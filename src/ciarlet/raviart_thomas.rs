@@ -13,11 +13,11 @@ use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
 use rlst::{DynArray, RlstScalar, SliceArray, rlst_dynamic_array};
 use std::marker::PhantomData;
 
-fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getrf + Getri>(
+fn create_simplex<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T, ContravariantPiolaMap> {
+) -> CiarletElement<T, ContravariantPiolaMap, TGeo> {
     if cell_type != ReferenceCellType::Triangle && cell_type != ReferenceCellType::Tetrahedron {
         panic!("Invalid cell: {cell_type:?}");
     }
@@ -44,9 +44,9 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     let pts_t = cell_q
         .points
         .iter()
-        .map(|i| TReal::from(*i).unwrap())
+        .map(|i| TGeo::from(*i).unwrap())
         .collect::<Vec<_>>();
-    let pts = SliceArray::<TReal, 2>::from_shape(&pts_t, [tdim, cell_q.npoints]);
+    let pts = SliceArray::<TGeo, 2>::from_shape(&pts_t, [tdim, cell_q.npoints]);
 
     let mut phi = DynArray::<T, 3>::from_shape(legendre_shape(cell_type, &pts, degree, 0));
     tabulate_legendre_polynomials(cell_type, &pts, degree, 0, &mut phi);
@@ -87,11 +87,11 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     let mut m = [vec![], vec![], vec![], vec![]];
 
     let entity_counts = reference_cell::entity_counts(cell_type);
-    let vertices = reference_cell::vertices::<T::Real>(cell_type);
+    let vertices = reference_cell::vertices::<TGeo>(cell_type);
 
     for d in 0..tdim - 1 {
         for _ in 0..entity_counts[d] {
-            x[d].push(rlst_dynamic_array!(T::Real, [tdim, 0]));
+            x[d].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
             m[d].push(rlst_dynamic_array!(T, [0, tdim, 0]));
         }
     }
@@ -101,9 +101,9 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     let facet_pts_t = facet_q
         .points
         .iter()
-        .map(|i| TReal::from(*i).unwrap())
+        .map(|i| TGeo::from(*i).unwrap())
         .collect::<Vec<_>>();
-    let facet_pts = SliceArray::<TReal, 2>::from_shape(&facet_pts_t, [tdim - 1, facet_q.npoints]);
+    let facet_pts = SliceArray::<TGeo, 2>::from_shape(&facet_pts_t, [tdim - 1, facet_q.npoints]);
 
     let mut facet_phi =
         DynArray::<T, 3>::from_shape(legendre_shape(facet_type, &facet_pts, degree - 1, 0));
@@ -115,9 +115,9 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
         } else {
             reference_cell::faces(cell_type)
         },
-        reference_cell::facet_normals::<TReal>(cell_type),
+        reference_cell::facet_normals::<TGeo>(cell_type),
     ) {
-        let mut pts = rlst_dynamic_array!(T::Real, [tdim, facet_q.npoints]);
+        let mut pts = rlst_dynamic_array!(TGeo, [tdim, facet_q.npoints]);
         let mut mat = rlst_dynamic_array!(T, [pdim_facet_minus1, tdim, facet_q.npoints]);
 
         for (w_i, wt) in facet_q.weights.iter().enumerate() {
@@ -128,7 +128,7 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
                         &facet_q.points[w_i * (tdim - 1)..(w_i + 1) * (tdim - 1)]
                     )
                     .map(|(v_i, pt)| {
-                        (vertices[*v_i][i] - vertices[facet[0]][i]) * TReal::from(*pt).unwrap()
+                        (vertices[*v_i][i] - vertices[facet[0]][i]) * TGeo::from(*pt).unwrap()
                     })
                     .sum();
 
@@ -146,15 +146,15 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
 
     if degree == 1 {
         for _ in 0..entity_counts[tdim] {
-            x[tdim].push(rlst_dynamic_array!(T::Real, [tdim, 0]));
+            x[tdim].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
             m[tdim].push(rlst_dynamic_array!(T, [0, tdim, 0]))
         }
     } else {
         let internal_q = gauss_jacobi_rule(cell_type, 2 * degree - 2).unwrap();
-        let mut pts = rlst_dynamic_array!(T::Real, [tdim, internal_q.npoints]);
+        let mut pts = rlst_dynamic_array!(TGeo, [tdim, internal_q.npoints]);
         for p in 0..internal_q.npoints {
             for d in 0..tdim {
-                pts[[d, p]] = TReal::from(internal_q.points[tdim * p + d]).unwrap()
+                pts[[d, p]] = TGeo::from(internal_q.points[tdim * p + d]).unwrap()
             }
         }
 
@@ -190,11 +190,11 @@ fn create_simplex<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> +
     )
 }
 
-fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getrf + Getri>(
+fn create_tp<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T, ContravariantPiolaMap> {
+) -> CiarletElement<T, ContravariantPiolaMap, TGeo> {
     if cell_type != ReferenceCellType::Quadrilateral && cell_type != ReferenceCellType::Hexahedron {
         panic!("Invalid cell: {cell_type:?}");
     }
@@ -208,9 +208,9 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
     let pts_t = cell_q
         .points
         .iter()
-        .map(|i| TReal::from(*i).unwrap())
+        .map(|i| TGeo::from(*i).unwrap())
         .collect::<Vec<_>>();
-    let pts = SliceArray::<TReal, 2>::from_shape(&pts_t, [tdim, cell_q.npoints]);
+    let pts = SliceArray::<TGeo, 2>::from_shape(&pts_t, [tdim, cell_q.npoints]);
 
     let mut phi = DynArray::<T, 3>::from_shape(legendre_shape(cell_type, &pts, degree, 0));
     tabulate_legendre_polynomials(cell_type, &pts, degree, 0, &mut phi);
@@ -293,11 +293,11 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
     let mut x = [vec![], vec![], vec![], vec![]];
     let mut m = [vec![], vec![], vec![], vec![]];
 
-    let vertices = reference_cell::vertices::<T::Real>(cell_type);
+    let vertices = reference_cell::vertices::<TGeo>(cell_type);
 
     for d in 0..tdim - 1 {
         for _ in 0..entity_counts[d] {
-            x[d].push(rlst_dynamic_array!(T::Real, [tdim, 0]));
+            x[d].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
             m[d].push(rlst_dynamic_array!(T, [0, tdim, 0]));
         }
     }
@@ -306,9 +306,9 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
     let facet_pts_t = facet_q
         .points
         .iter()
-        .map(|i| TReal::from(*i).unwrap())
+        .map(|i| TGeo::from(*i).unwrap())
         .collect::<Vec<_>>();
-    let facet_pts = SliceArray::<TReal, 2>::from_shape(&facet_pts_t, [tdim - 1, facet_q.npoints]);
+    let facet_pts = SliceArray::<TGeo, 2>::from_shape(&facet_pts_t, [tdim - 1, facet_q.npoints]);
 
     let mut facet_phi =
         DynArray::<T, 3>::from_shape(legendre_shape(facet_type, &facet_pts, degree - 1, 0));
@@ -316,9 +316,9 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
 
     for (facet, normal) in izip!(
         reference_cell::facets(cell_type),
-        reference_cell::facet_normals::<T::Real>(cell_type),
+        reference_cell::facet_normals::<TGeo>(cell_type),
     ) {
-        let mut pts = rlst_dynamic_array!(T::Real, [tdim, facet_q.npoints]);
+        let mut pts = rlst_dynamic_array!(TGeo, [tdim, facet_q.npoints]);
         let mut mat = rlst_dynamic_array!(T, [pdim_facet_minus1, tdim, facet_q.npoints]);
 
         for (w_i, wt) in facet_q.weights.iter().enumerate() {
@@ -329,7 +329,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
                             (vertices[facet[usize::pow(2, x as u32)]][d] - vertices[facet[0]][d])
                                 * facet_pts[[x, w_i]]
                         })
-                        .sum::<T::Real>();
+                        .sum::<TGeo>();
                 for j in 0..facet_phi.shape()[1] {
                     mat[[j, d, w_i]] = T::from(*wt).unwrap()
                         * facet_phi[[0, j, w_i]]
@@ -344,16 +344,16 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
 
     // DOFs on interior
     if degree == 1 {
-        x[tdim].push(rlst_dynamic_array!(T::Real, [tdim, 0]));
+        x[tdim].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
         m[tdim].push(rlst_dynamic_array!(T, [0, tdim, 0]))
     } else if tdim == 2 {
         let face_q = gauss_jacobi_rule(ReferenceCellType::Quadrilateral, 2 * degree - 1).unwrap();
         let face_pts_t = face_q
             .points
             .iter()
-            .map(|i| TReal::from(*i).unwrap())
+            .map(|i| TGeo::from(*i).unwrap())
             .collect::<Vec<_>>();
-        let face_pts = SliceArray::<TReal, 2>::from_shape(&face_pts_t, [2, face_q.npoints]);
+        let face_pts = SliceArray::<TGeo, 2>::from_shape(&face_pts_t, [2, face_q.npoints]);
 
         let mut face_phi = DynArray::<T, 3>::from_shape(legendre_shape(
             ReferenceCellType::Quadrilateral,
@@ -369,7 +369,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
             &mut face_phi,
         );
 
-        let mut pts = rlst_dynamic_array!(T::Real, [tdim, face_q.npoints]);
+        let mut pts = rlst_dynamic_array!(TGeo, [tdim, face_q.npoints]);
         let mdim = 2 * pdim_edge_minus2 * pdim_edge_minus1;
         let mut mat = rlst_dynamic_array!(T, [mdim, tdim, face_q.npoints]);
 
@@ -394,10 +394,10 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
         let interior_pts_t = interior_q
             .points
             .iter()
-            .map(|i| TReal::from(*i).unwrap())
+            .map(|i| TGeo::from(*i).unwrap())
             .collect::<Vec<_>>();
         let interior_pts =
-            SliceArray::<TReal, 2>::from_shape(&interior_pts_t, [3, interior_q.npoints]);
+            SliceArray::<TGeo, 2>::from_shape(&interior_pts_t, [3, interior_q.npoints]);
 
         let mut interior_phi = DynArray::<T, 3>::from_shape(legendre_shape(
             ReferenceCellType::Hexahedron,
@@ -413,7 +413,7 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
             &mut interior_phi,
         );
 
-        let mut pts = rlst_dynamic_array!(T::Real, [tdim, interior_q.npoints]);
+        let mut pts = rlst_dynamic_array!(TGeo, [tdim, interior_q.npoints]);
         let mdim = 3 * pdim_edge_minus1.pow(2) * pdim_edge_minus2;
         let mut mat = rlst_dynamic_array!(T, [mdim, tdim, interior_q.npoints]);
 
@@ -466,11 +466,11 @@ fn create_tp<TReal: RlstScalar<Real = TReal>, T: RlstScalar<Real = TReal> + Getr
 }
 
 /// Create a Raviart-Thomas element
-pub fn create<T: RlstScalar + Getrf + Getri>(
+pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T, ContravariantPiolaMap> {
+) -> CiarletElement<T, ContravariantPiolaMap, TGeo> {
     if cell_type == ReferenceCellType::Triangle || cell_type == ReferenceCellType::Tetrahedron {
         create_simplex(cell_type, degree, continuity)
     } else if cell_type == ReferenceCellType::Quadrilateral
@@ -486,28 +486,35 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
 ///
 /// A family of Raviart-Thomas elements on multiple cell types with appropriate
 /// continuity across different cell types.
-pub struct RaviartThomasElementFamily<T: RlstScalar + Getrf + Getri = f64> {
+pub struct RaviartThomasElementFamily<T: RlstScalar + Getrf + Getri = f64, TGeo: RlstScalar = f64> {
     degree: usize,
     continuity: Continuity,
     _t: PhantomData<T>,
+    _tgeo: PhantomData<TGeo>,
 }
 
-impl<T: RlstScalar + Getrf + Getri> RaviartThomasElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> RaviartThomasElementFamily<T, TGeo> {
     /// Create new family with given `degree` and `continuity`.
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
             degree,
             continuity,
             _t: PhantomData,
+            _tgeo: PhantomData,
         }
     }
 }
 
-impl<T: RlstScalar + Getrf + Getri> ElementFamily for RaviartThomasElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> ElementFamily
+    for RaviartThomasElementFamily<T, TGeo>
+{
     type T = T;
     type CellType = ReferenceCellType;
-    type FiniteElement = CiarletElement<T, ContravariantPiolaMap>;
-    fn element(&self, cell_type: ReferenceCellType) -> CiarletElement<T, ContravariantPiolaMap> {
-        create::<T>(cell_type, self.degree, self.continuity)
+    type FiniteElement = CiarletElement<T, ContravariantPiolaMap, TGeo>;
+    fn element(
+        &self,
+        cell_type: ReferenceCellType,
+    ) -> CiarletElement<T, ContravariantPiolaMap, TGeo> {
+        create::<T, TGeo>(cell_type, self.degree, self.continuity)
     }
 }
