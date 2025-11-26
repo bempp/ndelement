@@ -38,12 +38,18 @@ def test_value_size(cell, degree):
     + [(dt0, dt1) for dt0 in dtypes for dt1 in [np.complex64, np.complex128]],
 )
 def test_incompatible_types(dt0, dt1):
+    print(1)
     family = create_family(Family.Lagrange, 2, dtype=dt0)
+    print(2)
     element = family.element(ReferenceCellType.Triangle)
+    print(3)
     points = np.array([[0.0, 0.0], [0.2, 0.1], [0.8, 0.05]], dtype=dt1)
+    print(4)
 
     with pytest.raises(TypeError):
+        print(5)
         element.tabulate(points, 1)
+        print(6)
 
 
 @pytest.mark.parametrize("dtype", dtypes)
