@@ -53,6 +53,11 @@ class CiarletElement(object):
         return _dtypes[_lib.ciarlet_element_dtype(self._rs_element)]
 
     @property
+    def geo_dtype(self) -> typing.Type[np.floating]:
+        """Data type."""
+        return _dtypes[_lib.ciarlet_element_geo_dtype(self._rs_element)]
+
+    @property
     def value_size(self) -> int:
         """Value size of the element."""
         return _lib.element_value_size(self._rs_element)
@@ -123,7 +128,7 @@ class CiarletElement(object):
             points_d = []
             for i in range(n):
                 shape = (_lib.ciarlet_element_interpolation_npoints(self._rs_element, d, i), tdim)
-                points_di = np.empty(shape, dtype=self.dtype(0).real.dtype)
+                points_di = np.empty(shape, dtype=self.geo_dtype)
                 _lib.ciarlet_element_interpolation_points(
                     self._rs_element, d, i, _ffi.cast("void*", points_di.ctypes.data)
                 )
@@ -152,8 +157,6 @@ class CiarletElement(object):
 
     def tabulate(self, points: npt.NDArray[np.floating], nderivs: int) -> npt.NDArray:
         """Tabulate the basis functions at a set of points."""
-        if points.dtype != self.dtype(0).real.dtype:
-            raise TypeError("points has incorrect type")
         shape = np.empty(4, dtype=np.uintp)
         _lib.ciarlet_element_tabulate_array_shape(
             self._rs_element, nderivs, points.shape[0], _ffi.cast("uintptr_t*", shape.ctypes.data)
@@ -202,13 +205,12 @@ class CiarletElement(object):
         inverse_jacobians: npt.NDArray[np.floating],
     ) -> npt.NDArray[np.floating]:
         """Push values forward to a physical cell."""
-        if reference_values.dtype != self.geo_dtype(0):
-            raise TypeError("reference_values has incorrect type")
-        if jacobians.dtype != self.dtype(0).real.dtype:
+        geo_dtype = reference_values.dtype
+        if jacobians.dtype != geo_dtype:
             raise TypeError("jacobians has incorrect type")
-        if jacobian_determinants.dtype != self.dtype(0).real.dtype:
+        if jacobian_determinants.dtype != geo_dtype:
             raise TypeError("jacobian_determinants has incorrect type")
-        if inverse_jacobians.dtype != self.dtype(0).real.dtype:
+        if inverse_jacobians.dtype != geo_dtype:
             raise TypeError("inverse_jacobians has incorrect type")
 
         gdim = jacobians.shape[1]
@@ -252,13 +254,12 @@ class CiarletElement(object):
         inverse_jacobians: npt.NDArray[np.floating],
     ) -> npt.NDArray[np.floating]:
         """Push values back from a physical cell."""
-        if physical_values.dtype != self.dtype(0).real.dtype:
-            raise TypeError("physical_values has incorrect type")
-        if jacobians.dtype != self.dtype(0).real.dtype:
+        geo_dtype = physical_values.dtype
+        if jacobians.dtype != geo_dtype:
             raise TypeError("jacobians has incorrect type")
-        if jacobian_determinants.dtype != self.dtype(0).real.dtype:
+        if jacobian_determinants.dtype != geo_dtype:
             raise TypeError("jacobian_determinants has incorrect type")
-        if inverse_jacobians.dtype != self.dtype(0).real.dtype:
+        if inverse_jacobians.dtype != geo_dtype:
             raise TypeError("inverse_jacobians has incorrect type")
 
         gdim = jacobians.shape[1]
