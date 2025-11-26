@@ -53,6 +53,11 @@ class CiarletElement(object):
         return _dtypes[_lib.ciarlet_element_dtype(self._rs_element)]
 
     @property
+    def geo_dtype(self) -> typing.Type[np.floating]:
+        """Data type."""
+        return _dtypes[_lib.ciarlet_element_geo_dtype(self._rs_element)]
+
+    @property
     def value_size(self) -> int:
         """Value size of the element."""
         return _lib.element_value_size(self._rs_element)
@@ -123,7 +128,7 @@ class CiarletElement(object):
             points_d = []
             for i in range(n):
                 shape = (_lib.ciarlet_element_interpolation_npoints(self._rs_element, d, i), tdim)
-                points_di = np.empty(shape, dtype=self.dtype(0).real.dtype)
+                points_di = np.empty(shape, dtype=self.geo_dtype)
                 _lib.ciarlet_element_interpolation_points(
                     self._rs_element, d, i, _ffi.cast("void*", points_di.ctypes.data)
                 )
@@ -152,20 +157,31 @@ class CiarletElement(object):
 
     def tabulate(self, points: npt.NDArray[np.floating], nderivs: int) -> npt.NDArray:
         """Tabulate the basis functions at a set of points."""
-        if points.dtype != self.dtype(0).real.dtype:
-            raise TypeError("points has incorrect type")
         shape = np.empty(4, dtype=np.uintp)
         _lib.ciarlet_element_tabulate_array_shape(
             self._rs_element, nderivs, points.shape[0], _ffi.cast("uintptr_t*", shape.ctypes.data)
         )
         data = np.empty(shape[::-1], dtype=self.dtype)
-        _lib.ciarlet_element_tabulate(
-            self._rs_element,
-            _ffi.cast("void*", points.ctypes.data),
-            points.shape[0],
-            nderivs,
-            _ffi.cast("void*", data.ctypes.data),
-        )
+
+        if points.dtype == np.float64:
+            _lib.ciarlet_element_tabulate_f64(
+                self._rs_element,
+                _ffi.cast("double*", points.ctypes.data),
+                points.shape[0],
+                nderivs,
+                _ffi.cast("void*", data.ctypes.data),
+            )
+        elif points.dtype == np.float32:
+            _lib.ciarlet_element_tabulate_f32(
+                self._rs_element,
+                _ffi.cast("float*", points.ctypes.data),
+                points.shape[0],
+                nderivs,
+                _ffi.cast("void*", data.ctypes.data),
+            )
+        else:
+            raise TypeError(f"Unsupported dtype: {points.dtype}")
+
         return data
 
     def physical_value_size(self, gdim: int) -> int:
@@ -189,13 +205,12 @@ class CiarletElement(object):
         inverse_jacobians: npt.NDArray[np.floating],
     ) -> npt.NDArray[np.floating]:
         """Push values forward to a physical cell."""
-        if reference_values.dtype != self.dtype(0):
-            raise TypeError("reference_values has incorrect type")
-        if jacobians.dtype != self.dtype(0).real.dtype:
+        geo_dtype = reference_values.dtype
+        if jacobians.dtype != geo_dtype:
             raise TypeError("jacobians has incorrect type")
-        if jacobian_determinants.dtype != self.dtype(0).real.dtype:
+        if jacobian_determinants.dtype != geo_dtype:
             raise TypeError("jacobian_determinants has incorrect type")
-        if inverse_jacobians.dtype != self.dtype(0).real.dtype:
+        if inverse_jacobians.dtype != geo_dtype:
             raise TypeError("inverse_jacobians has incorrect type")
 
         gdim = jacobians.shape[1]
@@ -205,18 +220,29 @@ class CiarletElement(object):
 
         shape = (pvs,) + reference_values.shape[1:]
         data = np.empty(shape, dtype=self.dtype)
-        _lib.ciarlet_element_push_forward(
+
+        if reference_values.dtype == np.float64:
+            push_function = _lib.ciarlet_element_push_forward_f64
+            geo_type = "double*"
+        elif reference_values.dtype == np.float32:
+            push_function = _lib.ciarlet_element_push_forward_f32
+            geo_type = "float*"
+        else:
+            raise TypeError(f"Unsupported dtype: {reference_values.dtype}")
+
+        push_function(
             self._rs_element,
             npts,
             nfuncs,
             gdim,
-            _ffi.cast("void*", reference_values.ctypes.data),
+            _ffi.cast(geo_type, reference_values.ctypes.data),
             nderivs,
-            _ffi.cast("void*", jacobians.ctypes.data),
-            _ffi.cast("void*", jacobian_determinants.ctypes.data),
-            _ffi.cast("void*", inverse_jacobians.ctypes.data),
+            _ffi.cast(geo_type, jacobians.ctypes.data),
+            _ffi.cast(geo_type, jacobian_determinants.ctypes.data),
+            _ffi.cast(geo_type, inverse_jacobians.ctypes.data),
             _ffi.cast("void*", data.ctypes.data),
         )
+
         return data
 
     def pull_back(
@@ -228,13 +254,12 @@ class CiarletElement(object):
         inverse_jacobians: npt.NDArray[np.floating],
     ) -> npt.NDArray[np.floating]:
         """Push values back from a physical cell."""
-        if physical_values.dtype != self.dtype(0):
-            raise TypeError("physical_values has incorrect type")
-        if jacobians.dtype != self.dtype(0).real.dtype:
+        geo_dtype = physical_values.dtype
+        if jacobians.dtype != geo_dtype:
             raise TypeError("jacobians has incorrect type")
-        if jacobian_determinants.dtype != self.dtype(0).real.dtype:
+        if jacobian_determinants.dtype != geo_dtype:
             raise TypeError("jacobian_determinants has incorrect type")
-        if inverse_jacobians.dtype != self.dtype(0).real.dtype:
+        if inverse_jacobians.dtype != geo_dtype:
             raise TypeError("inverse_jacobians has incorrect type")
 
         gdim = jacobians.shape[1]
@@ -244,18 +269,29 @@ class CiarletElement(object):
 
         shape = (vs,) + physical_values.shape[1:]
         data = np.empty(shape, dtype=self.dtype)
-        _lib.ciarlet_element_pull_back(
+
+        if physical_values.dtype == np.float64:
+            pull_function = _lib.ciarlet_element_pull_back_f64
+            geo_type = "double*"
+        elif physical_values.dtype == np.float32:
+            pull_function = _lib.ciarlet_element_pull_back_f32
+            geo_type = "float*"
+        else:
+            raise TypeError(f"Unsupported dtype: {physical_values.dtype}")
+
+        pull_function(
             self._rs_element,
             npts,
             nfuncs,
             gdim,
-            _ffi.cast("void*", physical_values.ctypes.data),
+            _ffi.cast(geo_type, physical_values.ctypes.data),
             nderivs,
-            _ffi.cast("void*", jacobians.ctypes.data),
-            _ffi.cast("void*", jacobian_determinants.ctypes.data),
-            _ffi.cast("void*", inverse_jacobians.ctypes.data),
+            _ffi.cast(geo_type, jacobians.ctypes.data),
+            _ffi.cast(geo_type, jacobian_determinants.ctypes.data),
+            _ffi.cast(geo_type, inverse_jacobians.ctypes.data),
             _ffi.cast("void*", data.ctypes.data),
         )
+
         return data
 
     def apply_dof_permutations(self, data: npt.NDArray, orientation: np.int32):

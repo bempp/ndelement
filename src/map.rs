@@ -11,16 +11,17 @@ pub struct IdentityMap {}
 impl Map for IdentityMap {
     fn push_forward<
         T: RlstScalar,
-        Array3RealImpl: ValueArrayImpl<T::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         reference_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        _jacobians: &Array<Array3RealImpl, 3>,
-        _jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array<Array3RealImpl, 3>,
+        _jacobians: &Array<Array3GeoImpl, 3>,
+        _jacobian_determinants: &[TGeo],
+        _inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     ) {
         if nderivs > 0 {
@@ -31,16 +32,17 @@ impl Map for IdentityMap {
     }
     fn pull_back<
         T: RlstScalar,
-        Array3RealImpl: ValueArrayImpl<T::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         physical_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        _jacobians: &Array<Array3RealImpl, 3>,
-        _jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array<Array3RealImpl, 3>,
+        _jacobians: &Array<Array3GeoImpl, 3>,
+        _jacobian_determinants: &[TGeo],
+        _inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     ) {
         if nderivs > 0 {
@@ -70,16 +72,17 @@ pub struct CovariantPiolaMap {}
 impl Map for CovariantPiolaMap {
     fn push_forward<
         T: RlstScalar,
-        Array3RealImpl: ValueArrayImpl<T::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         reference_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        _jacobians: &Array<Array3RealImpl, 3>,
-        _jacobian_determinants: &[T::Real],
-        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        _jacobians: &Array<Array3GeoImpl, 3>,
+        _jacobian_determinants: &[TGeo],
+        inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     ) {
         let tdim = inverse_jacobians.shape()[1];
@@ -109,16 +112,17 @@ impl Map for CovariantPiolaMap {
     }
     fn pull_back<
         T: RlstScalar,
-        Array3RealImpl: ValueArrayImpl<T::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         physical_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3RealImpl, 3>,
-        _jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array<Array3RealImpl, 3>,
+        jacobians: &Array<Array3GeoImpl, 3>,
+        _jacobian_determinants: &[TGeo],
+        _inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     ) {
         let gdim = jacobians.shape()[1];
@@ -167,16 +171,17 @@ pub struct ContravariantPiolaMap {}
 impl Map for ContravariantPiolaMap {
     fn push_forward<
         T: RlstScalar,
-        Array3RealImpl: ValueArrayImpl<T::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         reference_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        jacobians: &Array<Array3RealImpl, 3>,
-        jacobian_determinants: &[T::Real],
-        _inverse_jacobians: &Array<Array3RealImpl, 3>,
+        jacobians: &Array<Array3GeoImpl, 3>,
+        jacobian_determinants: &[TGeo],
+        _inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     ) {
         let gdim = jacobians.shape()[1];
@@ -207,16 +212,17 @@ impl Map for ContravariantPiolaMap {
     }
     fn pull_back<
         T: RlstScalar,
-        Array3RealImpl: ValueArrayImpl<T::Real, 3>,
+        TGeo: RlstScalar,
+        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
     >(
         &self,
         physical_values: &Array<Array4Impl, 4>,
         nderivs: usize,
-        _jacobians: &Array<Array3RealImpl, 3>,
-        jacobian_determinants: &[T::Real],
-        inverse_jacobians: &Array<Array3RealImpl, 3>,
+        _jacobians: &Array<Array3GeoImpl, 3>,
+        jacobian_determinants: &[TGeo],
+        inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     ) {
         let tdim = inverse_jacobians.shape()[1];
@@ -256,7 +262,7 @@ mod test {
     use approx::*;
     use rlst::{Array, rlst_dynamic_array};
 
-    fn fill_jacobians<T: RlstScalar<Real = T>, Array3MutImpl: MutableArrayImpl<T, 3>>(
+    fn fill_jacobians<T: RlstScalar, Array3MutImpl: MutableArrayImpl<T, 3>>(
         j: &mut Array<Array3MutImpl, 3>,
         jdet: &mut [T],
         jinv: &mut Array<Array3MutImpl, 3>,

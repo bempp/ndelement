@@ -11,11 +11,11 @@ use rlst::{RlstScalar, rlst_dynamic_array};
 use std::marker::PhantomData;
 
 /// Create a Lagrange element.
-pub fn create<T: RlstScalar + Getrf + Getri>(
+pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-) -> CiarletElement<T, IdentityMap> {
+) -> CiarletElement<T, IdentityMap, TGeo> {
     let dim = polynomial_count(cell_type, degree);
     let tdim = reference_cell::dim(cell_type);
     let mut wcoeffs = rlst_dynamic_array!(T, [dim, 1, dim]);
@@ -26,24 +26,24 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
     let mut x = [vec![], vec![], vec![], vec![]];
     let mut m = [vec![], vec![], vec![], vec![]];
     let entity_counts = reference_cell::entity_counts(cell_type);
-    let vertices = reference_cell::vertices::<T::Real>(cell_type);
+    let vertices = reference_cell::vertices::<TGeo>(cell_type);
     if degree == 0 {
         if continuity == Continuity::Standard {
             panic!("Cannot create continuous degree 0 Lagrange element");
         }
         for (d, counts) in entity_counts.iter().enumerate() {
             for _e in 0..*counts {
-                x[d].push(rlst_dynamic_array!(T::Real, [tdim, 0]));
+                x[d].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
                 m[d].push(rlst_dynamic_array!(T, [0, 1, 0]));
             }
         }
-        let mut midp = rlst_dynamic_array!(T::Real, [tdim, 1]);
+        let mut midp = rlst_dynamic_array!(TGeo, [tdim, 1]);
         let nvertices = entity_counts[0];
         for i in 0..tdim {
             for vertex in &vertices {
-                *midp.get_mut([i, 0]).unwrap() += num::cast::<_, T::Real>(vertex[i]).unwrap();
+                *midp.get_mut([i, 0]).unwrap() += num::cast::<_, TGeo>(vertex[i]).unwrap();
             }
-            *midp.get_mut([i, 0]).unwrap() /= num::cast::<_, T::Real>(nvertices).unwrap();
+            *midp.get_mut([i, 0]).unwrap() /= num::cast::<_, TGeo>(nvertices).unwrap();
         }
         x[tdim].push(midp);
         let mut mentry = rlst_dynamic_array!(T, [1, 1, 1]);
@@ -54,9 +54,9 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
         let faces = reference_cell::faces(cell_type);
         let volumes = reference_cell::volumes(cell_type);
         for vertex in &vertices {
-            let mut pts = rlst_dynamic_array!(T::Real, [tdim, 1]);
+            let mut pts = rlst_dynamic_array!(TGeo, [tdim, 1]);
             for (i, v) in vertex.iter().enumerate() {
-                *pts.get_mut([i, 0]).unwrap() = num::cast::<_, T::Real>(*v).unwrap();
+                *pts.get_mut([i, 0]).unwrap() = num::cast::<_, TGeo>(*v).unwrap();
             }
             x[0].push(pts);
             let mut mentry = rlst_dynamic_array!(T, [1, 1, 1]);
@@ -64,7 +64,7 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
             m[0].push(mentry);
         }
         for e in &edges {
-            let mut pts = rlst_dynamic_array!(T::Real, [tdim, degree - 1]);
+            let mut pts = rlst_dynamic_array!(TGeo, [tdim, degree - 1]);
             let [vn0, vn1] = e[..] else {
                 panic!();
             };
@@ -75,10 +75,9 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
             for i in 1..degree {
                 *ident.get_mut([i - 1, 0, i - 1]).unwrap() = T::from(1.0).unwrap();
                 for j in 0..tdim {
-                    *pts.get_mut([j, i - 1]).unwrap() = num::cast::<_, T::Real>(v0[j]).unwrap()
-                        + num::cast::<_, T::Real>(i).unwrap()
-                            / num::cast::<_, T::Real>(degree).unwrap()
-                            * num::cast::<_, T::Real>(v1[j] - v0[j]).unwrap();
+                    *pts.get_mut([j, i - 1]).unwrap() = num::cast::<_, TGeo>(v0[j]).unwrap()
+                        + num::cast::<_, TGeo>(i).unwrap() / num::cast::<_, TGeo>(degree).unwrap()
+                            * num::cast::<_, TGeo>(v1[j] - v0[j]).unwrap();
                 }
             }
             x[1].push(pts);
@@ -101,7 +100,7 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
                     panic!("Unsupported face type");
                 }
             };
-            let mut pts = rlst_dynamic_array!(T::Real, [tdim, npts]);
+            let mut pts = rlst_dynamic_array!(TGeo, [tdim, npts]);
 
             let [vn0, vn1, vn2] = faces[e][..3] else {
                 panic!();
@@ -116,14 +115,14 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
                     for i0 in 1..degree {
                         for i1 in 1..degree - i0 {
                             for j in 0..tdim {
-                                *pts.get_mut([j, n]).unwrap() = num::cast::<_, T::Real>(v0[j])
+                                *pts.get_mut([j, n]).unwrap() = num::cast::<_, TGeo>(v0[j])
                                     .unwrap()
-                                    + num::cast::<_, T::Real>(i0).unwrap()
-                                        / num::cast::<_, T::Real>(degree).unwrap()
-                                        * num::cast::<_, T::Real>(v1[j] - v0[j]).unwrap()
-                                    + num::cast::<_, T::Real>(i1).unwrap()
-                                        / num::cast::<_, T::Real>(degree).unwrap()
-                                        * num::cast::<_, T::Real>(v2[j] - v0[j]).unwrap();
+                                    + num::cast::<_, TGeo>(i0).unwrap()
+                                        / num::cast::<_, TGeo>(degree).unwrap()
+                                        * num::cast::<_, TGeo>(v1[j] - v0[j]).unwrap()
+                                    + num::cast::<_, TGeo>(i1).unwrap()
+                                        / num::cast::<_, TGeo>(degree).unwrap()
+                                        * num::cast::<_, TGeo>(v2[j] - v0[j]).unwrap();
                             }
                             n += 1;
                         }
@@ -134,14 +133,14 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
                     for i0 in 1..degree {
                         for i1 in 1..degree {
                             for j in 0..tdim {
-                                *pts.get_mut([j, n]).unwrap() = num::cast::<_, T::Real>(v0[j])
+                                *pts.get_mut([j, n]).unwrap() = num::cast::<_, TGeo>(v0[j])
                                     .unwrap()
-                                    + num::cast::<_, T::Real>(i0).unwrap()
-                                        / num::cast::<_, T::Real>(degree).unwrap()
-                                        * num::cast::<_, T::Real>(v1[j] - v0[j]).unwrap()
-                                    + num::cast::<_, T::Real>(i1).unwrap()
-                                        / num::cast::<_, T::Real>(degree).unwrap()
-                                        * num::cast::<_, T::Real>(v2[j] - v0[j]).unwrap();
+                                    + num::cast::<_, TGeo>(i0).unwrap()
+                                        / num::cast::<_, TGeo>(degree).unwrap()
+                                        * num::cast::<_, TGeo>(v1[j] - v0[j]).unwrap()
+                                    + num::cast::<_, TGeo>(i1).unwrap()
+                                        / num::cast::<_, TGeo>(degree).unwrap()
+                                        * num::cast::<_, TGeo>(v2[j] - v0[j]).unwrap();
                             }
                             n += 1;
                         }
@@ -176,7 +175,7 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
                     panic!("Unsupported face type");
                 }
             };
-            let mut pts = rlst_dynamic_array!(T::Real, [tdim, npts]);
+            let mut pts = rlst_dynamic_array!(TGeo, [tdim, npts]);
 
             match volume_type {
                 ReferenceCellType::Tetrahedron => {
@@ -193,17 +192,17 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
                         for i1 in 1..degree - i0 {
                             for i2 in 1..degree - i0 - i1 {
                                 for j in 0..tdim {
-                                    *pts.get_mut([j, n]).unwrap() = num::cast::<_, T::Real>(v0[j])
+                                    *pts.get_mut([j, n]).unwrap() = num::cast::<_, TGeo>(v0[j])
                                         .unwrap()
-                                        + num::cast::<_, T::Real>(i0).unwrap()
-                                            / num::cast::<_, T::Real>(degree).unwrap()
-                                            * num::cast::<_, T::Real>(v1[j] - v0[j]).unwrap()
-                                        + num::cast::<_, T::Real>(i1).unwrap()
-                                            / num::cast::<_, T::Real>(degree).unwrap()
-                                            * num::cast::<_, T::Real>(v2[j] - v0[j]).unwrap()
-                                        + num::cast::<_, T::Real>(i2).unwrap()
-                                            / num::cast::<_, T::Real>(degree).unwrap()
-                                            * num::cast::<_, T::Real>(v3[j] - v0[j]).unwrap();
+                                        + num::cast::<_, TGeo>(i0).unwrap()
+                                            / num::cast::<_, TGeo>(degree).unwrap()
+                                            * num::cast::<_, TGeo>(v1[j] - v0[j]).unwrap()
+                                        + num::cast::<_, TGeo>(i1).unwrap()
+                                            / num::cast::<_, TGeo>(degree).unwrap()
+                                            * num::cast::<_, TGeo>(v2[j] - v0[j]).unwrap()
+                                        + num::cast::<_, TGeo>(i2).unwrap()
+                                            / num::cast::<_, TGeo>(degree).unwrap()
+                                            * num::cast::<_, TGeo>(v3[j] - v0[j]).unwrap();
                                 }
                                 n += 1;
                             }
@@ -224,17 +223,17 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
                         for i1 in 1..degree {
                             for i2 in 1..degree {
                                 for j in 0..tdim {
-                                    *pts.get_mut([j, n]).unwrap() = num::cast::<_, T::Real>(v0[j])
+                                    *pts.get_mut([j, n]).unwrap() = num::cast::<_, TGeo>(v0[j])
                                         .unwrap()
-                                        + num::cast::<_, T::Real>(i0).unwrap()
-                                            / num::cast::<_, T::Real>(degree).unwrap()
-                                            * num::cast::<_, T::Real>(v1[j] - v0[j]).unwrap()
-                                        + num::cast::<_, T::Real>(i1).unwrap()
-                                            / num::cast::<_, T::Real>(degree).unwrap()
-                                            * num::cast::<_, T::Real>(v2[j] - v0[j]).unwrap()
-                                        + num::cast::<_, T::Real>(i2).unwrap()
-                                            / num::cast::<_, T::Real>(degree).unwrap()
-                                            * num::cast::<_, T::Real>(v3[j] - v0[j]).unwrap();
+                                        + num::cast::<_, TGeo>(i0).unwrap()
+                                            / num::cast::<_, TGeo>(degree).unwrap()
+                                            * num::cast::<_, TGeo>(v1[j] - v0[j]).unwrap()
+                                        + num::cast::<_, TGeo>(i1).unwrap()
+                                            / num::cast::<_, TGeo>(degree).unwrap()
+                                            * num::cast::<_, TGeo>(v2[j] - v0[j]).unwrap()
+                                        + num::cast::<_, TGeo>(i2).unwrap()
+                                            / num::cast::<_, TGeo>(degree).unwrap()
+                                            * num::cast::<_, TGeo>(v3[j] - v0[j]).unwrap();
                                 }
                                 n += 1;
                             }
@@ -254,7 +253,7 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
             m[3].push(ident);
         }
     }
-    CiarletElement::<T, IdentityMap>::create(
+    CiarletElement::<T, IdentityMap, TGeo>::create(
         "Lagrange".to_string(),
         cell_type,
         degree,
@@ -272,28 +271,32 @@ pub fn create<T: RlstScalar + Getrf + Getri>(
 ///
 /// A family of Lagrange elements on multiple cell types with appropriate
 /// continuity across different cell types.
-pub struct LagrangeElementFamily<T: RlstScalar + Getrf + Getri> {
+pub struct LagrangeElementFamily<T: RlstScalar + Getrf + Getri = f64, TGeo: RlstScalar = f64> {
     degree: usize,
     continuity: Continuity,
     _t: PhantomData<T>,
+    _tgeo: PhantomData<TGeo>,
 }
 
-impl<T: RlstScalar + Getrf + Getri> LagrangeElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> LagrangeElementFamily<T, TGeo> {
     /// Create new family with given `degree` and `continuity`.
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
             degree,
             continuity,
             _t: PhantomData,
+            _tgeo: PhantomData,
         }
     }
 }
 
-impl<T: RlstScalar + Getrf + Getri> ElementFamily for LagrangeElementFamily<T> {
+impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> ElementFamily
+    for LagrangeElementFamily<T, TGeo>
+{
     type T = T;
-    type FiniteElement = CiarletElement<T, IdentityMap>;
+    type FiniteElement = CiarletElement<T, IdentityMap, TGeo>;
     type CellType = ReferenceCellType;
-    fn element(&self, cell_type: ReferenceCellType) -> CiarletElement<T, IdentityMap> {
-        create::<T>(cell_type, self.degree, self.continuity)
+    fn element(&self, cell_type: ReferenceCellType) -> CiarletElement<T, IdentityMap, TGeo> {
+        create::<T, TGeo>(cell_type, self.degree, self.continuity)
     }
 }

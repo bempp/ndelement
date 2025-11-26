@@ -40,7 +40,7 @@ pub fn is_simplex(cell: ReferenceCellType) -> bool {
 }
 
 /// The vertices of the reference cell
-pub fn vertices<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Vec<T>> {
+pub fn vertices<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
     let zero = T::from(0.0).unwrap();
     let one = T::from(1.0).unwrap();
     match cell {
@@ -88,7 +88,7 @@ pub fn vertices<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Vec<T>>
 }
 
 /// The midpoint of the cell
-pub fn midpoint<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<T> {
+pub fn midpoint<T: RlstScalar>(cell: ReferenceCellType) -> Vec<T> {
     let half = T::from(0.5).unwrap();
     let third = T::from(1.0).unwrap() / T::from(3.0).unwrap();
     match cell {
@@ -258,7 +258,7 @@ pub fn peaks(cell: ReferenceCellType) -> Vec<Vec<usize>> {
 }
 
 /// The normals to the facets of the reference cell. The length of each normal is the volume of the facet
-pub fn facet_normals<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Vec<T>> {
+pub fn facet_normals<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
     let zero = T::from(0.0).unwrap();
     let one = T::from(1.0).unwrap();
     match cell {
@@ -303,7 +303,7 @@ pub fn facet_normals<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Ve
 }
 
 /// The unit normals to the facets of the reference cell
-pub fn facet_unit_normals<T: RlstScalar<Real = T>>(cell: ReferenceCellType) -> Vec<Vec<T>> {
+pub fn facet_unit_normals<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
     let mut normals = facet_normals::<T>(cell);
     for normal in normals.iter_mut() {
         let size = normal.iter().map(|x| x.powi(2)).sum::<T>().sqrt();

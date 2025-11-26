@@ -10,7 +10,7 @@ fn main() {
             paste! {
                 for d in 1..[<$max_degree>] {
                     println!("Constructing Lagrange(degree={d}, cell={:?})", ReferenceCellType::[<$cell>]);
-                    let _e = lagrange::create::<f64>(ReferenceCellType::[<$cell>], d, Continuity::Standard);
+                    let _e = lagrange::create::<f64, f64>(ReferenceCellType::[<$cell>], d, Continuity::Standard);
                 }
             }
         };
@@ -21,7 +21,7 @@ fn main() {
             paste! {
                 for d in 1..[<$max_degree>] {
                     println!("Constructing RaviartThomas(degree={d}, cell={:?})", ReferenceCellType::[<$cell>]);
-                    let _e = raviart_thomas::create::<f64>(ReferenceCellType::[<$cell>], d, Continuity::Standard);
+                    let _e = raviart_thomas::create::<f64, f64>(ReferenceCellType::[<$cell>], d, Continuity::Standard);
                 }
             }
         };
@@ -32,7 +32,7 @@ fn main() {
             paste! {
                 for d in 1..[<$max_degree>] {
                     println!("Constructing Nedelec(degree={d}, cell={:?})", ReferenceCellType::[<$cell>]);
-                    let _e = nedelec::create::<f64>(ReferenceCellType::[<$cell>], d, Continuity::Standard);
+                    let _e = nedelec::create::<f64, f64>(ReferenceCellType::[<$cell>], d, Continuity::Standard);
                 }
             }
         };
