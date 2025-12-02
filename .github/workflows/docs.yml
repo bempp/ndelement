@@ -69,11 +69,11 @@ jobs:
         run: |
           mkdir docs
           mkdir docs/rust
-          mkdir docs/rust/ndgrid
+          mkdir docs/rust/ndelement
           mkdir docs/python
-          echo "<html><head><meta http-equiv='refresh' content='0; URL=https://bempp.github.io/nd/rust/ndgrid/'></head></html>" > docs/index.html
+          echo "<html><head><meta http-equiv='refresh' content='0; URL=https://bempp.github.io/nd/rust/ndelement/'></head></html>" > docs/index.html
           cp docs/index.html docs/rust/index.html
-          cp docs/index.html docs/rust/ndgrid/index.html
+          cp docs/index.html docs/rust/ndelement/index.html
           cp docs/index.html docs/python/index.html
       - name: Upload artifact for docs
         uses: actions/upload-pages-artifact@v3
