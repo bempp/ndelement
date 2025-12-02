@@ -1,3 +1,6 @@
+# ndelement (archived)
+The ndelement library is now maintained as part of the [bempp/nd repository](https://github.com/bempp/nd).
+
 # ndelement
 
 [![DefElement verification](https://defelement.org/badges/ndelement.svg)](https://defelement.org/verification/ndelement.html)

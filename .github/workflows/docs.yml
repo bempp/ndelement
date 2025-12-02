@@ -56,14 +56,31 @@ jobs:
       - name: Make index page
         run: echo "<html><head><title>ndelement docs</title></head><body><center><a href='rust/ndelement'>Rust docs</a><br /><a href='python'>Python docs</a></center></body></html>" > doc/index.html
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-        if: github.ref == 'refs/heads/main'
+      #- name: Setup Pages
+      #  uses: actions/configure-pages@v3
+      #  if: github.ref == 'refs/heads/main'
+      #- name: Upload artifact for docs
+      #  uses: actions/upload-pages-artifact@v3
+      #  with:
+      #    path: 'doc'
+      #  if: github.ref == 'refs/heads/main'
+
+      - name: Make redirect page
+        run: |
+          mkdir docs
+          mkdir docs/rust
+          mkdir docs/rust/ndgrid
+          mkdir docs/python
+          echo "<html><head><meta http-equiv='refresh' content='0; URL=https://bempp.github.io/nd/rust/ndgrid/'></head></html>" > docs/index.html
+          cp docs/index.html docs/rust/index.html
+          cp docs/index.html docs/rust/ndgrid/index.html
+          cp docs/index.html docs/python/index.html
       - name: Upload artifact for docs
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'doc'
+          path: 'docs'
         if: github.ref == 'refs/heads/main'
+
 
   deploy-docs:
     name: Deploy docs to GitHub pages
